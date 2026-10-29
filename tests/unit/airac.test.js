@@ -67,6 +67,14 @@ describe('diffs', () => {
     expect(d.removed.map(r => r.id)).toEqual(['BBBBB']);
     expect(d.added.map(r => r.id)).toEqual(['CCCCC']); // intermediate points are not auto-added
   });
+  it('reports role changes, including a point that loses its FRA role', () => {
+    const cur = [{ id: 'AAAAA', pos: 'p', role: 'I' }, { id: 'BBBBB', pos: 'p', role: 'E' }, { id: 'CCCCC', pos: 'p', role: 'L' }];
+    const par = [{ id: 'AAAAA', pos: 'p', role: 'EX' }, { id: 'BBBBB', pos: 'p', role: null }, { id: 'CCCCC', pos: 'p', role: 'L' }];
+    expect(diffPoints(cur, par).changed).toEqual([
+      { id: 'AAAAA', role: ['I', 'EX'] },
+      { id: 'BBBBB', role: ['E', null] }
+    ]);
+  });
   it('navaid frequency change is reported', () => {
     const d = diffNavaids([{ id: 'XXX', pos: 'p', freq: '110.000' }], [{ id: 'XXX', pos: 'p', freq: '110.200' }]);
     expect(d.changed).toHaveLength(1);

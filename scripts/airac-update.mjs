@@ -73,6 +73,8 @@ print('VOR/DME', dn);
 const referenced = new Set([...Object.values(traffic.gates).flatMap(g => g.pts), ...Object.values(traffic.lrop.arr), ...Object.values(traffic.lrop.dep)]);
 const blocked = dp.removed.filter(r => referenced.has(r.id));
 if (blocked.length) console.log(`\n! Removed points still used by traffic.json: ${blocked.map(b => b.id).join(', ')}. Replace them there first.`);
+const lostRole = dp.changed.filter(c => c.role && c.role[1] === null);
+if (lostRole.length) console.log(`\n! No longer FRA relevant in the AIP: ${lostRole.map(c => c.id).join(', ')}. --write keeps their old role; drop them or reassign them in traffic.json by hand.`);
 
 if (write) {
   const byId = new Map(parsedPts.map(p => [p.id, p]));
