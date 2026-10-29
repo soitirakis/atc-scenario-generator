@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ATC Scenario Generator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/src/styles.css">
+</head>
+<body>
+<div class="app">
+  <header class="bar">
+    <div class="brand">
+      <h1>ATC Scenario Generator</h1>
+      <span class="fir" id="firTag">LRBB · BUCUREȘTI ACC</span>
+    </div>
+    <div class="ctl">
+      <label for="country">Country</label>
+      <select id="country"></select>
+    </div>
+    <div class="ctl">
+      <label for="sector">Training sector</label>
+      <select id="sector"></select>
+    </div>
+    <div class="ctl">
+      <label for="difficulty">Traffic</label>
+      <select id="difficulty">
+        <option value="foundational">Foundational</option>
+        <option value="intermediate" selected>Intermediate</option>
+        <option value="advanced">Advanced</option>
+      </select>
+    </div>
+    <div class="clock" id="clock" aria-live="off">00:00 <small>/ 30:00</small></div>
+    <div class="seg" id="speedSeg" role="group" aria-label="Simulation speed">
+      <button data-s="1" aria-pressed="true">1×</button>
+      <button data-s="2" aria-pressed="false">2×</button>
+      <button data-s="4" aria-pressed="false">4×</button>
+      <button data-s="8" aria-pressed="false">8×</button>
+    </div>
+    <button class="btn primary" id="playBtn">Start</button>
+    <button class="btn" id="restartBtn" title="Restart the same scenario with the same seed">Restart</button>
+  </header>
+
+  <main class="main">
+    <section class="scope-wrap" id="scopeWrap">
+      <canvas id="scope" aria-label="Radar display of the selected airspace with simulated traffic"></canvas>
+      <div class="overlay ov-tl" id="layerChips"></div>
+      <div class="overlay ov-bl"><div class="legend" id="legend">
+        <span><i style="background:var(--assumed)"></i>In sector</span>
+        <span><i style="background:var(--pend)"></i>Inbound ≤6 min</span>
+        <span><i style="background:var(--unc)"></i>Other</span>
+        <span><i style="background:var(--warn)"></i>STCA predicted</span>
+        <span><i style="background:var(--alert)"></i>Loss of separation</span>
+      </div></div>
+      <div class="overlay ov-br">
+        <button class="chip" id="zoomIn" aria-label="Zoom in">＋</button>
+        <button class="chip" id="zoomOut" aria-label="Zoom out">－</button>
+        <button class="chip" id="fitSector">Fit sector</button>
+        <button class="chip" id="fitFir">Fit FIR</button>
+      </div>
+      <div class="paused-tag" id="pausedTag">
+        <b id="pausedTitle">Scenario ready</b>
+        <span id="pausedSub">Traffic is loaded. Start the session when you have read the scenario.</span>
+        <button class="btn primary" id="pausedStart">Start session</button>
+      </div>
+      <div class="toast" id="toast" hidden></div>
+    </section>
+
+    <aside class="panel">
+      <div class="tabs" role="tablist">
+        <button role="tab" aria-selected="true" data-tab="live" id="tab-live">Live</button>
+        <button role="tab" aria-selected="false" data-tab="scenario" id="tab-scenario">Scenario</button>
+        <button role="tab" aria-selected="false" data-tab="data" id="tab-data">AIP data</button>
+      </div>
+
+      <div class="tab-body" id="pane-live" role="tabpanel">
+        <div class="sec">
+          <h2>Sector <small id="secName">ARGES</small></h2>
+          <div class="stats">
+            <div class="stat"><div class="k">In sector</div><div class="v" id="stIn">0</div></div>
+            <div class="stat"><div class="k">Inbound</div><div class="v" id="stInb">0</div></div>
+            <div class="stat"><div class="k">STCA</div><div class="v" id="stStca">0</div></div>
+            <div class="stat"><div class="k">Next inject</div><div class="v" id="stNext">—</div></div>
+          </div>
+        </div>
+        <div class="sec">
+          <h2>Priorities <small>highest first</small></h2>
+          <div class="prio" id="prio"></div>
+        </div>
+        <div class="sec" id="acSec">
+          <h2>Selected aircraft <small>click a track</small></h2>
+          <div id="acBox"><div class="empty">Click an aircraft on the radar or a priority item to issue clearances.</div></div>
+        </div>
+        <div class="sec">
+          <h2>Injects <small id="injCount"></small></h2>
+          <div class="inj" id="injList"></div>
+        </div>
+        <div class="sec">
+          <h2>Event log</h2>
+          <div class="log" id="log"></div>
+        </div>
+      </div>
+
+      <div class="tab-body" id="pane-scenario" role="tabpanel" hidden>
+        <div class="sec">
+          <h2>Build a scenario</h2>
+          <div class="form">
+            <div class="full">
+              <label for="objective">Training objective</label>
+              <textarea id="objective">Trainee loses the picture when a level bust and weather deviations happen close together in a busy sector.</textarea>
+            </div>
+            <div>
+              <label for="duration">Session length</label>
+              <select id="duration">
+                <option value="20">20 minutes</option>
+                <option value="30" selected>30 minutes</option>
+                <option value="45">45 minutes</option>
+              </select>
+            </div>
+            <div>
+              <label for="seed">Seed</label>
+              <input type="number" id="seed" value="4127">
+            </div>
+          </div>
+          <div class="row-btns" style="margin-top:10px">
+            <button class="btn primary" id="buildLocal">Build scenario</button>
+            <button class="btn" id="buildAI" hidden>Generate with Claude</button>
+            <button class="btn sm" id="newSeed" title="Pick a random seed">New seed</button>
+          </div>
+          <p class="note" id="aiNote" style="margin:8px 0 0">The same seed, sector and traffic level always produce the same traffic, so two trainees can fly an identical session.</p>
+        </div>
+        <div class="sec">
+          <h2>Current scenario <small id="scnSource"></small></h2>
+          <div id="scnCard"></div>
+        </div>
+      </div>
+
+      <div class="tab-body" id="pane-data" role="tabpanel" hidden>
+        <div class="sec">
+          <h2>Source data <small id="airacTag"></small></h2>
+          <div class="data-list" id="dataList"></div>
+        </div>
+        <div class="sec">
+          <h2>What is simulated</h2>
+          <p class="note" id="simNote"></p>
+        </div>
+        <div class="sec">
+          <h2>Countries</h2>
+          <div class="roadmap" id="roadmap"></div>
+        </div>
+        <div class="sec">
+          <h2>Country module format</h2>
+          <p class="note" style="margin:0 0 6px">Each new country is one data module in this shape, built from that state's eAIP each AIRAC cycle.</p>
+          <pre class="code" id="schema"></pre>
+        </div>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<div class="modal" id="debrief" hidden>
+  <div class="modal-card">
+    <h3>Session debrief</h3>
+    <div class="deb" id="debStats"></div>
+    <div id="debNotes" class="note"></div>
+    <div class="row-btns">
+      <button class="btn primary" id="debRestart">Run again (same seed)</button>
+      <button class="btn" id="debNew">New seed</button>
+      <button class="btn" id="debClose">Close</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

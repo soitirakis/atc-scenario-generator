@@ -1,0 +1,657 @@
+[
+  {
+    "id": "ADINA",
+    "pos": "434812N 0303018E",
+    "role": "EX"
+  },
+  {
+    "id": "AKLEF",
+    "pos": "475538N 0252659E",
+    "role": "EX"
+  },
+  {
+    "id": "BADKA",
+    "pos": "452239N 0290639E",
+    "role": "EX"
+  },
+  {
+    "id": "BAGRI",
+    "pos": "451112N 0294812E",
+    "role": "E"
+  },
+  {
+    "id": "BAMUD",
+    "pos": "475432N 0241235E",
+    "role": "EX"
+  },
+  {
+    "id": "BEPES",
+    "pos": "452053N 0281920E",
+    "role": "EX"
+  },
+  {
+    "id": "BUKOV",
+    "pos": "475706N 0255730E",
+    "role": "EX"
+  },
+  {
+    "id": "DIRER",
+    "pos": "445918N 0212435E",
+    "role": "X"
+  },
+  {
+    "id": "ERBIZ",
+    "pos": "481039N 0261939E",
+    "role": "EX"
+  },
+  {
+    "id": "EROMO",
+    "pos": "475713N 0235647E",
+    "role": "EX"
+  },
+  {
+    "id": "IRMAM",
+    "pos": "451331N 0284323E",
+    "role": "E"
+  },
+  {
+    "id": "MAVIT",
+    "pos": "451424N 0211830E",
+    "role": "E"
+  },
+  {
+    "id": "OGATA",
+    "pos": "444846N 0300751E",
+    "role": "E"
+  },
+  {
+    "id": "OSDOR",
+    "pos": "445835N 0300300E",
+    "role": "X"
+  },
+  {
+    "id": "ROMOL",
+    "pos": "474408N 0250251E",
+    "role": "EX"
+  },
+  {
+    "id": "RUMUK",
+    "pos": "480136N 0232036E",
+    "role": "EX"
+  },
+  {
+    "id": "TALAM",
+    "pos": "440511N 0302619E",
+    "role": "X"
+  },
+  {
+    "id": "TUREC",
+    "pos": "475754N 0243459E",
+    "role": "EX"
+  },
+  {
+    "id": "TUREL",
+    "pos": "444244N 0301010E",
+    "role": "X"
+  },
+  {
+    "id": "VELIP",
+    "pos": "444618N 0213200E",
+    "role": "E"
+  },
+  {
+    "id": "ANASA",
+    "pos": "441843N 0223319E",
+    "role": "X"
+  },
+  {
+    "id": "NAVOD",
+    "pos": "434521N 0243335E",
+    "role": "L"
+  },
+  {
+    "id": "UPAMA",
+    "pos": "433735N 0252506E",
+    "role": "L"
+  },
+  {
+    "id": "SOMOV",
+    "pos": "434200N 0245100E",
+    "role": "L"
+  },
+  {
+    "id": "LOMOS",
+    "pos": "435000N 0231500E",
+    "role": "L"
+  },
+  {
+    "id": "OSTOV",
+    "pos": "434700N 0234800E",
+    "role": "L"
+  },
+  {
+    "id": "TIMUR",
+    "pos": "434120N 0241421E",
+    "role": "L"
+  },
+  {
+    "id": "BULEN",
+    "pos": "434500N 0254900E",
+    "role": "L"
+  },
+  {
+    "id": "MOSOP",
+    "pos": "434309N 0293149E",
+    "role": "L"
+  },
+  {
+    "id": "BINBI",
+    "pos": "434306N 0293808E",
+    "role": "L"
+  },
+  {
+    "id": "ABOLO",
+    "pos": "470001N 0271959E",
+    "role": "I"
+  },
+  {
+    "id": "ADMEC",
+    "pos": "470751N 0263448E",
+    "role": "I"
+  },
+  {
+    "id": "AGMEL",
+    "pos": "464126N 0213416E",
+    "role": "I"
+  },
+  {
+    "id": "AKUPO",
+    "pos": "470004N 0242344E",
+    "role": "L"
+  },
+  {
+    "id": "ALENO",
+    "pos": "435809N 0295029E",
+    "role": "I"
+  },
+  {
+    "id": "AMLAV",
+    "pos": "440943N 0294558E",
+    "role": "I"
+  },
+  {
+    "id": "ANAVU",
+    "pos": "471539N 0231921E",
+    "role": "L"
+  },
+  {
+    "id": "ARCAZ",
+    "pos": "463320N 0212726E",
+    "role": "L"
+  },
+  {
+    "id": "ARGES",
+    "pos": "440456N 0264936E",
+    "role": "I"
+  },
+  {
+    "id": "ASKUT",
+    "pos": "462411N 0281416E",
+    "role": "I"
+  },
+  {
+    "id": "ASTOD",
+    "pos": "463740N 0272337E",
+    "role": "I"
+  },
+  {
+    "id": "BALBI",
+    "pos": "445418N 0254515E",
+    "role": "I"
+  },
+  {
+    "id": "BIBOR",
+    "pos": "471609N 0250821E",
+    "role": "I"
+  },
+  {
+    "id": "BUDOP",
+    "pos": "464115N 0212948E",
+    "role": "I"
+  },
+  {
+    "id": "BUKAN",
+    "pos": "463154N 0225330E",
+    "role": "I"
+  },
+  {
+    "id": "BUSES",
+    "pos": "465533N 0280622E",
+    "role": "I"
+  },
+  {
+    "id": "BUXLE",
+    "pos": "462750N 0221143E",
+    "role": "I"
+  },
+  {
+    "id": "CONWI",
+    "pos": "464339N 0223345E",
+    "role": "I"
+  },
+  {
+    "id": "COZMU",
+    "pos": "460656N 0254542E",
+    "role": "I"
+  },
+  {
+    "id": "DENAK",
+    "pos": "450008N 0262608E",
+    "role": "L"
+  },
+  {
+    "id": "DIRAL",
+    "pos": "443039N 0273315E",
+    "role": "L"
+  },
+  {
+    "id": "DIRCO",
+    "pos": "463558N 0271517E",
+    "role": "I"
+  },
+  {
+    "id": "DITAX",
+    "pos": "452808N 0222014E",
+    "role": "L"
+  },
+  {
+    "id": "DOKUD",
+    "pos": "462807N 0245721E",
+    "role": "L"
+  },
+  {
+    "id": "EBEKU",
+    "pos": "442645N 0280729E",
+    "role": "I"
+  },
+  {
+    "id": "EDETA",
+    "pos": "454608N 0245552E",
+    "role": "L"
+  },
+  {
+    "id": "ELDET",
+    "pos": "441710N 0234521E",
+    "role": "I"
+  },
+  {
+    "id": "ELROM",
+    "pos": "464431N 0230155E",
+    "role": "L"
+  },
+  {
+    "id": "EPCAR",
+    "pos": "464916N 0264213E",
+    "role": "I"
+  },
+  {
+    "id": "EVIKA",
+    "pos": "453645N 0273050E",
+    "role": "I"
+  },
+  {
+    "id": "EVRIK",
+    "pos": "462107N 0221432E",
+    "role": "I"
+  },
+  {
+    "id": "FOCSA",
+    "pos": "455941N 0264123E",
+    "role": "I"
+  },
+  {
+    "id": "GALMI",
+    "pos": "440800N 0300132E",
+    "role": "I"
+  },
+  {
+    "id": "GANNA",
+    "pos": "464207N 0220541E",
+    "role": "I"
+  },
+  {
+    "id": "GESBA",
+    "pos": "455522N 0214724E",
+    "role": "I"
+  },
+  {
+    "id": "GOXGE",
+    "pos": "462216N 0211149E",
+    "role": "I"
+  },
+  {
+    "id": "GUXVA",
+    "pos": "464448N 0270407E",
+    "role": "I"
+  },
+  {
+    "id": "HUMOR",
+    "pos": "473053N 0255235E",
+    "role": "I"
+  },
+  {
+    "id": "IDARU",
+    "pos": "443825N 0265854E",
+    "role": "L"
+  },
+  {
+    "id": "IMMOC",
+    "pos": "460000N 0271311E",
+    "role": "I"
+  },
+  {
+    "id": "INVED",
+    "pos": "460928N 0202405E",
+    "role": "I"
+  },
+  {
+    "id": "IRLOX",
+    "pos": "453808N 0241102E",
+    "role": "L"
+  },
+  {
+    "id": "KARIL",
+    "pos": "474738N 0222632E",
+    "role": "I"
+  },
+  {
+    "id": "KERLO",
+    "pos": "471502N 0270000E",
+    "role": "I"
+  },
+  {
+    "id": "KODRU",
+    "pos": "461132N 0280726E",
+    "role": "I"
+  },
+  {
+    "id": "KOMAN",
+    "pos": "435900N 0261300E",
+    "role": "I"
+  },
+  {
+    "id": "KONIM",
+    "pos": "441243N 0284957E",
+    "role": "I"
+  },
+  {
+    "id": "LAMIT",
+    "pos": "450614N 0232229E",
+    "role": "I"
+  },
+  {
+    "id": "LAPKA",
+    "pos": "451734N 0263033E",
+    "role": "I"
+  },
+  {
+    "id": "LARMU",
+    "pos": "471501N 0230809E",
+    "role": "L"
+  },
+  {
+    "id": "LUGEB",
+    "pos": "434408N 0283004E",
+    "role": "I"
+  },
+  {
+    "id": "LUPUK",
+    "pos": "442446N 0293646E",
+    "role": "I"
+  },
+  {
+    "id": "MOPUG",
+    "pos": "460949N 0204229E",
+    "role": "I"
+  },
+  {
+    "id": "NARKA",
+    "pos": "471454N 0215136E",
+    "role": "I"
+  },
+  {
+    "id": "NEKUL",
+    "pos": "453100N 0223512E",
+    "role": "L"
+  },
+  {
+    "id": "NEPOT",
+    "pos": "455737N 0230517E",
+    "role": "I"
+  },
+  {
+    "id": "NERDI",
+    "pos": "451846N 0234211E",
+    "role": "I"
+  },
+  {
+    "id": "NETUL",
+    "pos": "444143N 0265843E",
+    "role": "L"
+  },
+  {
+    "id": "NOPTI",
+    "pos": "461855N 0215947E",
+    "role": "L"
+  },
+  {
+    "id": "OBARA",
+    "pos": "470153N 0224259E",
+    "role": "I"
+  },
+  {
+    "id": "OBUGA",
+    "pos": "440632N 0260539E",
+    "role": "L"
+  },
+  {
+    "id": "ODCIH",
+    "pos": "465158N 0213606E",
+    "role": "I"
+  },
+  {
+    "id": "OKLIV",
+    "pos": "471618N 0233121E",
+    "role": "L"
+  },
+  {
+    "id": "OLMIP",
+    "pos": "460243N 0222212E",
+    "role": "I"
+  },
+  {
+    "id": "OSTAL",
+    "pos": "441641N 0264622E",
+    "role": "L"
+  },
+  {
+    "id": "PANZU",
+    "pos": "440212N 0240813E",
+    "role": "I"
+  },
+  {
+    "id": "PASKA",
+    "pos": "472003N 0262954E",
+    "role": "I"
+  },
+  {
+    "id": "PELES",
+    "pos": "461302N 0270312E",
+    "role": "I"
+  },
+  {
+    "id": "PEMOK",
+    "pos": "442153N 0242054E",
+    "role": "I"
+  },
+  {
+    "id": "PILAT",
+    "pos": "444926N 0280552E",
+    "role": "L"
+  },
+  {
+    "id": "PIRIG",
+    "pos": "464932N 0274344E",
+    "role": "I"
+  },
+  {
+    "id": "POGAV",
+    "pos": "464654N 0281000E",
+    "role": "I"
+  },
+  {
+    "id": "POLUN",
+    "pos": "441415N 0251324E",
+    "role": "L"
+  },
+  {
+    "id": "RAMIX",
+    "pos": "461722N 0272019E",
+    "role": "I"
+  },
+  {
+    "id": "RIPGA",
+    "pos": "451131N 0275407E",
+    "role": "I"
+  },
+  {
+    "id": "RIVOS",
+    "pos": "443921N 0273917E",
+    "role": "L"
+  },
+  {
+    "id": "ROMAG",
+    "pos": "472522N 0222507E",
+    "role": "I"
+  },
+  {
+    "id": "SALAC",
+    "pos": "464427N 0264407E",
+    "role": "I"
+  },
+  {
+    "id": "SOBSA",
+    "pos": "460253N 0250514E",
+    "role": "L"
+  },
+  {
+    "id": "SOKRU",
+    "pos": "445934N 0251949E",
+    "role": "L"
+  },
+  {
+    "id": "SORDU",
+    "pos": "440233N 0252648E",
+    "role": "L"
+  },
+  {
+    "id": "TEGRI",
+    "pos": "461546N 0210616E",
+    "role": "I"
+  },
+  {
+    "id": "TEVSA",
+    "pos": "465234N 0271212E",
+    "role": "I"
+  },
+  {
+    "id": "TIDGA",
+    "pos": "462339N 0230347E",
+    "role": "L"
+  },
+  {
+    "id": "TIRVO",
+    "pos": "445933N 0284411E",
+    "role": "I"
+  },
+  {
+    "id": "TITEK",
+    "pos": "442936N 0233426E",
+    "role": "I"
+  },
+  {
+    "id": "TOMET",
+    "pos": "462912N 0253532E",
+    "role": "I"
+  },
+  {
+    "id": "TOMUC",
+    "pos": "473027N 0264934E",
+    "role": "I"
+  },
+  {
+    "id": "TOSVI",
+    "pos": "444514N 0250941E",
+    "role": "L"
+  },
+  {
+    "id": "TULNU",
+    "pos": "461650N 0270016E",
+    "role": "I"
+  },
+  {
+    "id": "UDSIG",
+    "pos": "465840N 0260313E",
+    "role": "I"
+  },
+  {
+    "id": "ULGAP",
+    "pos": "465023N 0273503E",
+    "role": "I"
+  },
+  {
+    "id": "ULMIN",
+    "pos": "454850N 0232353E",
+    "role": "L"
+  },
+  {
+    "id": "UNIRA",
+    "pos": "471006N 0275106E",
+    "role": "I"
+  },
+  {
+    "id": "URELA",
+    "pos": "452948N 0263340E",
+    "role": "I"
+  },
+  {
+    "id": "USHUZ",
+    "pos": "454646N 0280828E",
+    "role": "I"
+  },
+  {
+    "id": "VAKIS",
+    "pos": "435108N 0284329E",
+    "role": "I"
+  },
+  {
+    "id": "VAMON",
+    "pos": "442358N 0244047E",
+    "role": "I"
+  },
+  {
+    "id": "VASIS",
+    "pos": "455712N 0222429E",
+    "role": "L"
+  },
+  {
+    "id": "VIKBI",
+    "pos": "441531N 0243921E",
+    "role": "I"
+  },
+  {
+    "id": "ZULOC",
+    "pos": "451910N 0250000E",
+    "role": "I"
+  }
+]

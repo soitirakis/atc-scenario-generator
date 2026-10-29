@@ -1,0 +1,282 @@
+{
+  "_note": "Gates are real FRA points. Flow weights are a modelling choice, not published data. Gates with closed:true carry no traffic.",
+  "gates": {
+    "W": {
+      "label": "Serbia / Hungary",
+      "pts": [
+        "VELIP",
+        "MAVIT",
+        "DIRER",
+        "ANASA",
+        "ARCAZ",
+        "ODCIH",
+        "NARKA",
+        "KARIL"
+      ]
+    },
+    "S": {
+      "label": "Bulgaria",
+      "pts": [
+        "NAVOD",
+        "UPAMA",
+        "SOMOV",
+        "LOMOS",
+        "OSTOV",
+        "BULEN"
+      ]
+    },
+    "SE": {
+      "label": "Black Sea south",
+      "pts": [
+        "ADINA",
+        "TALAM",
+        "MOSOP",
+        "BINBI"
+      ]
+    },
+    "E": {
+      "label": "Black Sea east",
+      "pts": [
+        "OGATA",
+        "OSDOR",
+        "TUREL",
+        "BAGRI"
+      ]
+    },
+    "MD": {
+      "label": "Moldova / Danube",
+      "pts": [
+        "BEPES",
+        "IRMAM",
+        "BADKA"
+      ]
+    },
+    "N": {
+      "label": "Ukraine",
+      "closed": true,
+      "pts": [
+        "ROMOL",
+        "AKLEF",
+        "BUKOV",
+        "ERBIZ",
+        "TUREC",
+        "EROMO",
+        "BAMUD",
+        "RUMUK"
+      ]
+    }
+  },
+  "flows": [
+    [
+      "W",
+      "SE",
+      10
+    ],
+    [
+      "W",
+      "E",
+      4
+    ],
+    [
+      "W",
+      "S",
+      3
+    ],
+    [
+      "W",
+      "MD",
+      2
+    ],
+    [
+      "S",
+      "MD",
+      2
+    ],
+    [
+      "S",
+      "E",
+      1
+    ],
+    [
+      "SE",
+      "MD",
+      1
+    ],
+    [
+      "W",
+      "LROP",
+      3
+    ],
+    [
+      "SE",
+      "LROP",
+      2
+    ],
+    [
+      "S",
+      "LROP",
+      1
+    ],
+    [
+      "MD",
+      "LROP",
+      1
+    ],
+    [
+      "E",
+      "LROP",
+      1
+    ]
+  ],
+  "lrop": {
+    "arr": {
+      "W": "PEMOK",
+      "S": "SORDU",
+      "SE": "OSTAL",
+      "E": "NETUL",
+      "MD": "DENAK"
+    },
+    "dep": {
+      "W": "SOKRU",
+      "S": "POLUN",
+      "SE": "IDARU",
+      "E": "NETUL",
+      "MD": "DENAK"
+    }
+  },
+  "operators": [
+    {
+      "icao": "ROT",
+      "types": [
+        "B738",
+        "B38M"
+      ],
+      "weight": 3
+    },
+    {
+      "icao": "WZZ",
+      "types": [
+        "A321",
+        "A21N",
+        "A320"
+      ],
+      "weight": 5
+    },
+    {
+      "icao": "THY",
+      "types": [
+        "A321",
+        "B738",
+        "A333",
+        "B77W"
+      ],
+      "weight": 5
+    },
+    {
+      "icao": "PGT",
+      "types": [
+        "A20N",
+        "B38M"
+      ],
+      "weight": 2
+    },
+    {
+      "icao": "RYR",
+      "types": [
+        "B738",
+        "B38M"
+      ],
+      "weight": 3
+    },
+    {
+      "icao": "DLH",
+      "types": [
+        "A320",
+        "A20N"
+      ],
+      "weight": 2
+    },
+    {
+      "icao": "AUA",
+      "types": [
+        "A320",
+        "E195"
+      ],
+      "weight": 2
+    },
+    {
+      "icao": "LOT",
+      "types": [
+        "B38M",
+        "E195"
+      ],
+      "weight": 1
+    },
+    {
+      "icao": "QTR",
+      "types": [
+        "B788",
+        "A359",
+        "B77W"
+      ],
+      "weight": 2
+    },
+    {
+      "icao": "UAE",
+      "types": [
+        "B77W",
+        "A388"
+      ],
+      "weight": 1
+    },
+    {
+      "icao": "FDB",
+      "types": [
+        "B38M"
+      ],
+      "weight": 2
+    },
+    {
+      "icao": "AEE",
+      "types": [
+        "A320"
+      ],
+      "weight": 1
+    },
+    {
+      "icao": "KLM",
+      "types": [
+        "B738"
+      ],
+      "weight": 1
+    },
+    {
+      "icao": "AFR",
+      "types": [
+        "A320"
+      ],
+      "weight": 1
+    },
+    {
+      "icao": "SWR",
+      "types": [
+        "BCS3"
+      ],
+      "weight": 1
+    },
+    {
+      "icao": "BAW",
+      "types": [
+        "A320"
+      ],
+      "weight": 1
+    },
+    {
+      "icao": "ELY",
+      "types": [
+        "B738"
+      ],
+      "weight": 1
+    }
+  ]
+}

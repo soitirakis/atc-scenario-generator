@@ -1,0 +1,98 @@
+[
+  {
+    "id": "ARD",
+    "name": "ARAD",
+    "freq": "109.000",
+    "pos": "461103N 0210837E"
+  },
+  {
+    "id": "BCU",
+    "name": "BACĂU",
+    "freq": "109.400",
+    "pos": "463039N 0264932E"
+  },
+  {
+    "id": "BRV",
+    "name": "BRAȘOV",
+    "freq": "117.600",
+    "pos": "453403N 0253353E"
+  },
+  {
+    "id": "CLJ",
+    "name": "CLUJ",
+    "freq": "111.200",
+    "pos": "464800N 0234714E"
+  },
+  {
+    "id": "CND",
+    "name": "CONSTANȚA",
+    "freq": "112.700",
+    "pos": "441708N 0282842E"
+  },
+  {
+    "id": "CRV",
+    "name": "CRAIOVA",
+    "freq": "110.200",
+    "pos": "441907N 0235522E"
+  },
+  {
+    "id": "DVA",
+    "name": "DEVA",
+    "freq": "109.800",
+    "pos": "454941N 0225808E"
+  },
+  {
+    "id": "FLR",
+    "name": "FLOREȘTI",
+    "freq": "112.200",
+    "pos": "443003N 0254229E"
+  },
+  {
+    "id": "GLT",
+    "name": "GALAȚI",
+    "freq": "108.200",
+    "pos": "452459N 0275540E"
+  },
+  {
+    "id": "OPT",
+    "name": "ROȘIORI",
+    "freq": "117.100",
+    "pos": "443533N 0263337E"
+  },
+  {
+    "id": "SAT",
+    "name": "SATU MARE",
+    "freq": "108.400",
+    "pos": "474339N 0225338E"
+  },
+  {
+    "id": "SBI",
+    "name": "SIBIU",
+    "freq": "114.000",
+    "pos": "454651N 0240516E"
+  },
+  {
+    "id": "STJ",
+    "name": "STREJNIC",
+    "freq": "113.200",
+    "pos": "445507N 0255837E"
+  },
+  {
+    "id": "SCV",
+    "name": "SUCEAVA",
+    "freq": "112.300",
+    "pos": "474020N 0262139E"
+  },
+  {
+    "id": "TGJ",
+    "name": "TÂRGU JIU",
+    "freq": "115.300",
+    "pos": "450339N 0232003E"
+  },
+  {
+    "id": "TLA",
+    "name": "TULCEA",
+    "freq": "114.800",
+    "pos": "450443N 0284234E"
+  }
+]

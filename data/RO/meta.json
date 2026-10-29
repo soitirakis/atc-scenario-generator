@@ -1,0 +1,35 @@
+{
+  "code": "RO",
+  "name": "Romania",
+  "fir": "LRBB",
+  "firName": "BUCUREȘTI FIR",
+  "unit": "BUCUREȘTI ACC",
+  "center": [
+    45.9,
+    25
+  ],
+  "airac": {
+    "edition": "2026-10-01",
+    "enr41": "AIRAC AMDT 09/25",
+    "enr44": "AIRAC AMDT 06/26 (pages to 08/26)",
+    "sectors": "NM RAD sector file 14-08-25"
+  },
+  "sources": [
+    {
+      "title": "eAIP Romania",
+      "url": "https://aisro.ro/aip/2026-10-01/html/ro/aip_toc_enr.html"
+    },
+    {
+      "title": "ENR 4.1 Radio navigation aids",
+      "url": "https://aisro.ro/aip/2026-10-01/DOCS/AIP/ENR/ENR4/LR_ENR_4_1_en.pdf"
+    },
+    {
+      "title": "ENR 4.4 Significant points",
+      "url": "https://aisro.ro/aip/2026-10-01/DOCS/AIP/ENR/ENR4/LR_ENR_4_4_en.pdf"
+    },
+    {
+      "title": "NM RAD — LR sector data",
+      "url": "https://www.nm.eurocontrol.int/RAD/assets/ADDITIONAL_DOCUMENTATION/SECTOR_DATA/LR_Sector%20ID_14-08-25.pdf"
+    }
+  ]
+}

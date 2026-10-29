@@ -1,0 +1,87 @@
+[
+  {
+    "icao": "LROP",
+    "name": "Henri Coandă",
+    "pos": "443417N 0260506E"
+  },
+  {
+    "icao": "LRBS",
+    "name": "Băneasa",
+    "pos": "443011N 0260608E"
+  },
+  {
+    "icao": "LRCL",
+    "name": "Cluj",
+    "pos": "464707N 0234110E"
+  },
+  {
+    "icao": "LRTR",
+    "name": "Timișoara",
+    "pos": "454836N 0212015E"
+  },
+  {
+    "icao": "LRIA",
+    "name": "Iași",
+    "pos": "471043N 0273715E"
+  },
+  {
+    "icao": "LRCK",
+    "name": "Constanța",
+    "pos": "442144N 0282918E"
+  },
+  {
+    "icao": "LRSB",
+    "name": "Sibiu",
+    "pos": "454708N 0240529E"
+  },
+  {
+    "icao": "LRTM",
+    "name": "Târgu Mureș",
+    "pos": "462804N 0242429E"
+  },
+  {
+    "icao": "LROD",
+    "name": "Oradea",
+    "pos": "470131N 0215409E"
+  },
+  {
+    "icao": "LRSV",
+    "name": "Suceava",
+    "pos": "474115N 0262115E"
+  },
+  {
+    "icao": "LRBC",
+    "name": "Bacău",
+    "pos": "463119N 0265435E"
+  },
+  {
+    "icao": "LRCV",
+    "name": "Craiova",
+    "pos": "441905N 0235319E"
+  },
+  {
+    "icao": "LRSM",
+    "name": "Satu Mare",
+    "pos": "474212N 0225308E"
+  },
+  {
+    "icao": "LRBM",
+    "name": "Baia Mare",
+    "pos": "473929N 0232812E"
+  },
+  {
+    "icao": "LRTC",
+    "name": "Tulcea",
+    "pos": "450345N 0284251E"
+  },
+  {
+    "icao": "LRAR",
+    "name": "Arad",
+    "pos": "461035N 0211543E"
+  },
+  {
+    "icao": "LRBV",
+    "name": "Brașov",
+    "pos": "454224N 0253120E"
+  }
+]
