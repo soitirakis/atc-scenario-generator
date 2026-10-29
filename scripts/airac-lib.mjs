@@ -60,7 +60,8 @@ export function diffPoints(current, parsed) {
     if (!p) { removed.push(c); continue; }
     const d = {};
     if (p.pos !== c.pos) d.pos = [c.pos, p.pos];
-    if (p.role && p.role !== c.role) d.role = [c.role, p.role];
+    // A null parsed role means the AIP no longer lists the point as FRA relevant; report it too.
+    if (p.role !== c.role) d.role = [c.role, p.role];
     if (Object.keys(d).length) changed.push({ id: c.id, ...d });
   }
   const have = new Set(current.map(c => c.id));
