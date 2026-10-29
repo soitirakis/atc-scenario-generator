@@ -107,23 +107,23 @@ export class Sim {
       const rev = this.rng() < 0.5;
       const from = rev ? f[1] : f[0], to = rev ? f[0] : f[1];
       const cs = this.callsign();
-      if (from === 'LROP' || to === 'LROP') {
-        const g = from === 'LROP' ? to : from;
-        const lrop = C.airports.LROP.xy;
-        if (to === 'LROP') {
-          const gate = C.points[this.pick(this.gatePts(g, 'E'))], conn = C.points[T.lrop.arr[g]];
-          const route = [{ id: conn.id, xy: conn.xy }, { id: 'LROP', xy: lrop }];
+      const apt = C.mainAirports[from] || C.mainAirports[to];
+      if (apt) {
+        const g = from === apt.id ? to : from;
+        if (to === apt.id) {
+          const gate = C.points[this.pick(this.gatePts(g, 'E'))], conn = C.points[apt.arr[g]];
+          const route = [{ id: conn.id, xy: conn.xy }, { id: apt.id, xy: apt.xy }];
           const lvl = brg(gate.xy, conn.xy) < 180 ? this.pick([330, 350, 370]) : this.pick([340, 360, 380]);
           if (opts.mustCross && !this.routeCrosses(gate.xy, route, opts.mustCross)) continue;
-          return { ...cs, cat: 'arr', start: gate.xy, route, fl: lvl, cfl: lvl, rfl: lvl, entry: gate.id, exit: 'LROP' };
+          return { ...cs, cat: 'arr', start: gate.xy, route, fl: lvl, cfl: lvl, rfl: lvl, entry: gate.id, exit: apt.id };
         }
-        const gate = C.points[this.pick(this.gatePts(g, 'X'))], conn = C.points[T.lrop.dep[g]];
+        const gate = C.points[this.pick(this.gatePts(g, 'X'))], conn = C.points[apt.dep[g]];
         const route = [{ id: conn.id, xy: conn.xy }, { id: gate.id, xy: gate.xy }];
-        const b = brg(lrop, conn.xy);
-        const st = [lrop[0] + Math.sin(b * D2R) * 18, lrop[1] - Math.cos(b * D2R) * 18];
+        const b = brg(apt.xy, conn.xy);
+        const st = [apt.xy[0] + Math.sin(b * D2R) * 18, apt.xy[1] - Math.cos(b * D2R) * 18];
         const rfl = brg(conn.xy, gate.xy) < 180 ? this.pick(LEVELS_ODD) : this.pick(LEVELS_EVEN);
         if (opts.mustCross && !this.routeCrosses(st, route, opts.mustCross)) continue;
-        return { ...cs, cat: 'dep', start: st, route, fl: 100, cfl: 240, rfl, entry: 'LROP', exit: gate.id, gs: 330 };
+        return { ...cs, cat: 'dep', start: st, route, fl: 100, cfl: 240, rfl, entry: apt.id, exit: gate.id, gs: 330 };
       }
       const a = C.points[this.pick(this.gatePts(from, 'E'))], b = C.points[this.pick(this.gatePts(to, 'X'))];
       if (dist(a.xy, b.xy) < 140) continue;
@@ -213,8 +213,9 @@ export class Sim {
   step() {
     if (this.ended) return;
     this.t += 1;
-    const C = this.C, sec = this.sector, lrop = C.airports.LROP && C.airports.LROP.xy;
+    const C = this.C, sec = this.sector;
     for (const a of this.ac) {
+      const apt = a.cat === 'arr' ? C.mainAirports[a.exit] : null;
       let tgtH = a.hdg;
       if (a.mode === 'nav') {
         const w = a.route[a.ri];
@@ -245,7 +246,7 @@ export class Sim {
       if (a.cat === 'dep' && !a.req && Math.abs(a.fl - a.cfl) < 0.1 && a.cfl < a.rfl && !a.rcf && !a.reqAskedClimb) {
         a.reqAskedClimb = true; this.raiseRequest(a, 'climb', a.rfl, `requests climb FL${fmtFL(a.rfl)}`);
       }
-      if (a.cat === 'arr' && lrop && !a.req && !a.reqAskedDesc && a.cfl > 200 && dist([a.x, a.y], lrop) < 110) {
+      if (apt && !a.req && !a.reqAskedDesc && a.cfl > 200 && dist([a.x, a.y], apt.xy) < 110) {
         a.reqAskedDesc = true; this.raiseRequest(a, 'descend', 110, 'requests descent');
       }
       for (const cell of this.wx) {
@@ -271,10 +272,10 @@ export class Sim {
         a.inTsa = inZ;
       }
       if (a.emg && a.fl <= 105) { a.done = 'emg'; this.log(`${a.cs} below FL110, transferred to approach / FIS`); }
-      if (a.cat === 'arr' && lrop && dist([a.x, a.y], lrop) < 35) {
+      if (apt && dist([a.x, a.y], apt.xy) < apt.handoffNM) {
         a.done = 'arr';
-        if (a.fl > 150) this.log(`${a.cs} handed to Bucharest APP too high (FL${fmtFL(a.fl)})`, 'w');
-        else this.log(`${a.cs} transferred to Bucharest APP`);
+        if (a.fl > 150) this.log(`${a.cs} handed to ${apt.approach} too high (FL${fmtFL(a.fl)})`, 'w');
+        else this.log(`${a.cs} transferred to ${apt.approach}`);
       }
       if (a.ri >= a.route.length) a.done = a.done || 'exit';
       if (Math.abs(a.x) > 420 || Math.abs(a.y) > 300) a.done = 'exit';

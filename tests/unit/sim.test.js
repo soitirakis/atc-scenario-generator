@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import RO from '../../data/RO/index.js';
 import { loadCountry, inSector } from '../../src/country.js';
-import { Sim, DIFF } from '../../src/sim.js';
+import { Sim, DIFF, TYPES } from '../../src/sim.js';
 import { buildLocalScenario } from '../../src/scenario.js';
 
 const C = loadCountry(RO);
@@ -179,6 +179,25 @@ describe('clearances', () => {
     const a = sim.ac[0];
     sim.speed(a.id, 900);
     expect(a.tgs).toBe(520);
+  });
+});
+
+describe('countries without a main airport', () => {
+  it('run transit-only traffic', () => {
+    const { mainAirports, ...rest } = RO.traffic;
+    const traffic = { ...rest, flows: rest.flows.filter(f => rest.gates[f[0]] && rest.gates[f[1]]) };
+    const C0 = loadCountry({ ...RO, traffic });
+    expect(C0.mainAirports).toEqual({});
+    const scn = buildLocalScenario(C0, cfg({ difficulty: 'advanced' }));
+    scn.injects = Object.keys(TYPES).map((type, i) => ({ min: 1 + i * 2, type, text: '' }));
+    const sim = new Sim(C0);
+    sim.load(scn);
+    const seen = new Set(sim.ac.map(a => a.cs));
+    for (let i = 0; i < 1800; i++) {
+      sim.step();
+      for (const a of sim.ac) { expect(a.cat, a.cs).toBe('transit'); seen.add(a.cs); }
+    }
+    expect(seen.size).toBeGreaterThan(DIFF.advanced.count); // new traffic kept spawning
   });
 });
 

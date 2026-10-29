@@ -44,11 +44,40 @@ describe('Romania data module', () => {
     }
   });
 
-  it('every traffic gate and Bucharest connection point exists', () => {
+  it('every traffic gate exists and flows run between gates or main airports', () => {
     const T = RO.traffic;
     for (const g of Object.values(T.gates)) for (const id of g.pts) expect(C.points[id], id).toBeTruthy();
-    for (const id of [...Object.values(T.lrop.arr), ...Object.values(T.lrop.dep)]) expect(C.points[id], id).toBeTruthy();
-    for (const f of T.flows) for (const g of f.slice(0, 2)) expect(g === 'LROP' || T.gates[g], g).toBeTruthy();
+    for (const f of T.flows) {
+      const ends = f.slice(0, 2);
+      for (const e of ends) expect(T.gates[e] || C.mainAirports[e], e).toBeTruthy();
+      expect(ends.every(e => C.mainAirports[e]), ends.join('-')).toBe(false); // airport to airport is not modelled
+    }
+  });
+
+  it('LROP is the only main airport', () => {
+    expect(Object.keys(C.mainAirports)).toEqual(['LROP']);
+    expect(C.mainAirports.LROP.approach).toBe('Bucharest APP');
+  });
+
+  it('main airports declare an approach unit, a hand-off distance and both connection points per flow', () => {
+    const T = RO.traffic;
+    for (const m of T.mainAirports) {
+      expect(C.airports[m.icao], m.icao).toBeTruthy();
+      expect(m.approach, m.icao).toMatch(/\S/);
+      expect(m.handoffNM, m.icao).toBeGreaterThan(0);
+      for (const id of [...Object.values(m.arr), ...Object.values(m.dep)]) expect(C.points[id], `${m.icao}:${id}`).toBeTruthy();
+      // flows are flown in both directions, so each linked gate group needs an arrival and a departure connection
+      for (const f of T.flows) if (f.slice(0, 2).includes(m.icao)) {
+        const g = f[0] === m.icao ? f[1] : f[0];
+        expect(m.arr[g], `${m.icao} arr from ${g}`).toBeTruthy();
+        expect(m.dep[g], `${m.icao} dep to ${g}`).toBeTruthy();
+      }
+    }
+  });
+
+  it('the loader rejects a main airport missing from airports.json', () => {
+    const traffic = { ...RO.traffic, mainAirports: [{ ...RO.traffic.mainAirports[0], icao: 'LRXX' }] };
+    expect(() => loadCountry({ ...RO, traffic })).toThrow(/LRXX/);
   });
 
   it('flows never use the closed Ukrainian gates', () => {
