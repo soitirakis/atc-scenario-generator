@@ -1,5 +1,5 @@
 {
-  "_note": "Gates are real FRA points. Flow weights are a modelling choice, not published data. Gates with closed:true carry no traffic.",
+  "_note": "Gates are real FRA points. Flow weights are a modelling choice, not published data. Gates with closed:true carry no traffic. mainAirports: arrival/departure airports; arr/dep map each gate group to the FRA connection point used on that side, handoffNM is where arrivals are transferred to the approach unit.",
   "gates": {
     "W": {
       "label": "Serbia / Hungary",
@@ -128,22 +128,27 @@
       1
     ]
   ],
-  "lrop": {
-    "arr": {
-      "W": "PEMOK",
-      "S": "SORDU",
-      "SE": "OSTAL",
-      "E": "NETUL",
-      "MD": "DENAK"
-    },
-    "dep": {
-      "W": "SOKRU",
-      "S": "POLUN",
-      "SE": "IDARU",
-      "E": "NETUL",
-      "MD": "DENAK"
+  "mainAirports": [
+    {
+      "icao": "LROP",
+      "approach": "Bucharest APP",
+      "handoffNM": 35,
+      "arr": {
+        "W": "PEMOK",
+        "S": "SORDU",
+        "SE": "OSTAL",
+        "E": "NETUL",
+        "MD": "DENAK"
+      },
+      "dep": {
+        "W": "SOKRU",
+        "S": "POLUN",
+        "SE": "IDARU",
+        "E": "NETUL",
+        "MD": "DENAK"
+      }
     }
-  },
+  ],
   "operators": [
     {
       "icao": "ROT",

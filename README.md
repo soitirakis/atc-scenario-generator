@@ -65,7 +65,7 @@ tests/
 | `navaids.json` | 16 VOR/DME | eAIP ENR 4.1 (AIRAC AMDT 09/25) |
 | `points.json` | 131 significant points with FRA role | eAIP ENR 4.4 (AIRAC AMDT 06/26) |
 | `airports.json` | aerodrome reference points | eAIP AD 2 |
-| `traffic.json` | gates, flow weights, operators | modelling choice, not published data |
+| `traffic.json` | gates, flow weights, operators, main airports (LROP) | modelling choice, not published data |
 
 eAIP: https://aisro.ro/aip/2026-10-01/html/ro/aip_toc_enr.html
 
@@ -104,11 +104,28 @@ What the script does and doesn't do:
 ## Adding a country
 
 1. Create `data/<CODE>/` with the same eight files as `data/RO/`. Coordinates stay in AIP notation (`DDMMSSN DDDMMSSE`); `{ "b": "KEY" }` inside a sector polygon splices in a border segment from `borders.json`.
-2. Choose real FRA entry/exit points as traffic gates and write the flow table.
-3. Register it in `data/countries.js`.
-4. Copy `tests/unit/country.test.js` for the new module. Its checks catch most data mistakes: sectors that don't contain their own label, overlapping sectors, aerodromes outside the FIR, gates that don't exist.
+2. Choose real FRA entry/exit points as traffic gates and write the flow table. Each flow is `[from, to, weight]` between two gate groups, or between a gate group and a main airport. Flows are flown in both directions.
+3. Optionally declare one or more main airports in `traffic.json` to get arrivals and departures:
 
-The simulator assumes an `LROP`-style main airport for arrival/departure flows (`traffic.lrop`). Generalising that to any main airport is a known next step.
+   ```json
+   "mainAirports": [
+     {
+       "icao": "LROP",
+       "approach": "Bucharest APP",
+       "handoffNM": 35,
+       "arr": { "W": "PEMOK", "S": "SORDU" },
+       "dep": { "W": "SOKRU", "S": "POLUN" }
+     }
+   ]
+   ```
+
+   - `icao` must also be in `airports.json`.
+   - `arr` and `dep` map each gate group to the FRA point where arrivals leave the network and departures join it. Every gate group that has a flow to the airport needs both.
+   - Arrivals are transferred to `approach` once they are within `handoffNM` of the airport.
+
+   Leave `mainAirports` out for a transit-only country.
+4. Register it in `data/countries.js`.
+5. Copy `tests/unit/country.test.js` for the new module. Its checks catch most data mistakes: sectors that don't contain their own label, overlapping sectors, aerodromes outside the FIR, gates that don't exist, and main airports with missing connection points.
 
 ## Claude integration
 

@@ -8,7 +8,7 @@ export function loadCountry(raw) {
   const c = {
     meta, traffic, proj,
     sectors: {}, sectorList: [], elementary: [],
-    points: {}, pointList: [], navaids: [], airports: {}, airportList: []
+    points: {}, pointList: [], navaids: [], airports: {}, airportList: [], mainAirports: {}
   };
 
   for (const s of sectorFile.sectors) {
@@ -45,6 +45,12 @@ export function loadCountry(raw) {
     const ll = dms(a.pos);
     const ap = { id: a.icao, name: a.name, xy: proj.toNM(ll[0], ll[1]) };
     c.airports[ap.id] = ap; c.airportList.push(ap);
+  }
+  // Airports with arrival/departure flows. Optional: without any, traffic is transit only.
+  for (const m of traffic.mainAirports || []) {
+    const ap = c.airports[m.icao];
+    if (!ap) throw new Error(`Main airport ${m.icao} is not in airports.json`);
+    c.mainAirports[ap.id] = { ...ap, approach: m.approach, handoffNM: m.handoffNM, arr: m.arr, dep: m.dep };
   }
   c.coast = map.coast.map(p => proj.toNM(p[0], p[1]));
   c.neigh = map.neighbours.map(n => ({ label: n.label, xy: proj.toNM(n.lat, n.lon) }));

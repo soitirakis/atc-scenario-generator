@@ -70,7 +70,7 @@ const dp = diffPoints(points, parsedPts), dn = diffNavaids(navaids, parsedNav);
 print('Significant points', dp);
 print('VOR/DME', dn);
 
-const referenced = new Set([...Object.values(traffic.gates).flatMap(g => g.pts), ...Object.values(traffic.lrop.arr), ...Object.values(traffic.lrop.dep)]);
+const referenced = new Set([...Object.values(traffic.gates).flatMap(g => g.pts), ...(traffic.mainAirports || []).flatMap(m => [...Object.values(m.arr), ...Object.values(m.dep)])]);
 const blocked = dp.removed.filter(r => referenced.has(r.id));
 if (blocked.length) console.log(`\n! Removed points still used by traffic.json: ${blocked.map(b => b.id).join(', ')}. Replace them there first.`);
 const lostRole = dp.changed.filter(c => c.role && c.role[1] === null);

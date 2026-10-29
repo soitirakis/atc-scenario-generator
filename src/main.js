@@ -181,7 +181,7 @@ function renderDataTab() {
   navaids.json   [{id, name, freq, pos:"DMS"}]   ENR 4.1
   points.json    [{id, pos:"DMS", role:E|X|EX|L|I}]   ENR 4.4
   airports.json  [{icao, name, pos:"DMS"}]
-  traffic.json   gates, flows, operators
+  traffic.json   gates, flows, operators, mainAirports[{icao, approach, handoffNM, arr, dep}]
   map.json       neighbours, coast`;
 }
 
