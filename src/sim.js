@@ -53,7 +53,8 @@ export class Sim {
     for (const it of items) { r -= wfn(it); if (r <= 0) return it; }
     return items[items.length - 1];
   }
-  log(text, cls = '') { this.logs.unshift({ t: this.t, text, cls }); if (this.logs.length > 120) this.logs.pop(); }
+  /** who: 'i' for instructor-only lines (not sent to a trainee window). */
+  log(text, cls = '', who = '') { this.logs.unshift({ t: this.t, text, cls, who }); if (this.logs.length > 120) this.logs.pop(); }
   get(id) { return this.ac.find(a => a.id === id) || null; }
 
   callsign() {
@@ -275,7 +276,7 @@ export class Sim {
       a.ctl = a.lastIn ? 'ass' : 'none'; a.pendAt = null;
     }
     this.computeInbound();
-    this.log(`Session loaded: ${scenario.title}`);
+    this.log(`Session loaded: ${scenario.title}`, '', 'i');
   }
 
   /* ---------------- physics, 1 s ---------------- */
@@ -307,7 +308,7 @@ export class Sim {
       a.x += Math.sin(a.hdg * D2R) * a.gs / 3600;
       a.y -= Math.cos(a.hdg * D2R) * a.gs / 3600;
 
-      if (a.rcf > 0 && this.t >= a.rcf) { a.rcf = 0; a.sq = this.squawk(); this.log(`${a.cs} re-established contact on secondary frequency`, 'w'); }
+      if (a.rcf > 0 && this.t >= a.rcf) { a.rcf = 0; if (a.sq === '7600') a.sq = this.squawk(); this.log(`${a.cs} re-established contact on secondary frequency`, 'w'); }
       const inside = inSector([a.x, a.y], sec);
       if (inside && !a.lastIn) this.entered(a);
       else if (!inside && a.lastIn) this.left(a);
@@ -568,16 +569,104 @@ export class Sim {
         t2.ctl = 'none'; t2.noXfer = true; t2.pendAt = t2.lastIn ? this.t : null; inj.target = t2.cs; break;
       }
     }
-    if (!inj.target && inj.type !== 'MILITARY_TSA') this.log(`Inject ${TYPES[inj.type]}: no suitable aircraft in sector`, 'w');
+    if (!inj.target && inj.type !== 'MILITARY_TSA') this.log(`Inject ${TYPES[inj.type]}: no suitable aircraft in sector`, 'w', 'i');
   }
 
-  /** Instructor: fire a pending inject immediately. */
+  /** Instructor: fire a pending (or held) inject immediately. */
   fireNow(index) {
     const inj = this.scenario.injects[index];
-    if (!inj || inj.status !== 'pending') return false;
+    if (!inj || (inj.status !== 'pending' && inj.status !== 'held')) return false;
     inj.min = Math.ceil(this.t / 60);
     this.fireInject(inj);
     return true;
+  }
+  /** Instructor: hold a pending inject (it will not fire on time) or release it. */
+  holdInject(index, hold) {
+    const inj = this.scenario.injects[index];
+    if (!inj || inj.status === 'fired') return { ok: false, msg: 'Inject already fired' };
+    inj.status = hold ? 'held' : 'pending';
+    this.log(`Inject ${TYPES[inj.type]} ${hold ? 'held' : 'released'}`, '', 'i');
+    return { ok: true };
+  }
+  /** Instructor: move an inject later (or earlier) by whole minutes, not before the next minute or past the session end. */
+  delayInject(index, minutes) {
+    const inj = this.scenario.injects[index];
+    if (!inj || inj.status === 'fired') return { ok: false, msg: 'Inject already fired' };
+    inj.min = Math.max(Math.ceil((this.t + 1) / 60), Math.min(this.scenario.duration - 1, inj.min + Math.round(minutes)));
+    this.log(`Inject ${TYPES[inj.type]} moved to ${String(inj.min).padStart(2, '0')}:00`, '', 'i');
+    return { ok: true };
+  }
+  /** Instructor: change an unfired inject's minute, type or instructor text. */
+  editInject(index, { min, type, text } = {}) {
+    const inj = this.scenario.injects[index];
+    if (!inj || inj.status === 'fired') return { ok: false, msg: 'Inject already fired' };
+    if (type !== undefined && !TYPES[type]) return { ok: false, msg: `Unknown inject type ${type}` };
+    if (min !== undefined) {
+      const m = Math.round(+min);
+      if (!(m * 60 > this.t && m < this.scenario.duration)) return { ok: false, msg: `Minute must be after ${fmtT(this.t)} and before ${this.scenario.duration}:00` };
+      inj.min = m;
+    }
+    if (type !== undefined) inj.type = type;
+    if (text !== undefined) inj.text = String(text).slice(0, 160);
+    this.log(`Inject edited: ${String(inj.min).padStart(2, '0')}:00 ${TYPES[inj.type]}`, '', 'i');
+    return { ok: true };
+  }
+
+  /* ---------------- pseudo-pilot (instructor speaks as any aircraft) ---------------- */
+  _pilot(id) { const a = this.get(id); return a ? { a } : { err: { ok: false, msg: 'No such aircraft' } }; }
+  /** The pilot asks for something: climb/descend to an FL, a weather deviation in degrees (negative left), or a direct to a point. */
+  pilotRequest(id, kind, value) {
+    const { a, err } = this._pilot(id); if (err) return err;
+    if (a.req) return { ok: false, msg: `${a.cs} already has an open request` };
+    if (kind === 'climb' || kind === 'descend') {
+      const fl = Math.round(+value / 10) * 10;
+      if (!(fl >= 100 && fl <= 410)) return { ok: false, msg: 'Level must be FL100–FL410' };
+      this.raiseRequest(a, kind, fl, `requests ${kind} FL${fmtFL(fl)}`);
+    } else if (kind === 'wx') {
+      const deg = Math.max(-60, Math.min(60, Math.round(+value)));
+      if (!deg) return { ok: false, msg: 'Give a deviation in degrees' };
+      this.raiseRequest(a, 'wx', deg, `requests ${Math.abs(deg)}° ${deg < 0 ? 'left' : 'right'} for weather`);
+    } else if (kind === 'direct') {
+      const key = String(value).trim().toUpperCase();
+      if (!this.C.points[key] && !this.C.airports[key]) return { ok: false, msg: `Unknown point ${key}` };
+      this.raiseRequest(a, 'direct', key, `requests direct ${key}`);
+    } else return { ok: false, msg: `Unknown request ${kind}` };
+    return { ok: true };
+  }
+  /** The pilot will refuse ('refuse') or query ('query') the next clearance once; null cancels. */
+  pilotNextReply(id, mode) {
+    const { a, err } = this._pilot(id); if (err) return err;
+    if (mode !== null && mode !== 'refuse' && mode !== 'query') return { ok: false, msg: `Unknown reply ${mode}` };
+    a.pilotNext = mode;
+    this.log(mode ? `${a.cs} pilot will ${mode} the next clearance` : `${a.cs} pilot reply reset`, '', 'i');
+    return { ok: true };
+  }
+  /** The pilot turns off track without a clearance, by deg (negative left). */
+  pilotDeviate(id, deg) {
+    const { a, err } = this._pilot(id); if (err) return err;
+    const d = Math.max(-90, Math.min(90, Math.round(+deg)));
+    if (!d) return { ok: false, msg: 'Give a deviation in degrees' };
+    a.mode = 'hdg'; a.thdg = (a.hdg + d + 360) % 360; a.req = null;
+    this.log(`${a.cs} deviating ${Math.abs(d)}° ${d < 0 ? 'left' : 'right'}, heading ${String(Math.round(a.thdg) || 360).padStart(3, '0')}`, 'w');
+    return { ok: true };
+  }
+  /** The pilot selects another transponder code (four octal digits). */
+  pilotSquawk(id, code) {
+    const { a, err } = this._pilot(id); if (err) return err;
+    const c = String(code).trim();
+    if (!/^[0-7]{4}$/.test(c)) return { ok: false, msg: 'Squawk is four digits 0–7' };
+    a.sq = c;
+    this.log(`${a.cs} squawking ${c}`, '', 'i');
+    return { ok: true };
+  }
+  /** The pilot stops answering for `seconds` (0 restores contact). The squawk does not change. */
+  pilotSilent(id, seconds) {
+    const { a, err } = this._pilot(id); if (err) return err;
+    const s = Math.max(0, Math.round(+seconds));
+    a.rcf = s ? this.t + s : 0;
+    if (s) a.req = null;
+    this.log(s ? `${a.cs} silent for ${s} s` : `${a.cs} back on frequency`, '', 'i');
+    return { ok: true };
   }
 
   /* ---------------- clearances ----------------
@@ -586,7 +675,12 @@ export class Sim {
     const a = this.get(id);
     if (!a) return { ok: false, msg: 'Aircraft no longer on frequency' };
     if (!this.onFreq(a)) return { ok: false, msg: `${a.cs} is not on your frequency${a.ctl === 'xfer' ? ' (transferred)' : a.noXfer ? ' (not transferred to you yet)' : ''}` };
-    if (a.rcf) { this.log(`${what} to ${a.cs} — no reply`, 'w'); return { ok: false, msg: `${a.cs}: no reply (radio failure)` }; }
+    if (a.rcf) { this.log(`${what} to ${a.cs} — no reply`, 'w'); return { ok: false, msg: `${a.cs}: no reply` }; }
+    if (a.pilotNext) { // pseudo-pilot: refuse or query this clearance once
+      const mode = a.pilotNext; a.pilotNext = null;
+      if (mode === 'refuse') { this.log(`${a.cs} unable ${what}`, 'w'); return { ok: false, msg: `${a.cs}: unable ${what}` }; }
+      this.log(`${a.cs} say again? (${what})`, 'w'); return { ok: false, msg: `${a.cs} asks you to say again` };
+    }
     fn(a); this.stats.cmds++; this.log(`${a.cs} ${what}`);
     return { ok: true };
   }
@@ -629,11 +723,12 @@ export class Sim {
     const key = String(pointId).trim().toUpperCase();
     const p = this.C.points[key] || this.C.airports[key];
     if (!p) return { ok: false, msg: `Unknown point ${key}` };
-    return this._cmd(id, `direct ${key}`, a => {
-      const last = a.route[a.route.length - 1];
-      a.route = key === last.id ? [last] : [{ id: key, xy: p.xy }, last];
-      a.ri = 0; a.mode = 'nav'; a.wxCleared = null;
-    });
+    return this._cmd(id, `direct ${key}`, a => this._directTo(a, key, p.xy));
+  }
+  _directTo(a, key, xy) {
+    const last = a.route[a.route.length - 1];
+    a.route = key === last.id ? [last] : [{ id: key, xy }, last];
+    a.ri = 0; a.mode = 'nav'; a.wxCleared = null;
   }
   speed(id, kt) {
     const v = Math.max(250, Math.min(520, Math.round(kt)));
@@ -654,7 +749,8 @@ export class Sim {
     } else if (approve) {
       if (r.kind === 'climb' || r.kind === 'descend') { a.cfl = r.value; a.sfl = r.value; a.bust = false; }
       if (r.kind === 'wx') { a.mode = 'hdg'; a.thdg = (a.hdg + r.value + 360) % 360; a.wxCleared = a.wxAsked; }
-      this.log(`${a.cs} ${r.kind === 'wx' ? 'deviation approved' : (r.kind === 'climb' ? 'climb' : 'descend') + ' FL' + fmtFL(r.value)}`);
+      if (r.kind === 'direct') { const p = this.C.points[r.value] || this.C.airports[r.value]; if (p) this._directTo(a, r.value, p.xy); }
+      this.log(`${a.cs} ${r.kind === 'wx' ? 'deviation approved' : r.kind === 'direct' ? 'direct ' + r.value : (r.kind === 'climb' ? 'climb' : 'descend') + ' FL' + fmtFL(r.value)}`);
     } else this.log(`${a.cs} unable, ${r.text.replace('requests ', '')}`);
     a.req = null;
     return { ok: true };
@@ -673,7 +769,7 @@ export class Sim {
     const items = [];
     for (const a of this.ac) {
       if (a.emg) items.push({ p: 1, ac: a, h: `${a.cs} emergency descent`, s: `Squawk 7700, descending FL${fmtFL(a.fl)} to FL100, diverting ${a.route[0] ? a.route[0].id : ''}${a.emgAck ? ' · acknowledged' : ''}`, act: a.emgAck ? null : 'ack' });
-      if (a.rcf) items.push({ p: 1, ac: a, h: `${a.cs} radio failure`, s: `Squawk 7600. Continues FL${fmtFL(a.cfl)} on own navigation. Separate others from it.` });
+      if (a.rcf && a.sq === '7600') items.push({ p: 1, ac: a, h: `${a.cs} radio failure`, s: `Squawk 7600. Continues FL${fmtFL(a.cfl)} on own navigation. Separate others from it.` });
       if (a.bust) items.push({ p: 1, ac: a, h: `${a.cs} level bust`, s: `Cleared FL${fmtFL(a.cfl)}, selected FL${fmtFL(a.sfl)}, now FL${fmtFL(a.fl)}. Re-issue the level.` });
       if (a.inTsa) items.push({ p: 1, ac: a, h: `${a.cs} inside active TSA`, s: `FL${fmtFL(a.fl)}. Turn or descend below FL195.` });
     }
@@ -700,7 +796,7 @@ export class Sim {
       if (a.popupUntil > this.t) items.push({ p: 2, ac: a, h: `${a.cs} uncoordinated`, s: `Entering at FL${fmtFL(a.fl)}. Check conflicts and accept or turn.` });
     }
     const next = this.scenario.injects.find(i => i.status === 'pending');
-    if (next && next.min * 60 - this.t < 120) items.push({ p: 3, h: `Inject in ${fmtT(next.min * 60 - this.t)}`, s: TYPES[next.type] + ' (instructor view)' });
+    if (next && next.min * 60 - this.t < 120) items.push({ p: 3, h: `Inject in ${fmtT(next.min * 60 - this.t)}`, s: TYPES[next.type] + ' (instructor view)', instr: true });
     return items.sort((a, b) => a.p - b.p);
   }
 

@@ -20,6 +20,11 @@ En-route ATC radar training simulator. Vanilla JS (ES modules) built with Vite i
 - Sector routine: each aircraft has a control state `ctl` (`none`, `pend`, `ass`, `xfer`) and an agreed exit level `xfl`. Only `pend`/`ass` aircraft take clearances (`_cmd` refuses the rest); `assume` and `transfer` change the state and count late assumes, late transfers and wrong exit levels in `stats`. Entry, exit and hand-off times come from `lookAhead`, which follows the route; a boundary crossing only counts if the flight stays on the other side for `ROUTINE.crossS`.
 - New inject types: add to `TYPES` in `sim.js`, implement in `fireInject`, add text in `scenario.js` `INJECT_TEXT`, and add a unit test. The Claude prompt lists `TYPES` automatically.
 
+## Two windows
+- `src/link.js` is DOM-free like `sim.js`; the instructor window owns the Sim, the trainee window only has a `SimView` built from snapshots.
+- `makeSnapshot` decides what a trainee may see. Add aircraft fields to `AC_FIELDS` only if a controller would know them. Log lines meant only for the instructor use `sim.log(text, cls, 'i')`; priority items only for the instructor carry `instr: true`.
+- A trainee window may only run the commands in `TRAINEE_COMMANDS`. New controller actions go there; instructor actions (injects, pseudo-pilot) never do.
+
 ## Data rules
 - Country data lives in `data/<CODE>/` as JSON. Keep coordinates in AIP DMS notation, exactly as published, so they can be diffed against the source.
 - Anything not from an official source (border approximations, flows, TSA geometry) must be labelled as such in the file's `_note` and in the README.
