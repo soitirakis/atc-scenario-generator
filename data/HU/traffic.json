@@ -1,0 +1,305 @@
+{
+  "_note": "Gates are real FRA points on the Budapest FIR boundary (ENR 4.4.1). The Romania gate uses the same three HU-RO border points as the Hungarian side of Romania’s west gate (ODCIH, NARKA, KARIL), with identical coordinates in both AIPs. Flow weights and operators are a modelling choice, not published data. Gates with closed:true carry no traffic. mainAirports: LHBP connection points are AIP STAR first waypoints, SID final points or mandatory ARR/DEP LHBP points from ENR 4.4.1; the pairing with gate groups is a modelling choice.",
+  "gates": {
+    "W": {
+      "label": "Austria",
+      "pts": [
+        "GOTAR",
+        "ADGOH",
+        "SASAL",
+        "STEIN",
+        "ABETI",
+        "PESAT"
+      ]
+    },
+    "NW": {
+      "label": "Slovakia west / Czechia",
+      "pts": [
+        "VAMOG",
+        "XOMBA",
+        "ALAMU",
+        "ERGOM"
+      ]
+    },
+    "NE": {
+      "label": "Slovakia east / Poland",
+      "pts": [
+        "PATAK",
+        "BALAP",
+        "AMRAX",
+        "WESTE",
+        "LITKU",
+        "DEMOP",
+        "PITOK",
+        "ABULI",
+        "ETNIK",
+        "KEKED",
+        "KENIN"
+      ]
+    },
+    "UA": {
+      "label": "Ukraine",
+      "closed": true,
+      "pts": [
+        "LONLA",
+        "GEMTO"
+      ]
+    },
+    "E": {
+      "label": "Romania",
+      "pts": [
+        "ODCIH",
+        "NARKA",
+        "KARIL"
+      ]
+    },
+    "S": {
+      "label": "Serbia",
+      "pts": [
+        "BABIT",
+        "TONDO",
+        "KEROP",
+        "PARAK"
+      ]
+    },
+    "SW": {
+      "label": "Croatia / Slovenia",
+      "pts": [
+        "DIMLO",
+        "NEKIN",
+        "KOPRY",
+        "VEBAL",
+        "OSDUK",
+        "BAREB"
+      ]
+    }
+  },
+  "flows": [
+    [
+      "W",
+      "E",
+      3
+    ],
+    [
+      "NW",
+      "E",
+      3
+    ],
+    [
+      "W",
+      "S",
+      2
+    ],
+    [
+      "NE",
+      "S",
+      1
+    ],
+    [
+      "NE",
+      "SW",
+      2
+    ],
+    [
+      "NW",
+      "SW",
+      1
+    ],
+    [
+      "SW",
+      "E",
+      2
+    ],
+    [
+      "W",
+      "NE",
+      1
+    ],
+    [
+      "NE",
+      "E",
+      1
+    ],
+    [
+      "W",
+      "LHBP",
+      2
+    ],
+    [
+      "NW",
+      "LHBP",
+      1
+    ],
+    [
+      "NE",
+      "LHBP",
+      1
+    ],
+    [
+      "E",
+      "LHBP",
+      1
+    ],
+    [
+      "S",
+      "LHBP",
+      1
+    ],
+    [
+      "SW",
+      "LHBP",
+      1
+    ]
+  ],
+  "mainAirports": [
+    {
+      "icao": "LHBP",
+      "approach": "Budapest APP",
+      "handoffNM": 35,
+      "arr": {
+        "W": "VAJDI",
+        "NW": "VAJDI",
+        "NE": "BETED",
+        "E": "ZURFA",
+        "S": "PARAK",
+        "SW": "ULZAK"
+      },
+      "dep": {
+        "W": "GILEP",
+        "NW": "GILEP",
+        "NE": "WITRI",
+        "E": "ZURFA",
+        "S": "MAVIR",
+        "SW": "DUZLA"
+      }
+    }
+  ],
+  "operators": [
+    {
+      "icao": "WZZ",
+      "types": [
+        "A321",
+        "A21N",
+        "A320"
+      ],
+      "weight": 6
+    },
+    {
+      "icao": "RYR",
+      "types": [
+        "B738",
+        "B38M"
+      ],
+      "weight": 3
+    },
+    {
+      "icao": "THY",
+      "types": [
+        "A321",
+        "B738",
+        "A333",
+        "B77W"
+      ],
+      "weight": 4
+    },
+    {
+      "icao": "LOT",
+      "types": [
+        "B38M",
+        "E195"
+      ],
+      "weight": 2
+    },
+    {
+      "icao": "DLH",
+      "types": [
+        "A320",
+        "A20N"
+      ],
+      "weight": 2
+    },
+    {
+      "icao": "AUA",
+      "types": [
+        "A320",
+        "E195"
+      ],
+      "weight": 2
+    },
+    {
+      "icao": "ROT",
+      "types": [
+        "B738",
+        "B38M"
+      ],
+      "weight": 1
+    },
+    {
+      "icao": "QTR",
+      "types": [
+        "B788",
+        "A359",
+        "B77W"
+      ],
+      "weight": 2
+    },
+    {
+      "icao": "UAE",
+      "types": [
+        "B77W",
+        "A388"
+      ],
+      "weight": 1
+    },
+    {
+      "icao": "FDB",
+      "types": [
+        "B38M"
+      ],
+      "weight": 1
+    },
+    {
+      "icao": "PGT",
+      "types": [
+        "A20N",
+        "B38M"
+      ],
+      "weight": 1
+    },
+    {
+      "icao": "KLM",
+      "types": [
+        "B738"
+      ],
+      "weight": 1
+    },
+    {
+      "icao": "AFR",
+      "types": [
+        "A320"
+      ],
+      "weight": 1
+    },
+    {
+      "icao": "SWR",
+      "types": [
+        "BCS3"
+      ],
+      "weight": 1
+    },
+    {
+      "icao": "BAW",
+      "types": [
+        "A320"
+      ],
+      "weight": 1
+    },
+    {
+      "icao": "ELY",
+      "types": [
+        "B738"
+      ],
+      "weight": 1
+    }
+  ]
+}

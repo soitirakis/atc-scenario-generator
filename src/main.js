@@ -10,8 +10,9 @@ import { Renderer } from './render.js';
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-const entry = COUNTRIES.find(c => !c.planned);
-const C = loadCountry(entry.data);
+const loaded = {};
+const countryData = code => (loaded[code] ||= loadCountry(COUNTRIES.find(c => c.code === code).data));
+let C = countryData(COUNTRIES.find(c => !c.planned).code);
 const sim = new Sim(C);
 const R = new Renderer($('scope'), sim);
 const ui = { running: false, speed: 1, debriefShown: false, acBoxFor: null, acBoxSig: '', lastPanel: 0, toastT: 0 };
@@ -172,10 +173,10 @@ function renderDataTab() {
   ];
   $('dataList').innerHTML = rows.map(d => `<div><span>${esc(d[0])}</span><span>${esc(d[1])}</span></div>`).join('') +
     `<div><span>Links</span><span>${m.sources.map(s => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a>`).join('<br>')}</span></div>`;
-  $('simNote').textContent = 'Traffic flies Free Route (SEE FRA) directs between real entry and exit points, on semicircular levels: odd eastbound, even westbound. Main flows are Western Europe to Istanbul and the Gulf through the Black Sea gates, plus Moldova and Bucharest arrivals and departures. The Ukrainian gates are shown greyed and carry no traffic while those FIRs are closed to civil flights; update the flow table if that changes. Border segments between published sector vertices are approximated from the national boundary, and the TSA geometry is a training construct, not a published area. STCA uses 5 NM and 1000 ft with a 3-minute linear look-ahead. Radar plots refresh every 4 seconds.';
+  $('simNote').textContent = m.simNote || '';
   $('roadmap').innerHTML = COUNTRIES.map(c => `<div><span>${esc(c.name)}</span><span class="tag ${c.planned ? '' : 'on'}">${c.planned ? 'planned' : 'available'}</span></div>`).join('');
   $('schema').textContent = `data/<CODE>/
-  meta.json      fir, center, airac, sources
+  meta.json      fir, center, defaultSector, airac, simNote, sources
   sectors.json   sectors[{id, rad, name, vert, poly:["DMS", {b:"KEY"}]}], collapsed[]
   borders.json   KEY: [[lat, lon], ...]   (border vertices)
   navaids.json   [{id, name, freq, pos:"DMS"}]   ENR 4.1
@@ -292,15 +293,23 @@ function bindInput() {
   });
 }
 
-/* ---------- boot ---------- */
-function boot() {
-  $('country').innerHTML = COUNTRIES.map(c => `<option value="${c.code}" ${c.planned ? 'disabled' : ''}>${esc(c.name)}${c.planned ? ' — planned' : ''}</option>`).join('');
+/* ---------- country ---------- */
+function setCountry(code) {
+  C = countryData(code); sim.C = C;
+  $('country').value = code;
   $('firTag').textContent = `${C.meta.fir} · ${C.meta.unit}`;
   const opts = [...C.sectorList.map(s => [s.id, `${s.name} (${s.rad})`]), ['FIR', 'Whole FIR']];
   $('sector').innerHTML = opts.map(o => `<option value="${o[0]}">${esc(o[1])}</option>`).join('');
-  $('sector').value = 'ARG';
-  bindInput();
+  $('sector').value = C.meta.defaultSector || C.sectorList[0].id;
   renderDataTab();
+}
+
+/* ---------- boot ---------- */
+function boot() {
+  $('country').innerHTML = COUNTRIES.map(c => `<option value="${c.code}" ${c.planned ? 'disabled' : ''}>${esc(c.name)}${c.planned ? ' — planned' : ''}</option>`).join('');
+  $('country').onchange = () => { setCountry($('country').value); applyScenario(buildLocalScenario(C, readCfg())); };
+  setCountry(C.meta.code);
+  bindInput();
   applyScenario(buildLocalScenario(C, readCfg()));
   new ResizeObserver(() => R.resize()).observe($('scope'));
   initClaude();

@@ -1,0 +1,90 @@
+{
+  "_note": "Budapest ACC lateral sectors. NOT published as coordinates: the EUROCONTROL NM RAD has no LH sector file, and the eAIP shows the sectors only as a chart (ENR 6-LHCC-SECTOR, 19 MAR 2026, AIRAC AMDT 002/2026, unchanged in AMDT 006/2026 and 007/2026). The four internal boundary lines were traced from that chart after fitting its Lambert conformal conic graticule (WGS84; tick residual 0.07 NM RMS). Traced vertices, approximate to about 0.5 NM: 474537N 0181715E, 481032N 0200159E, 470038N 0213937E, 460849N 0195111E, 471936N 0184229E. FIR corners are the published ENR 2.1 points. Each lateral sector is split vertically into ten elementary sectors (0–9); the simulator uses the lateral outline. Areas of ATS delegation to or from Wien, Bratislava and Košice shown on the chart are not modelled. The \"rad\" field holds the chart's elementary sector names; Hungary has no NM RAD sector designators.",
+  "sectors": [
+    {
+      "id": "WEST",
+      "rad": "WEST 0–9",
+      "name": "WEST",
+      "vert": "9500 FT ALT – FL660. Elementary layers 0–9 split at FL305, 315, 325, 335, 345, 355, 365, 375 and 385",
+      "poly": [
+        "480024N 0170939E",
+        {
+          "b": "WEST_SK"
+        },
+        "474537N 0181715E",
+        "471936N 0184229E",
+        "462901N 0163358E",
+        {
+          "b": "WEST_SI"
+        },
+        "465209N 0160650E",
+        {
+          "b": "WEST_AT"
+        }
+      ]
+    },
+    {
+      "id": "NORTH",
+      "rad": "NORTH 0–9",
+      "name": "NORTH",
+      "vert": "9500 FT ALT – FL660. Elementary layers 0–9 split at FL305, 315, 325, 335, 345, 355, 365, 375 and 385",
+      "poly": [
+        "481032N 0200159E",
+        {
+          "b": "NORTH_SK"
+        },
+        "482412N 0220919E",
+        {
+          "b": "NORTH_UA"
+        },
+        "475733N 0225422E",
+        {
+          "b": "NORTH_RO"
+        },
+        "470038N 0213937E"
+      ]
+    },
+    {
+      "id": "EAST",
+      "rad": "EAST 0–9",
+      "name": "EAST",
+      "vert": "9500 FT ALT – FL660. Elementary layers 0–9 split at FL305, 315, 325, 335, 345, 355, 365, 375 and 385",
+      "poly": [
+        "474537N 0181715E",
+        {
+          "b": "EAST_SK"
+        },
+        "481032N 0200159E",
+        "470038N 0213937E",
+        {
+          "b": "EAST_RO"
+        },
+        "460702N 0201602E",
+        {
+          "b": "EAST_RS"
+        },
+        "460849N 0195111E",
+        "471936N 0184229E"
+      ]
+    },
+    {
+      "id": "SOUTH",
+      "rad": "SOUTH 0–9",
+      "name": "SOUTH",
+      "vert": "9500 FT ALT – FL660. Elementary layers 0–9 split at FL305, 315, 325, 335, 345, 355, 365, 375 and 385",
+      "poly": [
+        "471936N 0184229E",
+        "460849N 0195111E",
+        {
+          "b": "SOUTH_RS"
+        },
+        "455515N 0185324E",
+        {
+          "b": "SOUTH_HR"
+        },
+        "462901N 0163358E"
+      ]
+    }
+  ],
+  "collapsed": []
+}

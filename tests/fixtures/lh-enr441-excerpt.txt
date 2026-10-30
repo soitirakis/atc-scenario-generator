@@ -1,0 +1,19 @@
+AIP HUNGARY ENR 4.4.1 valid from 03 SEP 2026 (AIRAC AMDT 006/2026)
+ENR 4.4.1 NAME-CODE DESIGNATORS FOR FRA SIGNIFICANT POINTS
+Legend for FRA relevance: (E) = Horizontal Entry point, (X) = Horizontal Exit point, (I) = Intermediate point, (A) = Arrival Connecting point, (D) = Departure Connecting point.
+Name-code designator Coordinates ATS route or other route FRA relevance Remarks/Usage
+1 2 3 4 5
+ABETI 474040N 0170046E Nil (I) Nil
+ABULI 482903N 0202912E Nil (I) FL245-FL660 Nil (X) 9500 FT AMSL-FL245 EVEN FLs for all exiting aircraft
+ALAMU 474413N 0181948E Nil (I) FL245-FL660 Nil (E) 9500 FT AMSL-FL245 ODD FLs for all entering aircraft
+ANIWE 480930N 0212630E Nil Nil LHNY TIZ2/RMZ2 ENTRY/EXIT point
+ARSIN 473402N 0164513E Nil (ID) (D): LOWW See AIP Austria
+BABIT 455554N 0185544E Nil (EX) EVEN FLs for all entering aircraft, ODD FLs for all exiting aircraft
+BABOX 465345N 0194059E Nil (D) Final point of the SID procedure for LHKE, (D): LHKE
+BADOR 473425N 0220629E Nil (I) FL105-FL660 Nil (X) 9500 FT AMSL-FL105 Nil
+BAREB 454446N 0182448E Nil (I) FL205-FL660 (EXD) 9500 FT AMSL-FL205 Mandatory waypoint for DEP LHBP, EVEN FLs for all entering aircraft, ODD FLs for all exiting aircraft, (D): LHBP (D): LDOS See AIP Croatia
+DEGET 462937N 0211602E Nil (I) FL175-FL660 Nil (E) 9500 FT AMSL-FL175 EVEN FLs for all entering aircraft
+KOPRY 461425N 0165746E Nil (I) FL205-FL660 (EXAD) 9500 FT AMSL-FL205 ODD FLs for all entering aircraft, EVEN FLs for all exiting aircraft, (A): LHBP (D): LDZA See AIP Croatia
+ODCIH 465158N 0213606E Nil (I) FL105-FL660 Nil (EX) 9500 FT AMSL-FL105
+PARAK 460950N 0200539E Nil (EXA) Mandatory waypoint for ARR LHBP, EVEN FLs for all entering aircraft, ODD FLs for all exiting aircraft, (A): LHBP
+VEBAL 455929N 0171748E Nil (I) FL205-FL660 (EXAD) 9500 FT AMSL-FL205 Mandatory waypoint for DEP LHBP, ODD FLs for all entering aircraft, EVEN FLs for all exiting aircraft, (D): LHBP (A): LDZA See AIP Croatia

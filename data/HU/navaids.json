@@ -1,0 +1,56 @@
+[
+  {
+    "id": "BKS",
+    "name": "BÉKÉS",
+    "freq": "115.800",
+    "pos": "464800N 0210426E"
+  },
+  {
+    "id": "BUD",
+    "name": "BUDAPEST",
+    "freq": "117.300",
+    "pos": "472702N 0191458E"
+  },
+  {
+    "id": "BUG",
+    "name": "BUGAC",
+    "freq": "113.400",
+    "pos": "464040N 0194054E"
+  },
+  {
+    "id": "GYR",
+    "name": "GYŐR",
+    "freq": "115.100",
+    "pos": "473933N 0174328E"
+  },
+  {
+    "id": "MNR",
+    "name": "MONOR",
+    "freq": "112.500",
+    "pos": "472005N 0192420E"
+  },
+  {
+    "id": "PTB",
+    "name": "PUSZTASZABOLCS",
+    "freq": "117.100",
+    "pos": "470908N 0184432E"
+  },
+  {
+    "id": "SAG",
+    "name": "SAJÓHÍDVÉG",
+    "freq": "114.400",
+    "pos": "480029N 0205947E"
+  },
+  {
+    "id": "SVR",
+    "name": "SÁGVÁR",
+    "freq": "117.700",
+    "pos": "464941N 0180704E"
+  },
+  {
+    "id": "TPS",
+    "name": "TÁPIÓSÁP",
+    "freq": "115.900",
+    "pos": "472936N 0192646E"
+  }
+]

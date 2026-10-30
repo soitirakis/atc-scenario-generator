@@ -1,6 +1,6 @@
 # ATC Scenario Generator
 
-En-route radar training simulator that builds scenarios and injects for a chosen country, sector and traffic level, on top of real AIP data. Romania (Bucharest ACC, LRBB) is the first country; more are added one module at a time.
+En-route radar training simulator that builds scenarios and injects for a chosen country, sector and traffic level, on top of real AIP data. Romania (Bucharest ACC, LRBB) and Hungary (Budapest ACC, LHCC) are available from the country selector; more are added one module at a time.
 
 - **Radar display** with the real sector polygons, VOR/DMEs, Free Route points and aerodromes.
 - **Simulated traffic** flying Free Route directs between real entry and exit points, scaled by difficulty, with crossing conflicts deliberately built into the training sector.
@@ -42,6 +42,7 @@ CI runs both on every push and pull request, and uploads the single-file build.
 data/
   countries.js        registry of country modules
   RO/                 Romania: one JSON file per AIP source (see below)
+  HU/                 Hungary: same files
 src/
   geo.js              projection, AIP coordinate parsing, plane geometry, seeded RNG
   country.js          raw country module -> projected data
@@ -51,7 +52,7 @@ src/
   main.js             UI wiring
 scripts/
   airac-update.mjs    pull ENR 4.1 / 4.4 from the eAIP and diff against data/RO
-  airac-lib.mjs       pure parsing helpers (unit tested)
+  airac-lib.mjs       pure parsing helpers (unit tested), including Hungary's ENR 4.4.1 format
 tests/
   unit/  e2e/  fixtures/
 ```
@@ -84,9 +85,28 @@ eAIP: https://aisro.ro/aip/2026-10-01/html/ro/aip_toc_enr.html
 
 The Ukrainian entry and exit points are kept in the data but carry no traffic (`closed: true`).
 
+## Data sources (Hungary)
+
+| File | Content | Source |
+|---|---|---|
+| `sectors.json` | 4 lateral ACC sectors (WEST, NORTH, EAST, SOUTH) | **traced** from eAIP chart ENR 6-LHCC-SECTOR (19 MAR 2026); FIR corners from ENR 2.1 |
+| `borders.json` | border vertices between sector corners | **approximated**: Natural Earth 1:10m; HU-RO reuses Romania's vertices |
+| `navaids.json` | 9 DVOR/DME | eAIP ENR 4.1 (AIRAC AMDT 006/2026) |
+| `points.json` | 107 FRA significant points with role | eAIP ENR 4.4.1 (AIRAC AMDT 006/2026) |
+| `airports.json` | aerodrome reference points | eAIP AD 2.2 |
+| `traffic.json` | gates, flow weights, operators, main airport (LHBP) | modelling choice, not published data |
+
+eAIP: https://ais-en.hungarocontrol.hu/aip/2026-09-03/ (AIRAC AMDT 006/2026, effective 2026-09-03). AMDT 007/2026 (effective 2026-11-26) does not change ENR 2.1, 4.1, 4.4.1 or the sector chart.
+
+**Sector polygons are not published data.** The EUROCONTROL NM RAD has no LH sector file, and the eAIP shows Budapest ACC sectors only as a chart. The four internal boundary lines were traced from that chart after fitting its Lambert conformal conic graticule (0.07 NM RMS on the grid ticks); treat them as accurate to about 0.5 NM. Each lateral sector is split into ten elementary layers (0–9, at FL305 to FL385); the simulator uses the lateral outline. Areas of ATS delegation to or from Wien, Bratislava and Košice are not modelled.
+
+**FRA roles** follow the same `classifyRole` rule as Romania. ENR 4.4.1 gives relevance per level band, e.g. ABULI `(I) FL245-FL660` / `(X) 9500 FT AMSL-FL245`; `9500 FT AMSL` is read as FL095. Many border points are entry/exit only up to FL245 and intermediate above (cross-border free route); under the rule they count as `E`/`X`/`EX`, because the band tops out above FL175. Points with only arrival/departure connection relevance, or none, are left out, as for Romania.
+
+**HU-RO border.** The Romania gate uses ODCIH, NARKA and KARIL, the same three points as the Hungarian side of Romania's west gate, with identical coordinates in both AIPs. Their role differs between the AIPs (Romania `I`, Hungary `L`), which reflects what each AIP publishes. The border line reuses Romania's vertices, so both countries draw it the same way.
+
 ## Updating for a new AIRAC cycle
 
-AIRAC cycles change every 28 days. The ROMATSA eAIP has no data API, so updates are a scripted pull of the PDFs:
+AIRAC cycles change every 28 days. `npm run airac` covers Romania only for now; Hungary's ENR 4.4.1 parser is in `airac-lib.mjs` but there is no download script for it yet. The ROMATSA eAIP has no data API, so updates are a scripted pull of the PDFs:
 
 ```bash
 npm run airac                          # report changes for the current cycle
@@ -103,7 +123,7 @@ What the script does and doesn't do:
 
 ## Adding a country
 
-1. Create `data/<CODE>/` with the same eight files as `data/RO/`. Coordinates stay in AIP notation (`DDMMSSN DDDMMSSE`); `{ "b": "KEY" }` inside a sector polygon splices in a border segment from `borders.json`.
+1. Create `data/<CODE>/` with the same eight files as `data/RO/`. Coordinates stay in AIP notation (`DDMMSSN DDDMMSSE`); `{ "b": "KEY" }` inside a sector polygon splices in a border segment from `borders.json`. In `meta.json`, `defaultSector` picks the sector selected when the country loads, and `simNote` is the traffic note shown in the AIP data tab.
 2. Choose real FRA entry/exit points as traffic gates and write the flow table. Each flow is `[from, to, weight]` between two gate groups, or between a gate group and a main airport. Flows are flown in both directions.
 3. Optionally declare one or more main airports in `traffic.json` to get arrivals and departures:
 
