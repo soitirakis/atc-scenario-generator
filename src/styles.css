@@ -156,6 +156,19 @@ select { padding-right: 4px; }
 .roadmap div { display: flex; justify-content: space-between; gap: 8px; padding: 5px 8px; background: var(--panel-2); border-radius: 4px; font-size: 14px; }
 pre.code { margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 8px; font-family: var(--f-data); font-size: 11.5px; line-height: 1.45; overflow-x: auto; color: var(--text); }
 
+/* Roles: solo (one window), instructor and trainee (two windows) */
+body:not([data-role="solo"]) .solo-only, body[data-role="trainee"] .not-trainee, body:not([data-role="instructor"]) .instructor-only { display: none !important; }
+.role-tag { font-family: var(--f-data); font-size: 11px; letter-spacing: 1px; padding: 2px 8px; border-radius: 3px; border: 1px solid var(--accent); color: var(--accent); white-space: nowrap; }
+.role-tag.off { border-color: var(--warn); color: var(--warn); }
+.inj-row.held .tm { color: var(--muted); text-decoration: line-through; }
+.tl-acts { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; max-width: 190px; }
+.tl-edit { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 6px; grid-column: 1 / -1; }
+.tl-edit .full { grid-column: 1 / -1; }
+.pp { display: flex; flex-direction: column; gap: 8px; }
+.pp .row-btns label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); min-width: 72px; }
+.pp input, .pp select { min-width: 0; }
+.pp input[type=text], .pp input[type=number] { width: 84px; }
+
 /* Debrief */
 .modal { position: fixed; inset: 0; background: rgba(5, 9, 13, 0.7); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 20; }
 .modal-card { background: var(--panel); border: 1px solid var(--accent); border-radius: 8px; padding: 18px; width: min(520px, 100%); max-height: 90%; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }

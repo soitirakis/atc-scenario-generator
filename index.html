@@ -9,12 +9,13 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="/src/styles.css">
 </head>
-<body>
+<body data-role="solo">
 <div class="app">
   <header class="bar">
     <div class="brand">
       <h1>ATC Scenario Generator</h1>
       <span class="fir" id="firTag">LRBB · BUCUREȘTI ACC</span>
+      <span class="role-tag" id="roleTag" hidden></span>
     </div>
     <div class="ctl">
       <label for="country">Country</label>
@@ -33,14 +34,14 @@
       </select>
     </div>
     <div class="clock" id="clock" aria-live="off">00:00 <small>/ 30:00</small></div>
-    <div class="seg" id="speedSeg" role="group" aria-label="Simulation speed">
+    <div class="seg not-trainee" id="speedSeg" role="group" aria-label="Simulation speed">
       <button data-s="1" aria-pressed="true">1×</button>
       <button data-s="2" aria-pressed="false">2×</button>
       <button data-s="4" aria-pressed="false">4×</button>
       <button data-s="8" aria-pressed="false">8×</button>
     </div>
-    <button class="btn primary" id="playBtn">Start</button>
-    <button class="btn" id="restartBtn" title="Restart the same scenario with the same seed">Restart</button>
+    <button class="btn primary not-trainee" id="playBtn">Start</button>
+    <button class="btn not-trainee" id="restartBtn" title="Restart the same scenario with the same seed">Restart</button>
   </header>
 
   <main class="main">
@@ -63,7 +64,7 @@
       <div class="paused-tag" id="pausedTag">
         <b id="pausedTitle">Scenario ready</b>
         <span id="pausedSub">Traffic is loaded. Start the session when you have read the scenario.</span>
-        <button class="btn primary" id="pausedStart">Start session</button>
+        <button class="btn primary not-trainee" id="pausedStart">Start session</button>
       </div>
       <div class="toast" id="toast" hidden></div>
     </section>
@@ -73,6 +74,7 @@
         <button role="tab" aria-selected="true" data-tab="live" id="tab-live">Live</button>
         <button role="tab" aria-selected="false" data-tab="scenario" id="tab-scenario">Scenario</button>
         <button role="tab" aria-selected="false" data-tab="data" id="tab-data">AIP data</button>
+        <button role="tab" aria-selected="false" data-tab="instr" id="tab-instr" class="instructor-only">Instructor</button>
       </div>
 
       <div class="tab-body" id="pane-live" role="tabpanel">
@@ -82,7 +84,7 @@
             <div class="stat"><div class="k">In sector</div><div class="v" id="stIn">0</div></div>
             <div class="stat"><div class="k">Pending</div><div class="v" id="stInb">0</div></div>
             <div class="stat"><div class="k">STCA</div><div class="v" id="stStca">0</div></div>
-            <div class="stat"><div class="k">Next inject</div><div class="v" id="stNext">—</div></div>
+            <div class="stat not-trainee"><div class="k">Next inject</div><div class="v" id="stNext">—</div></div>
           </div>
         </div>
         <div class="sec">
@@ -93,7 +95,7 @@
           <h2>Selected aircraft <small>click a track</small></h2>
           <div id="acBox"><div class="empty">Click an aircraft on the radar or a priority item to issue clearances.</div></div>
         </div>
-        <div class="sec">
+        <div class="sec solo-only">
           <h2>Injects <small id="injCount"></small></h2>
           <div class="inj" id="injList"></div>
         </div>
@@ -104,7 +106,7 @@
       </div>
 
       <div class="tab-body" id="pane-scenario" role="tabpanel" hidden>
-        <div class="sec">
+        <div class="sec not-trainee">
           <h2>Build a scenario</h2>
           <div class="form">
             <div class="full">
@@ -134,6 +136,30 @@
         <div class="sec">
           <h2>Current scenario <small id="scnSource"></small></h2>
           <div id="scnCard"></div>
+        </div>
+        <div class="sec solo-only">
+          <h2>Instructor and trainee windows</h2>
+          <p class="note" style="margin:0 0 8px">Run the session in two windows on this computer: this one becomes the instructor window (inject timeline, pseudo-pilot, live grading); a second window shows the trainee only what a controller would know. The instructor window starts a fresh session.</p>
+          <button class="btn" id="openTwo">Open instructor and trainee windows</button>
+        </div>
+      </div>
+
+      <div class="tab-body instructor-only" id="pane-instr" role="tabpanel" hidden>
+        <div class="sec">
+          <h2>Trainee window <small id="linkState"></small></h2>
+          <div class="row-btns"><button class="btn sm" id="openTrainee">Open trainee window</button><span class="note">The trainee window gets a snapshot every second and sends its clearances here.</span></div>
+        </div>
+        <div class="sec">
+          <h2>Live grading</h2>
+          <div class="deb" id="gradeStats"></div>
+        </div>
+        <div class="sec">
+          <h2>Inject timeline <small id="tlCount"></small></h2>
+          <div class="inj" id="tlList"></div>
+        </div>
+        <div class="sec">
+          <h2>Pseudo-pilot <small id="ppFor">select an aircraft</small></h2>
+          <div id="ppBox"><div class="empty">Select an aircraft on the radar to speak as its pilot.</div></div>
         </div>
       </div>
 
@@ -166,8 +192,8 @@
     <div class="deb" id="debStats"></div>
     <div id="debNotes" class="note"></div>
     <div class="row-btns">
-      <button class="btn primary" id="debRestart">Run again (same seed)</button>
-      <button class="btn" id="debNew">New seed</button>
+      <button class="btn primary not-trainee" id="debRestart">Run again (same seed)</button>
+      <button class="btn not-trainee" id="debNew">New seed</button>
       <button class="btn" id="debClose">Close</button>
     </div>
   </div>

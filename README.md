@@ -26,6 +26,7 @@ En-route radar training simulator that builds scenarios and injects for a chosen
 - **Assume and transfer of control**: traffic about to enter the sector is transferred to you as pending and must be assumed; traffic leaving must be transferred before it crosses the boundary, cleared to its agreed exit level (XFL). Only aircraft on your frequency (pending or assumed) take clearances.
 - **Debrief** at the end of the session, including late assumes, late transfers and wrong exit levels.
 - **Repeatable sessions**: the same seed, sector and difficulty always give the same traffic.
+- **Instructor and trainee windows**: an instructor window runs the session, with the inject timeline, a pseudo-pilot and live grading; a trainee window shows only what a controller would know (see below).
 
 ## Screenshots
 
@@ -48,6 +49,29 @@ npm run build        # one self-contained file: dist/index.html
 ```
 
 `dist/index.html` has the code, styles and data inlined. Open it directly, host it anywhere, or publish it as a claude.ai artifact. The latest `main` is live at https://soitirakis.github.io/atc-scenario-generator/.
+
+## Instructor and trainee windows
+
+The app runs in one of three roles, chosen by the URL:
+
+| URL | Role | What it shows |
+|---|---|---|
+| `/` | solo | Today's single-window practice mode: radar, priorities, inject list, everything. |
+| `/?role=instructor` | instructor | Owns the simulation. Adds an **Instructor** tab: link status, live grading, the inject timeline (fire, hold, −1′/+1′, edit while the session runs) and a pseudo-pilot panel. Start / Freeze / Unfreeze and the speed buttons apply to both windows. |
+| `/?role=trainee` | trainee | Radar, priorities, selected-aircraft panel and event log, as a controller would see them: no inject list, no "Inject in" warnings, no scenario title or challenges (the Scenario tab shows the briefing only), no instructor log lines, and no clock controls. Its clearances go to the instructor window. |
+
+To start: in solo mode, open the **Scenario** tab and choose **Open instructor and trainee windows**, or open the two URLs yourself. Both windows must be in the same browser on the same computer: they talk over a [BroadcastChannel](https://developer.mozilla.org/docs/Web/API/BroadcastChannel). The instructor window sends a snapshot about once a second, and immediately after each trainee command. If the instructor window closes, the trainee window shows "Instructor window not responding" and keeps the last picture.
+
+The **pseudo-pilot** speaks as the aircraft selected on the instructor's radar:
+- make a request: climb or descend to a level, a weather deviation, or a direct to a point;
+- refuse or query ("say again") the next clearance;
+- deviate 20° left or right without a clearance;
+- change squawk;
+- go silent for two minutes and come back.
+
+A silent pilot keeps their squawk, so nothing shows on the trainee's radar until a call goes unanswered. Only a 7600 squawk shows as a radio failure.
+
+The sync layer is `src/link.js`. It decides what a trainee may see (`makeSnapshot`), and refuses any trainee command other than the controller actions (level, heading, direct, speed, own navigation, answer, assume, transfer, acknowledge emergency).
 
 ## Tests
 
@@ -74,6 +98,7 @@ src/
   sim.js              simulation engine (no DOM): traffic, physics, STCA, injects, clearances
   scenario.js         local scenario builder, Claude prompt and validator
   render.js           canvas radar display
+  link.js             instructor/trainee windows: BroadcastChannel protocol, trainee snapshot, read-only view
   main.js             UI wiring
 scripts/
   airac-update.mjs    pull ENR 4.1 / 4.4 from the eAIP and diff against data/RO or data/HU

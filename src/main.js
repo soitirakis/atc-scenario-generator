@@ -1,23 +1,33 @@
 // UI wiring: header controls, panel tabs, priorities, aircraft commands,
 // injects, log, debrief. All simulation state lives in the Sim instance.
+//
+// Roles (?role=…): solo (default, one window), instructor (owns the Sim, adds the
+// inject timeline, pseudo-pilot and live grading) and trainee (no Sim: shows the
+// instructor's snapshots and sends clearances back over src/link.js).
 import { COUNTRIES } from '../data/countries.js';
 import { loadCountry } from './country.js';
 import { fmtFL, fmtT, dist } from './geo.js';
 import { Sim, TYPES, DIFF } from './sim.js';
 import { buildLocalScenario, buildClaudePrompt, parseClaudeScenario } from './scenario.js';
 import { Renderer } from './render.js';
+import { Link, SimView, makeSnapshot, CHANNEL_NAME } from './link.js';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+const ROLE = (r => (r === 'instructor' || r === 'trainee' ? r : 'solo'))(new URLSearchParams(location.search).get('role'));
+document.body.dataset.role = ROLE;
+
 const loaded = {};
 const countryData = code => (loaded[code] ||= loadCountry(COUNTRIES.find(c => c.code === code).data));
 let C = countryData(COUNTRIES.find(c => !c.planned).code);
-const sim = new Sim(C);
+const link = ROLE === 'solo' ? null : new Link(new BroadcastChannel(CHANNEL_NAME), ROLE);
+const sim = ROLE === 'trainee' ? new SimView(link, countryData) : new Sim(C);
 const R = new Renderer($('scope'), sim);
-const ui = { running: false, speed: 1, debriefShown: false, acBoxFor: null, acBoxSig: '', lastPanel: 0, toastT: 0 };
+const ui = { running: false, speed: 1, debriefShown: false, acBoxFor: null, acBoxSig: '', lastPanel: 0, toastT: 0, session: 0, lastPub: 0, editInj: null, ppFor: null, ppSig: '' };
 window.__sim = sim; // handy for e2e tests and console debugging
 window.__radar = R;
+window.__link = link;
 
 /* ---------- session control ---------- */
 function readCfg() {
@@ -34,6 +44,7 @@ function applyScenario(scn) {
 }
 function startSession(scn = sim.scenario) {
   sim.load(scn);
+  ui.session++; ui.editInj = null;
   ui.debriefShown = false; R.sel = null; ui.acBoxFor = -1; R.resetLabels();
   setRunning(false);
   $('pausedTag').hidden = false;
@@ -41,18 +52,84 @@ function startSession(scn = sim.scenario) {
   $('pausedSub').textContent = `${sim.ac.length} aircraft loaded in ${sim.sector.name}. Read the injects, then start.`;
   R.fitSector();
   updatePanel(true);
+  publish();
 }
 function setRunning(r) {
   ui.running = r;
-  $('playBtn').textContent = r ? 'Pause' : (sim.t > 0 ? 'Resume' : 'Start');
+  // the instructor freezes the session for both windows
+  $('playBtn').textContent = ROLE === 'instructor' ? (r ? 'Freeze' : sim.t > 0 ? 'Unfreeze' : 'Start') : r ? 'Pause' : (sim.t > 0 ? 'Resume' : 'Start');
   $('playBtn').classList.toggle('primary', !r);
   if (r) $('pausedTag').hidden = true;
+  publish();
 }
 function toast(msg) {
   const t = $('toast'); t.textContent = msg; t.hidden = false;
   clearTimeout(ui.toastT); ui.toastT = setTimeout(() => { t.hidden = true; }, 2600);
 }
-function result(r) { if (r && !r.ok && r.msg) toast(r.msg); updatePanel(true); }
+/** Commands return { ok, msg }; in the trainee window they return a promise of it. */
+function result(r) {
+  Promise.resolve(r).then(x => { if (x && !x.ok && x.msg) toast(x.msg); updatePanel(true); publish(); });
+}
+
+/* ---------- two windows ---------- */
+/** Instructor: send the trainee window what a controller may see. */
+function publish() {
+  if (ROLE !== 'instructor' || !sim.scenario) return;
+  ui.lastPub = performance.now();
+  link.publish(makeSnapshot(sim, { session: ui.session, running: ui.running, speed: ui.speed }));
+}
+const roleUrl = role => `${location.pathname}?role=${role}`;
+function openTrainee() { window.open(roleUrl('trainee'), 'atc-trainee'); }
+function initLink() {
+  if (ROLE === 'instructor') {
+    link.serve((name, args) => {
+      const r = sim[name](...args);
+      queueMicrotask(() => { updatePanel(true); publish(); }); // after the reply has gone out
+      return r;
+    });
+    link.onHello = () => publish();
+    $('openTrainee').onclick = openTrainee;
+  }
+  if (ROLE === 'trainee') {
+    link.onSnapshot = snap => {
+      const fresh = snap.session !== ui.session;
+      sim.apply(snap);
+      if (fresh) { // a new session in the instructor window
+        ui.session = snap.session; ui.debriefShown = false; ui.acBoxFor = -1;
+        setCountry(snap.country);
+        $('sector').value = snap.sector; $('difficulty').value = snap.brief.difficulty;
+        R.sel = null; R.resetLabels(); R.fitSector();
+        renderScenarioCard();
+      }
+      ui.running = snap.running;
+    };
+    link.hello();
+    setInterval(() => link.hello(), 2000);
+    for (const id of ['country', 'sector', 'difficulty']) $(id).disabled = true;
+  }
+  $('roleTag').hidden = false;
+  updateLinkState();
+  setInterval(updateLinkState, 1000);
+}
+function updateLinkState() {
+  const ok = ROLE === 'instructor' ? link.traineeSeen() : link.instructorSeen();
+  $('roleTag').textContent = `${ROLE.toUpperCase()} · ${ok ? 'linked' : ROLE === 'instructor' ? 'no trainee window' : 'no instructor window'}`;
+  $('roleTag').classList.toggle('off', !ok);
+  if (ROLE === 'instructor') $('linkState').textContent = ok ? 'connected' : 'not connected';
+  if (ROLE === 'trainee') traineeOverlay(ok);
+}
+/** Trainee: the overlay says why the clock is not running. */
+function traineeOverlay(linked) {
+  let title = null, sub = '';
+  if (!sim.snap) { title = 'Waiting for the instructor'; sub = 'Open the instructor window on this computer. This window follows its session.'; }
+  else if (!linked) { title = 'Instructor window not responding'; sub = 'The picture is frozen at the last update.'; }
+  else if (!sim.snap.running && !sim.ended) {
+    title = sim.t > 0 ? 'Frozen by the instructor' : 'Session ready';
+    sub = sim.t > 0 ? 'Traffic is held. Wait for the instructor.' : `${sim.ac.length} aircraft in ${sim.sector.name}. The instructor will start the session.`;
+  }
+  $('pausedTag').hidden = title === null;
+  if (title) { $('pausedTitle').textContent = title; $('pausedSub').textContent = sub; }
+}
 
 /* ---------- Claude (only inside a claude.ai artifact viewer) ---------- */
 let sampleFn = null;
@@ -92,14 +169,17 @@ function updatePanel(force) {
   const pred = sim.stca.filter(c => c.level === 'pred').length, los = sim.stca.filter(c => c.level === 'los').length;
   $('stStca').innerHTML = los ? `<span style="color:var(--alert)">${los} LoS</span>` : `<span style="color:${pred ? 'var(--warn)' : 'var(--text)'}">${pred}</span>`;
   const next = scn.injects.find(i => i.status === 'pending');
-  $('stNext').textContent = next ? fmtT(next.min * 60 - sim.t) : '—';
+  if (ROLE !== 'trainee') $('stNext').textContent = next ? fmtT(next.min * 60 - sim.t) : '—';
 
   const pr = sim.priorities();
   $('prio').innerHTML = pr.length ? pr.slice(0, 10).map(it => `<div class="pi p${it.p}" data-ac="${it.ac ? it.ac.id : ''}"><span class="lvl">P${it.p}</span><div class="t"><b>${esc(it.h)}</b><span>${esc(it.s)}</span></div><div class="acts">${actButtons(it)}</div></div>`).join('') : '<div class="empty">No open items. Keep scanning the sector.</div>';
 
   renderAcBox();
-  $('injCount').textContent = `${scn.injects.filter(i => i.status === 'fired').length}/${scn.injects.length} fired`;
-  $('injList').innerHTML = scn.injects.map((i, k) => `<div class="inj-row ${i.status}"><span class="tm">${String(i.min).padStart(2, '0')}:00</span><div class="tx"><b>${esc(TYPES[i.type])}${i.target ? ' · ' + esc(i.target) : ''}</b>${esc(i.text)}</div>${i.status === 'pending' ? `<button class="btn sm" data-fire="${k}">Fire now</button>` : `<span class="tag on">fired ${fmtT(i.firedAt)}</span>`}</div>`).join('');
+  if (ROLE === 'solo') {
+    $('injCount').textContent = `${scn.injects.filter(i => i.status === 'fired').length}/${scn.injects.length} fired`;
+    $('injList').innerHTML = scn.injects.map((i, k) => `<div class="inj-row ${i.status}"><span class="tm">${String(i.min).padStart(2, '0')}:00</span><div class="tx"><b>${esc(TYPES[i.type])}${i.target ? ' · ' + esc(i.target) : ''}</b>${esc(i.text)}</div>${i.status === 'pending' ? `<button class="btn sm" data-fire="${k}">Fire now</button>` : `<span class="tag on">fired ${fmtT(i.firedAt)}</span>`}</div>`).join('');
+  }
+  if (ROLE === 'instructor') renderInstructor();
   $('log').innerHTML = sim.logs.slice(0, 40).map(l => `<div class="${l.cls}"><b>${fmtT(l.t)}</b> ${esc(l.text)}</div>`).join('') || '<div>Nothing yet.</div>';
 }
 
@@ -154,8 +234,85 @@ function updateKv(a) {
   k.innerHTML = `<div><span>FL</span>${fmtFL(a.fl)}</div><div><span>CFL</span>${fmtFL(a.cfl)}${a.bust ? ' <b style="color:var(--alert)">≠' + fmtFL(a.sfl) + '</b>' : ''}</div><div><span>GS</span>${Math.round(a.gs)}</div><div><span>HDG</span>${String(Math.round(a.hdg) || 360).padStart(3, '0')}</div><div><span>Next</span>${w ? w.id : '—'}</div><div><span>Dist</span>${w ? Math.round(dist([a.x, a.y], w.xy)) + ' NM' : '—'}</div><div><span>Mode</span>${a.mode === 'nav' ? 'OWN NAV' : 'HDG'}</div><div><span>SSR</span>${a.sq}</div><div><span>XFL</span>${a.xfl === null ? '—' : fmtFL(a.xfl) + (a.ctl === 'ass' && Math.round(a.cfl) !== a.xfl ? ' <b style="color:var(--warn)">≠CFL</b>' : '')}</div><div><span>Exit</span>${a.ctl === 'ass' && a.tExit !== null ? fmtT(a.tExit) : a.tEntry !== null ? 'in ' + fmtT(a.tEntry) : '—'}</div>`;
 }
 
+/* ---------- instructor ---------- */
+function renderInstructor() {
+  $('gradeStats').innerHTML = gradeItems(sim.debrief()).map(statHtml).join('');
+  renderTimeline(false);
+  renderPseudoPilot();
+}
+function renderTimeline(force) {
+  const inj = sim.scenario.injects;
+  $('tlCount').textContent = `${inj.filter(i => i.status === 'fired').length}/${inj.length} fired`;
+  if (ui.editInj !== null && !force) return; // keep what the instructor is typing
+  $('tlList').innerHTML = inj.map((i, k) => {
+    const mm = String(i.min).padStart(2, '0');
+    if (ui.editInj === k) return `<div class="inj-row"><div class="tl-edit">
+      <input type="number" id="tlMin" aria-label="Minute" min="1" max="${sim.scenario.duration - 1}" value="${i.min}">
+      <select id="tlType" aria-label="Inject type">${Object.entries(TYPES).map(([t, label]) => `<option value="${t}" ${t === i.type ? 'selected' : ''}>${esc(label)}</option>`).join('')}</select>
+      <input class="full" type="text" id="tlText" aria-label="Instructor note" value="${esc(i.text)}">
+      <div class="row-btns full"><button class="btn sm primary" data-tl="save" data-i="${k}">Save</button><button class="btn sm" data-tl="cancel" data-i="${k}">Cancel</button></div>
+    </div></div>`;
+    const acts = i.status === 'fired' ? `<span class="tag on">fired ${fmtT(i.firedAt)}</span>`
+      : [['fire', 'Fire'], i.status === 'held' ? ['release', 'Release'] : ['hold', 'Hold'], ['earlier', '−1′'], ['later', '+1′'], ['edit', 'Edit']]
+        .map(([a, label]) => `<button class="btn sm" data-tl="${a}" data-i="${k}">${label}</button>`).join('');
+    return `<div class="inj-row ${i.status}"><span class="tm">${mm}:00</span><div class="tx"><b>${esc(TYPES[i.type])}${i.target ? ' · ' + esc(i.target) : ''}${i.status === 'held' ? ' · held' : ''}</b>${esc(i.text)}</div><div class="tl-acts">${acts}</div></div>`;
+  }).join('');
+}
+function timeline(action, k) {
+  if (action === 'fire') sim.fireNow(k);
+  if (action === 'hold' || action === 'release') result(sim.holdInject(k, action === 'hold'));
+  if (action === 'earlier' || action === 'later') result(sim.delayInject(k, action === 'later' ? 1 : -1));
+  if (action === 'edit') ui.editInj = k;
+  if (action === 'cancel') ui.editInj = null;
+  if (action === 'save') {
+    const r = sim.editInject(k, { min: +$('tlMin').value, type: $('tlType').value, text: $('tlText').value });
+    if (r.ok) ui.editInj = null;
+    result(r);
+  }
+  renderTimeline(true);
+  updatePanel(true);
+}
+function renderPseudoPilot() {
+  const a = sim.get(R.sel);
+  $('ppFor').textContent = a ? `speaking as ${a.cs}` : 'select an aircraft';
+  const sig = a ? `${a.id}|${a.pilotNext}|${a.rcf > 0}|${a.req ? a.req.text : ''}|${a.sq}` : '';
+  if (sig === ui.ppSig) return;
+  ui.ppSig = sig;
+  if (!a) { $('ppBox').innerHTML = '<div class="empty">Select an aircraft on the radar to speak as its pilot.</div>'; return; }
+  const next = a.pilotNext || 'normal';
+  $('ppBox').innerHTML = `<div class="pp">
+    <div class="row-btns"><label for="ppKind">Request</label>
+      <select id="ppKind"><option value="climb">Climb to FL</option><option value="descend">Descend to FL</option><option value="wx">Weather deviation, ° (− left)</option><option value="direct">Direct to point</option></select>
+      <input type="text" id="ppVal" aria-label="Request value" value="${Math.min(410, Math.round(a.cfl) + 20)}"><button class="btn sm" data-pp="req">Ask</button></div>
+    <div class="row-btns"><label>Next clearance</label>${[['normal', 'Comply'], ['refuse', 'Refuse'], ['query', 'Say again']].map(([m, label]) => `<button class="btn sm" data-pp="next-${m}" aria-pressed="${next === m}"${next === m ? ' style="border-color:var(--accent)"' : ''}>${label}</button>`).join('')}</div>
+    <div class="row-btns"><label>Deviate</label><button class="btn sm" data-pp="left">20° left</button><button class="btn sm" data-pp="right">20° right</button></div>
+    <div class="row-btns"><label for="ppSq">Squawk</label><input type="text" id="ppSq" maxlength="4" value="${esc(a.sq)}"><button class="btn sm" data-pp="squawk">Set</button></div>
+    <div class="row-btns"><label>Radio</label>${a.rcf > 0 ? '<span class="note warn">silent</span><button class="btn sm" data-pp="back">Back on frequency</button>' : '<button class="btn sm" data-pp="silent">Go silent 2 min</button>'}</div>
+    ${a.req ? `<div class="note">Open request: ${esc(a.req.text)}</div>` : ''}
+  </div>`;
+}
+function pseudoPilot(action) {
+  const a = sim.get(R.sel); if (!a) return;
+  const run = {
+    req: () => sim.pilotRequest(a.id, $('ppKind').value, $('ppVal').value),
+    'next-normal': () => sim.pilotNextReply(a.id, null), 'next-refuse': () => sim.pilotNextReply(a.id, 'refuse'), 'next-query': () => sim.pilotNextReply(a.id, 'query'),
+    left: () => sim.pilotDeviate(a.id, -20), right: () => sim.pilotDeviate(a.id, 20),
+    squawk: () => sim.pilotSquawk(a.id, $('ppSq').value),
+    silent: () => sim.pilotSilent(a.id, 120), back: () => sim.pilotSilent(a.id, 0)
+  }[action];
+  if (run) result(run());
+  ui.ppSig = '';
+}
+
 function renderScenarioCard() {
   const s = sim.scenario;
+  if (ROLE === 'trainee') { // the briefing a controller gets: no title, challenges or injects
+    $('scnSource').textContent = 'briefing';
+    $('scnCard').innerHTML = `<div class="scn">
+      <div class="meta"><span class="tag">${esc(sim.sector.name)}</span><span class="tag">${esc(DIFF[s.difficulty].label)}</span><span class="tag">${s.duration} min</span></div>
+      <p>${esc(s.objective)}</p></div>`;
+    return;
+  }
   $('scnSource').textContent = s.source === 'claude' ? 'written by Claude' : 'built locally';
   $('scnCard').innerHTML = `<div class="scn">
     <h3>${esc(s.title)}</h3>
@@ -200,11 +357,10 @@ function renderDataTab() {
 
 function switchTab(t) {
   for (const b of document.querySelectorAll('.tabs button')) b.setAttribute('aria-selected', b.dataset.tab === t);
-  for (const p of ['live', 'scenario', 'data']) $('pane-' + p).hidden = p !== t;
+  for (const p of ['live', 'scenario', 'data', 'instr']) $('pane-' + p).hidden = p !== t;
 }
 
-function showDebrief() {
-  const d = sim.debrief(), scn = sim.scenario;
+function gradeItems(d) {
   const items = [
     ['Losses of separation', d.losCount, d.losCount ? 'a' : ''],
     ['Time below minima', fmtT(d.losSec), d.losSec ? 'a' : ''],
@@ -216,11 +372,17 @@ function showDebrief() {
     ['Late assumes', d.lateAssume, d.lateAssume ? 'w' : ''],
     ['Late transfers', d.lateXfer, d.lateXfer ? 'w' : ''],
     ['Wrong exit levels', d.wrongXfl, d.wrongXfl ? 'a' : ''],
-    ['Clearances issued', d.cmds, ''],
-    ['Injects fired', `${d.injectsFired}/${d.injectsTotal}`, '']
+    ['Clearances issued', d.cmds, '']
   ];
-  $('debStats').innerHTML = items.map(i => `<div class="stat"><div class="k">${esc(i[0])}</div><div class="v" style="color:${i[2] === 'a' ? 'var(--alert)' : i[2] === 'w' ? 'var(--warn)' : 'var(--text)'}">${esc(String(i[1]))}</div></div>`).join('');
-  $('debNotes').textContent = `Scenario "${scn.title}", seed ${scn.seed}. Success criteria: ${scn.criteria.join('; ')}.`;
+  if (d.injectsTotal !== undefined) items.push(['Injects fired', `${d.injectsFired}/${d.injectsTotal}`, '']);
+  return items;
+}
+const statHtml = i => `<div class="stat"><div class="k">${esc(i[0])}</div><div class="v" style="color:${i[2] === 'a' ? 'var(--alert)' : i[2] === 'w' ? 'var(--warn)' : 'var(--text)'}">${esc(String(i[1]))}</div></div>`;
+function showDebrief() {
+  const d = sim.debrief(), scn = sim.scenario;
+  if (!d) return;
+  $('debStats').innerHTML = gradeItems(d).map(statHtml).join('');
+  $('debNotes').textContent = ROLE === 'trainee' ? `Seed ${scn.seed}. Your instructor has the full scenario and the injects.` : `Scenario "${scn.title}", seed ${scn.seed}. Success criteria: ${scn.criteria.join('; ')}.`;
   $('debrief').hidden = false;
 }
 
@@ -272,6 +434,10 @@ function bindInput() {
       if (b.dataset.a === 'ack') result(sim.ackEmergency(id));
       return;
     }
+    const tl = e.target.closest('button[data-tl]');
+    if (tl) { timeline(tl.dataset.tl, +tl.dataset.i); return; }
+    const pp = e.target.closest('button[data-pp]');
+    if (pp) { pseudoPilot(pp.dataset.pp); return; }
     const f = e.target.closest('button[data-fire]');
     if (f) { sim.fireNow(+f.dataset.fire); updatePanel(true); return; }
     const pi = e.target.closest('.pi');
@@ -312,15 +478,17 @@ function bindInput() {
   $('debRestart').onclick = () => { $('debrief').hidden = true; startSession(); };
   $('debNew').onclick = () => { $('debrief').hidden = true; $('seed').value = 1000 + Math.floor(Math.random() * 9000); applyScenario(buildLocalScenario(C, readCfg())); };
   $('debClose').onclick = () => { $('debrief').hidden = true; };
+  $('openTwo').onclick = () => { openTrainee(); location.href = roleUrl('instructor'); };
   document.addEventListener('keydown', e => {
-    if (e.target.matches('input,textarea,select')) return;
+    if (ROLE === 'trainee' || e.target.matches('input,textarea,select')) return;
     if (e.code === 'Space') { e.preventDefault(); $('playBtn').click(); }
   });
 }
 
 /* ---------- country ---------- */
 function setCountry(code) {
-  C = countryData(code); sim.C = C;
+  C = countryData(code);
+  if (ROLE !== 'trainee') sim.C = C; // the trainee view takes its country from the snapshots
   $('country').value = code;
   $('firTag').textContent = `${C.meta.fir} · ${C.meta.unit}`;
   const opts = [...C.sectorList.map(s => [s.id, `${s.name} (${s.rad})`]), ['FIR', 'Whole FIR']];
@@ -335,19 +503,22 @@ function boot() {
   $('country').onchange = () => { setCountry($('country').value); applyScenario(buildLocalScenario(C, readCfg())); };
   setCountry(C.meta.code);
   bindInput();
-  applyScenario(buildLocalScenario(C, readCfg()));
+  if (ROLE !== 'trainee') applyScenario(buildLocalScenario(C, readCfg()));
+  if (link) initLink();
   new ResizeObserver(() => R.resize()).observe($('scope'));
-  initClaude();
+  if (ROLE !== 'trainee') initClaude();
 
   let last = performance.now(), acc = 0;
   function frame(now) {
     const dt = Math.min(0.25, (now - last) / 1000); last = now;
-    if (ui.running && !sim.ended) {
+    if (ROLE === 'trainee' && !sim.snap) { requestAnimationFrame(frame); return; } // nothing to show yet
+    if (ROLE !== 'trainee' && ui.running && !sim.ended) {
       acc += dt * ui.speed;
       let n = 0;
       while (acc >= 1 && n < 40) { sim.step(); acc -= 1; n++; }
     }
     if (sim.ended && !ui.debriefShown) { ui.debriefShown = true; setRunning(false); updatePanel(true); showDebrief(); }
+    if (ROLE === 'instructor' && now - ui.lastPub >= 1000) publish();
     R.draw();
     updatePanel(false);
     requestAnimationFrame(frame);

@@ -198,7 +198,7 @@ export class Renderer {
   acColor(a) {
     const c = this.col;
     if (a.emg) return c.alert;
-    if (a.rcf) return c.warn;
+    if (a.rcf && a.sq === '7600') return c.warn; // a silent pilot without 7600 looks normal on radar
     if (a.ctl === 'ass') return c.assumed;
     if (a.ctl === 'pend' || a.noXfer) return c.pend;
     return c.unc;

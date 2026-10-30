@@ -7,14 +7,15 @@ This document describes what each test layer covers, and why it is there.
 | Layer | Tool | Where | Size | Runs |
 |---|---|---|---|---|
 | Data integrity | Vitest | `tests/unit/country.test.js`, `country-hu.test.js` | 31 tests | `npm test`, CI |
-| Determinism and simulation behaviour | Vitest | `tests/unit/sim.test.js` | 37 tests | `npm test`, CI |
+| Determinism and simulation behaviour | Vitest | `tests/unit/sim.test.js` | 48 tests | `npm test`, CI |
+| Two-window link | Vitest | `tests/unit/link.test.js` | 14 tests | `npm test`, CI |
 | Scenario builder and Claude reply validator | Vitest | `tests/unit/scenario.test.js` | 10 tests | `npm test`, CI |
 | AIP parsers against fixtures | Vitest | `tests/unit/airac.test.js`, `tests/fixtures/` | 19 tests | `npm test`, CI |
 | Geometry | Vitest | `tests/unit/geo.test.js` | 12 tests | `npm test`, CI |
-| End to end, two viewports | Playwright | `tests/e2e/app.spec.js` | 12 tests × 2 viewports | `npm run test:e2e`, CI |
+| End to end, two viewports | Playwright | `tests/e2e/app.spec.js`, `two-windows.spec.js` | 17 tests × 2 viewports | `npm run test:e2e`, CI |
 | Coverage gate | Vitest (V8) | `vite.config.js` | 85% per file on `src/sim.js`, `src/scenario.js` | `npm run test:coverage`, CI |
 
-Unit tests run in Node in under five seconds and need no browser or network. End-to-end tests run against the production build. CI (`.github/workflows/ci.yml`) runs the unit tests with coverage, then the end-to-end tests, on every push and pull request. A push to `main` deploys to GitHub Pages only if both pass.
+The 134 unit tests run in Node in under five seconds and need no browser or network. End-to-end tests run against the production build. CI (`.github/workflows/ci.yml`) runs the unit tests with coverage, then the end-to-end tests, on every push and pull request. A push to `main` deploys to GitHub Pages only if both pass.
 
 ## Data integrity
 
@@ -68,6 +69,12 @@ During refactors that should not change behaviour, the same idea is applied more
   - transfer at the right level against a wrong one;
   - only aircraft on frequency take clearances and raise requests.
 - **A disciplined trainee:** a scripted trainee assumes on transfer, re-clears to the exit level and transfers before the boundary. It must finish with zero late assumes, late transfers and wrong exit levels in every sector of both countries. This test is there because the routine counts errors against the trainee, so it must never count one that could not have been avoided. A wider sweep (5 seeds × 19 sectors) found three such cases during development. All were fixed, and this test fails if the boundary rule behind one of them is removed.
+- **Instructor controls:**
+  - a held inject does not fire on time, but can still be fired by hand;
+  - delay and edit validate the minute (not in the past, not past the end) and the inject type;
+  - the pseudo-pilot's requests are answered like any other;
+  - a refused or queried clearance is not carried out and is armed for one clearance only;
+  - a silent pilot gives no reply, shows no radio failure and keeps their squawk.
 - **Robustness:**
   - every inject copes with an empty sector;
   - commands reject unknown aircraft and invalid requests;
@@ -75,6 +82,20 @@ During refactors that should not change behaviour, the same idea is applied more
   - a country with no main airport runs transit-only traffic.
 
 **Why.** Injects are the training content. A broken inject usually does not throw: it fires on no aircraft, or on the wrong one. Testing each inject's observable effect catches that. `CLAUDE.md` requires a unit test for every new inject type.
+
+## Two-window link
+
+**What.** `tests/unit/link.test.js` runs the instructor and trainee sides of `src/link.js` against a fake channel that behaves like BroadcastChannel: every message is structured-cloned, delivered asynchronously, and never echoed to the sender.
+- **The snapshot shows what a controller would know and nothing more:** no inject list, inject warnings, scenario title or instructor log lines; no built-in conflict flags; a radio failure only when 7600 is squawked; the end-of-session debrief without inject counts. It is plain data that survives structured cloning unchanged.
+- **The trainee view rebuilds what the radar reads:** the time, sector, aircraft, STCA pairs and priorities, with references pointing at the view's own aircraft.
+- **Commands:**
+  - a trainee command runs on the instructor's Sim and returns its result;
+  - with two trainee windows open, each gets its own reply;
+  - instructor actions (`fireNow`, pseudo-pilot calls) and malformed arguments are refused;
+  - with no instructor window, a command fails after a timeout (fake timers).
+- **Presence and stray messages:** the instructor sees the trainee's hello; messages from another protocol version, or from the same role, are ignored.
+
+**Why.** The trainee window must not learn what is coming. That rule is enforced in one function (`makeSnapshot`) and one list (`TRAINEE_COMMANDS`), so these tests check both directly. Faking the channel keeps the tests in Node and makes timing deterministic.
 
 ## Scenario builder and Claude reply validator
 
@@ -123,7 +144,14 @@ The live download (`npm run airac`) is not run in CI, because it depends on thir
 - switching country;
 - label placement: no two data blocks overlap by more than 20% on desktop; labels stay put between radar updates; a dragged label stays where it was put;
 - the sector routine through the panels: assume a pending flight, transfer one at its exit level, accept a coordination request, assume a flight that arrived without transfer;
-- the debrief, including the routine counters.
+- the debrief, including the routine counters;
+- **two windows** (`two-windows.spec.js`): the instructor and trainee pages open in one browser context, so they share a BroadcastChannel as two windows on one computer do:
+  - the trainee mirrors the instructor's traffic, and an "Inject in" warning shows only on the instructor side;
+  - freezing in the instructor window shows "Frozen by the instructor" to the trainee;
+  - a trainee clearance changes the instructor's Sim;
+  - a pseudo-pilot request appears in the trainee's priorities and is approved there, and a refusal comes back to the trainee;
+  - the instructor holds, edits and fires injects;
+  - solo mode has no link and keeps its inject list.
 
 **Why.** Unit tests do not see the DOM, the canvas, or the build. These tests run the artefact that is deployed. The phone viewport is there because the UI must work at about 400 px (`CLAUDE.md`).
 

@@ -348,6 +348,123 @@ describe('sector routine injects', () => {
   });
 });
 
+describe('instructor: inject timeline', () => {
+  const two = () => [{ min: 2, type: 'LEVEL_BUST', text: '' }, { min: 5, type: 'CLIMB_REQUEST', text: '' }];
+
+  it('a held inject does not fire on time; released, it fires', () => {
+    const sim = fresh({}, two());
+    expect(sim.holdInject(0, true).ok).toBe(true);
+    run(sim, 125);
+    expect(sim.scenario.injects[0].status).toBe('held');
+    sim.holdInject(0, false);
+    run(sim, 1);
+    expect(sim.scenario.injects[0].status).toBe('fired');
+  });
+
+  it('a held inject can still be fired by hand', () => {
+    const sim = fresh({}, two());
+    sim.holdInject(0, true);
+    expect(sim.fireNow(0)).toBe(true);
+    expect(sim.scenario.injects[0].status).toBe('fired');
+  });
+
+  it('delay moves an inject by whole minutes, never into the past or past the end', () => {
+    const sim = fresh({}, two());
+    sim.delayInject(0, 3);
+    expect(sim.scenario.injects[0].min).toBe(5);
+    run(sim, 90);
+    sim.delayInject(0, -10);
+    expect(sim.scenario.injects[0].min).toBe(2); // the next whole minute after 01:30
+    sim.delayInject(1, 99);
+    expect(sim.scenario.injects[1].min).toBe(29);
+  });
+
+  it('edit changes minute, type and text, and validates them', () => {
+    const sim = fresh({}, two());
+    expect(sim.editInject(1, { min: 8, type: 'WEATHER_CELL', text: 'CB on the main flow' }).ok).toBe(true);
+    expect(sim.scenario.injects[1]).toMatchObject({ min: 8, type: 'WEATHER_CELL', text: 'CB on the main flow' });
+    expect(sim.editInject(1, { type: 'NOPE' }).msg).toMatch(/Unknown inject type/);
+    expect(sim.editInject(1, { min: 40 }).msg).toMatch(/Minute must be/);
+    run(sim, 130);
+    expect(sim.editInject(0, { min: 9 }).msg).toBe('Inject already fired');
+  });
+
+  it('timeline changes are logged for the instructor only', () => {
+    const sim = fresh({}, two());
+    sim.delayInject(0, 1);
+    expect(sim.logs[0]).toMatchObject({ who: 'i' });
+  });
+});
+
+describe('instructor: pseudo-pilot', () => {
+  const mine = sim => sim.ac.find(a => a.ctl === 'ass' && !a.req);
+
+  it('makes level, weather and direct requests that the controller answers', () => {
+    const sim = fresh({}, []);
+    const [a, b, c] = sim.ac.filter(x => x.ctl === 'ass' && !x.req);
+    expect(sim.pilotRequest(a.id, 'climb', 390).ok).toBe(true);
+    expect(a.req).toMatchObject({ kind: 'climb', value: 390, text: 'requests climb FL390' });
+    sim.answer(a.id, true);
+    expect(a.cfl).toBe(390);
+    sim.pilotRequest(b.id, 'wx', -20);
+    expect(b.req.text).toBe('requests 20° left for weather');
+    const pt = C.pointList.find(p => p.id !== c.route[c.ri].id).id;
+    sim.pilotRequest(c.id, 'direct', pt.toLowerCase());
+    sim.answer(c.id, true);
+    expect(c.route[0].id).toBe(pt);
+    expect(sim.stats.reqs).toBe(3);
+  });
+
+  it('rejects malformed requests', () => {
+    const sim = fresh({}, []), a = mine(sim);
+    expect(sim.pilotRequest(a.id, 'climb', 900).ok).toBe(false);
+    expect(sim.pilotRequest(a.id, 'direct', 'ZZZZZ').msg).toMatch(/Unknown point/);
+    expect(sim.pilotRequest(a.id, 'land', 0).ok).toBe(false);
+    expect(sim.pilotRequest(9999, 'climb', 300).msg).toBe('No such aircraft');
+    sim.pilotRequest(a.id, 'climb', 300);
+    expect(sim.pilotRequest(a.id, 'climb', 320).msg).toMatch(/already has an open request/);
+  });
+
+  it('refuses or queries the next clearance once, then complies', () => {
+    const sim = fresh({}, []), a = mine(sim), cfl = a.cfl;
+    sim.pilotNextReply(a.id, 'refuse');
+    expect(sim.clearLevel(a.id, 250)).toEqual({ ok: false, msg: `${a.cs}: unable descend FL250` });
+    expect(a.cfl).toBe(cfl);
+    sim.pilotNextReply(a.id, 'query');
+    expect(sim.clearLevel(a.id, 250).msg).toBe(`${a.cs} asks you to say again`);
+    expect(sim.logs[0].text).toMatch(/say again\?/);
+    expect(sim.clearLevel(a.id, 250).ok).toBe(true);
+    expect(a.cfl).toBe(250);
+  });
+
+  it('deviates off track without a clearance', () => {
+    const sim = fresh({}, []), a = mine(sim), h = a.hdg;
+    sim.pilotDeviate(a.id, 30);
+    expect(a.mode).toBe('hdg');
+    expect(Math.round(a.thdg)).toBe(Math.round((h + 30) % 360));
+    expect(sim.logs[0]).toMatchObject({ cls: 'w', who: '' }); // the controller hears it
+  });
+
+  it('changes squawk; only valid octal codes', () => {
+    const sim = fresh({}, []), a = mine(sim);
+    expect(sim.pilotSquawk(a.id, '1234').ok).toBe(true);
+    expect(a.sq).toBe('1234');
+    expect(sim.pilotSquawk(a.id, '1289').ok).toBe(false);
+  });
+
+  it('goes silent: no reply until contact returns, and the squawk does not change', () => {
+    const sim = fresh({}, []), a = mine(sim), sq = a.sq;
+    sim.pilotSilent(a.id, 60);
+    expect(sim.clearLevel(a.id, 250).msg).toBe(`${a.cs}: no reply`);
+    expect(sim.priorities().some(p => p.ac === a && /radio failure/.test(p.h))).toBe(false);
+    run(sim, 61);
+    expect(a.rcf).toBe(0);
+    expect(a.sq).toBe(sq);
+    const r = sim.clearLevel(a.id, 250); // answers again (unless it has meanwhile left the sector)
+    expect(r.ok || /not on your frequency/.test(r.msg), r.msg).toBe(true);
+  });
+});
+
 describe('robustness', () => {
   it('every inject copes with an empty sector', () => {
     for (const type of Object.keys(TYPES)) {
