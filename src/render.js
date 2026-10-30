@@ -97,6 +97,45 @@ export class Renderer {
       });
       if (!changed) break;
     }
+    // pair moves: two overlapping labels where neither can improve alone try all slot combinations together
+    for (let pass = 0; pass < 3; pass++) {
+      let changed = false;
+      for (let i = 0; i < L.length; i++) for (let j = i + 1; j < L.length; j++) {
+        const A = L[i].l, B = L[j].l;
+        if (A.user || B.user || !overlap(A.box, B.box)) continue;
+        const keep = [A.box, B.box], cur = cost(i, A.box) + cost(j, B.box);
+        let best = null, bc = cur;
+        for (let sa = 0; sa < SLOTS.length; sa++) for (let sb = 0; sb < SLOTS.length; sb++) {
+          A.box = boxAt(L[i].it, sa); B.box = boxAt(L[j].it, sb);
+          const c = cost(i, A.box) + cost(j, B.box);
+          if (c < bc) { bc = c; best = [sa, sb]; }
+        }
+        [A.box, B.box] = keep;
+        if (best && bc < cur - HYST) {
+          A.slot = best[0]; A.box = boxAt(L[i].it, best[0]); B.slot = best[1]; B.box = boxAt(L[j].it, best[1]); changed = true;
+        }
+      }
+      if (!changed) break;
+    }
+    // repair the worst overlap directly: move one label of the worst pair if that lowers the worst overlap overall
+    const worst = () => {
+      let w = 0, pr = null;
+      for (let i = 0; i < L.length; i++) for (let j = i + 1; j < L.length; j++) { const o = overlap(L[i].l.box, L[j].l.box); if (o > w) { w = o; pr = [i, j]; } }
+      return [w, pr];
+    };
+    for (let n = 0; n < 30; n++) {
+      const [w, pr] = worst();
+      if (!pr || w <= 0.1 * LW * LH) break;
+      let best = null;
+      for (const k of pr) {
+        const l = L[k].l, keep = l.box;
+        if (l.user) continue;
+        for (let s = 0; s < SLOTS.length; s++) { l.box = boxAt(L[k].it, s); const [nw] = worst(); if (nw < w - HYST && (!best || nw < best[2])) best = [k, s, nw]; }
+        l.box = keep;
+      }
+      if (!best) break;
+      const l = L[best[0]].l; l.slot = best[1]; l.box = boxAt(L[best[0]].it, best[1]);
+    }
   }
 
   readColors() {
@@ -160,8 +199,8 @@ export class Renderer {
     const c = this.col;
     if (a.emg) return c.alert;
     if (a.rcf) return c.warn;
-    if (a.lastIn) return c.assumed;
-    if (a.inbound) return c.pend;
+    if (a.ctl === 'ass') return c.assumed;
+    if (a.ctl === 'pend' || a.noXfer) return c.pend;
     return c.unc;
   }
 
@@ -316,6 +355,11 @@ export class Renderer {
       ctx.fillStyle = a.req ? col.pend : color; ctx.fillText(l1, lx, ly + 10);
       ctx.fillStyle = color; ctx.fillText(fmtFL(a.fl) + trend, lx, ly + 23);
       ctx.fillStyle = a.bust ? col.alert : color; ctx.fillText(fmtFL(a.cfl) + (a.bust ? '≠' + fmtFL(a.sfl) : ''), lx + 34, ly + 23);
+      // agreed exit level, amber while the cleared level differs from it
+      if (!a.bust && a.xfl !== null && (a.ctl === 'ass' || a.ctl === 'pend')) {
+        ctx.fillStyle = a.ctl === 'ass' && Math.round(a.cfl) !== a.xfl ? col.warn : color;
+        ctx.fillText('X' + fmtFL(a.xfl), lx + 62, ly + 23);
+      }
       ctx.fillStyle = color; ctx.globalAlpha = 0.85; ctx.fillText(String(Math.round(a.gs / 10)).padStart(2, '0') + ' ' + a.type, lx, ly + 36); ctx.globalAlpha = 1;
     }
   }

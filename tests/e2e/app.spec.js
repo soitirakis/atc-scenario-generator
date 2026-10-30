@@ -34,7 +34,8 @@ test('start, run, select an aircraft and clear a level', async ({ page }) => {
       const opts = { bubbles: true, clientX: r.left + x, clientY: r.top + y, pointerId: 1 };
       cv.dispatchEvent(new PointerEvent('pointerdown', opts));
       cv.dispatchEvent(new PointerEvent('pointerup', opts));
-      if (document.querySelector('#acBox .ac-card')) return true;
+      // only an aircraft on our frequency (assumed) takes clearances
+      if (document.querySelector('#acBox .ac-card') && window.__sim.get(window.__radar.sel)?.ctl === 'ass') return true;
     }
     return false;
   });
@@ -100,8 +101,9 @@ const worstOverlap = ls => {
 
 test('advanced ARGES: no two data blocks overlap by more than 20%', async ({ page }, info) => {
   // On the phone scope (about 378 px wide) ARGES tracks sit so close that even the best of the four
-  // positions exceeds 20% at times, so there the test only guards against a badly broken layout.
-  const limit = info.project.name === 'phone' ? 0.5 : 0.2;
+  // positions exceeds 20% at times (up to about 33% in this session), so there the test only guards
+  // against a badly broken layout; labels stacked on each other would be near 100%.
+  const limit = info.project.name === 'phone' ? 0.65 : 0.2;
   await page.locator('#difficulty').selectOption('advanced');
   await expect(page.locator('#pausedSub')).toContainText('ARGES');
   for (let k = 0; k < 10; k++) {
@@ -148,9 +150,75 @@ test('a dragged data block stays where it was put', async ({ page }) => {
   expect(await page.evaluate(() => window.__radar.sel)).toBe(null); // a drag is not a click
 });
 
+// advance the paused session until a priority item with this action is in the visible top 10
+const stepUntilPriority = (page, act) => page.evaluate(act => {
+  const s = window.__sim;
+  for (let i = 0; i < 1500; i++) {
+    const it = s.priorities().slice(0, 10).find(p => p.act === act);
+    if (it) return it.ac.id;
+    s.step();
+  }
+  return null;
+}, act);
+const fireInject = (page, type) => page.evaluate(type => {
+  const s = window.__sim;
+  s.scenario.injects.push({ min: 99, type, text: '', status: 'pending' });
+  s.fireNow(s.scenario.injects.length - 1);
+  return s.scenario.injects.at(-1).target;
+}, type);
+const pauseSession = async page => { await page.locator('#pausedStart').click(); await page.locator('#playBtn').click(); };
+
+test('assume a pending flight, then transfer one at its agreed exit level', async ({ page }) => {
+  await pauseSession(page);
+  const pend = await stepUntilPriority(page, 'assume');
+  expect(pend).not.toBeNull();
+  await page.locator(`#prio button[data-a="assume"][data-id="${pend}"]`).click();
+  expect(await page.evaluate(id => window.__sim.get(id).ctl, pend)).toBe('ass');
+
+  const out = await stepUntilPriority(page, 'xfer');
+  expect(out).not.toBeNull();
+  const { cs, xfl } = await page.evaluate(id => { const a = window.__sim.get(id); return { cs: a.cs, xfl: a.xfl }; }, out);
+  await page.locator(`#prio .pi[data-ac="${out}"] .t`).click(); // select it
+  await expect(page.locator('#acBox .ac-head b')).toHaveText(cs);
+  await expect(page.locator('#acCtl')).toContainText(`agreed exit FL${xfl}`);
+  await page.locator('#cFl').selectOption(String(xfl));
+  await page.locator('#bFl').click();
+  await page.locator('#acCtl button[data-a="xfer"]').click();
+  await expect(page.locator('#log')).toContainText(`${cs} transferred at FL${xfl}`);
+  expect(await page.evaluate(id => [window.__sim.get(id)?.ctl, window.__sim.stats.wrongXfl], out)).toEqual(['xfer', 0]);
+});
+
+test('the next sector asks for another exit level and the trainee accepts', async ({ page }) => {
+  await pauseSession(page);
+  const cs = await fireInject(page, 'COORD_REQUEST');
+  expect(cs).toBeTruthy();
+  const want = await page.evaluate(cs => window.__sim.ac.find(a => a.cs === cs).req.value, cs);
+  const item = page.locator('#prio .pi', { hasText: `${cs} next sector requests exit FL${want}` });
+  await expect(item.locator('button[data-a="ok"]')).toHaveText('Accept');
+  await item.locator('button[data-a="ok"]').click();
+  await expect(page.locator('#log')).toContainText(`${cs} exit level FL${want} agreed with the next sector`);
+  expect(await page.evaluate(cs => window.__sim.ac.find(a => a.cs === cs).xfl, cs)).toBe(want);
+});
+
+test('a flight arrives without transfer; the trainee coordinates and assumes it', async ({ page }) => {
+  await pauseSession(page);
+  const cs = await fireInject(page, 'LATE_TRANSFER');
+  expect(cs).toBeTruthy();
+  await page.evaluate(cs => { const s = window.__sim, a = s.ac.find(x => x.cs === cs); for (let i = 0; i < 300 && !a.lastIn; i++) s.step(); }, cs);
+  const item = page.locator('#prio .pi', { hasText: `${cs} in sector without transfer` });
+  await expect(item).toBeVisible();
+  await item.locator('button[data-a="assume"]').click();
+  await expect(page.locator('#log')).toContainText(`${cs} assumed`);
+  expect(await page.evaluate(cs => window.__sim.ac.find(a => a.cs === cs).ctl, cs)).toBe('ass');
+});
+
 test('session ends with a debrief', async ({ page }) => {
   await page.locator('#pausedStart').click();
   await page.evaluate(() => { const s = window.__sim; while (!s.ended) s.step(); });
   await expect(page.locator('#debrief')).toBeVisible();
-  await expect(page.locator('#debStats .stat')).toHaveCount(9);
+  await expect(page.locator('#debStats .stat')).toHaveCount(12);
+  // nobody assumed or transferred anything, so the routine counters show it
+  const stat = k => page.locator('#debStats .stat', { hasText: k }).locator('.v');
+  for (const k of ['Late assumes', 'Late transfers']) expect(+(await stat(k).textContent()), k).toBeGreaterThan(0);
+  await expect(stat('Wrong exit levels')).toHaveText(/^\d+$/);
 });

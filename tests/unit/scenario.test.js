@@ -25,6 +25,12 @@ describe('local scenario builder', () => {
     expect(buildLocalScenario(C, cfg({ objective: 'Civil-military coordination with a TSA' , difficulty: 'advanced' })).injects[0].type).toBe('MILITARY_TSA');
   });
 
+  it('puts the sector routine injects first when the objective asks for them', () => {
+    expect(buildLocalScenario(C, cfg({ objective: 'Exit level coordination with the next sector' })).injects[0].type).toBe('COORD_REQUEST');
+    expect(buildLocalScenario(C, cfg({ objective: 'Late transfer of control from the previous sector' })).injects[0].type).toBe('LATE_TRANSFER');
+    expect(buildLocalScenario(C, cfg({ objective: 'Civil-military coordination with a TSA', difficulty: 'advanced' })).injects[0].type).toBe('MILITARY_TSA');
+  });
+
   it('adds a conflict when the objective is about separation', () => {
     const base = buildLocalScenario(C, cfg()).conflicts;
     expect(buildLocalScenario(C, cfg({ objective: 'Late conflict detection and separation' })).conflicts).toBe(base + 1);

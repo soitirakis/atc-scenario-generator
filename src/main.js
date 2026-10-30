@@ -88,14 +88,14 @@ function updatePanel(force) {
   $('clock').innerHTML = `${fmtT(sim.t)} <small>/ ${fmtT(scn.duration * 60)}</small>`;
   $('secName').textContent = `${sim.sector.name} · ${sim.sector.rad}`;
   $('stIn').textContent = sim.ac.filter(a => a.lastIn).length;
-  $('stInb').textContent = sim.ac.filter(a => a.inbound).length;
+  $('stInb').textContent = sim.ac.filter(a => a.ctl === 'pend').length;
   const pred = sim.stca.filter(c => c.level === 'pred').length, los = sim.stca.filter(c => c.level === 'los').length;
   $('stStca').innerHTML = los ? `<span style="color:var(--alert)">${los} LoS</span>` : `<span style="color:${pred ? 'var(--warn)' : 'var(--text)'}">${pred}</span>`;
   const next = scn.injects.find(i => i.status === 'pending');
   $('stNext').textContent = next ? fmtT(next.min * 60 - sim.t) : '—';
 
   const pr = sim.priorities();
-  $('prio').innerHTML = pr.length ? pr.slice(0, 10).map(it => `<div class="pi p${it.p}" data-ac="${it.ac ? it.ac.id : ''}"><span class="lvl">P${it.p}</span><div class="t"><b>${esc(it.h)}</b><span>${esc(it.s)}</span></div><div class="acts">${it.act === 'req' ? `<button class="btn sm" data-a="ok" data-id="${it.ac.id}">Approve</button><button class="btn sm" data-a="no" data-id="${it.ac.id}">Unable</button>` : it.act === 'ack' ? `<button class="btn sm warn" data-a="ack" data-id="${it.ac.id}">Ack</button>` : ''}</div></div>`).join('') : '<div class="empty">No open items. Keep scanning the sector.</div>';
+  $('prio').innerHTML = pr.length ? pr.slice(0, 10).map(it => `<div class="pi p${it.p}" data-ac="${it.ac ? it.ac.id : ''}"><span class="lvl">P${it.p}</span><div class="t"><b>${esc(it.h)}</b><span>${esc(it.s)}</span></div><div class="acts">${actButtons(it)}</div></div>`).join('') : '<div class="empty">No open items. Keep scanning the sector.</div>';
 
   renderAcBox();
   $('injCount').textContent = `${scn.injects.filter(i => i.status === 'fired').length}/${scn.injects.length} fired`;
@@ -103,21 +103,32 @@ function updatePanel(force) {
   $('log').innerHTML = sim.logs.slice(0, 40).map(l => `<div class="${l.cls}"><b>${fmtT(l.t)}</b> ${esc(l.text)}</div>`).join('') || '<div>Nothing yet.</div>';
 }
 
+function actButtons(it) {
+  const id = it.ac && it.ac.id, b = (a, label, cls = '') => `<button class="btn sm ${cls}" data-a="${a}" data-id="${id}">${label}</button>`;
+  if (it.act === 'req') return it.ac.req && it.ac.req.kind === 'coord' ? b('ok', 'Accept') + b('no', 'Refuse') : b('ok', 'Approve') + b('no', 'Unable');
+  if (it.act === 'ack') return b('ack', 'Ack', 'warn');
+  if (it.act === 'assume') return b('assume', 'Assume', 'primary');
+  if (it.act === 'xfer') return b('xfer', 'Transfer');
+  return '';
+}
+const CTL = { none: 'NOT CONCERNED', pend: 'PENDING', ass: 'ASSUMED', xfer: 'TRANSFERRED' };
+
 function renderAcBox() {
   const a = sim.get(R.sel);
   if (!a) {
     if (ui.acBoxFor !== null) { $('acBox').innerHTML = '<div class="empty">Click an aircraft on the radar or a priority item to issue clearances.</div>'; ui.acBoxFor = null; }
     return;
   }
-  const sig = `${a.id}|${a.req ? a.req.text : ''}|${a.rcf}|${a.emg}${a.emgAck}`;
+  const sig = `${a.id}|${a.req ? a.req.text : ''}|${a.rcf}|${a.emg}${a.emgAck}|${a.ctl}${a.noXfer}|${a.xfl}`;
   if (ui.acBoxFor === a.id && sig === ui.acBoxSig) { updateKv(a); return; }
   ui.acBoxFor = a.id; ui.acBoxSig = sig;
   const lvls = []; for (let f = 100; f <= 410; f += 10) lvls.push(f);
   const pts = [...a.route.slice(a.ri).map(w => w.id), ...C.pointList.filter(p => dist(p.xy, [a.x, a.y]) < 150).map(p => p.id)];
   $('acBox').innerHTML = `<div class="ac-card">
     <div class="ac-head"><b>${esc(a.cs)}</b><span>${esc(a.type)} · ${esc(a.entry)} → ${esc(a.exit)} · ${a.cat.toUpperCase()}</span></div>
+    <div class="row-btns" id="acCtl"><span class="note" style="flex:1;min-width:0">${a.noXfer && a.ctl === 'none' ? 'NOT TRANSFERRED by the previous sector' : CTL[a.ctl]}${a.xfl !== null ? ` · agreed exit FL${fmtFL(a.xfl)}` : ''}</span>${a.ctl === 'pend' || a.noXfer ? `<button class="btn sm primary" data-a="assume" data-id="${a.id}">Assume</button>` : a.ctl === 'ass' ? `<button class="btn sm" data-a="xfer" data-id="${a.id}">Transfer</button>` : ''}</div>
     <div class="kv" id="acKv"></div>
-    ${a.req ? `<div class="row-btns"><span class="note" style="flex:1;min-width:0">${esc(a.req.text)}</span><button class="btn sm primary" data-a="ok" data-id="${a.id}">Approve</button><button class="btn sm" data-a="no" data-id="${a.id}">Unable</button></div>` : ''}
+    ${a.req ? `<div class="row-btns"><span class="note" style="flex:1;min-width:0">${esc(a.req.text)}</span><button class="btn sm primary" data-a="ok" data-id="${a.id}">${a.req.kind === 'coord' ? 'Accept' : 'Approve'}</button><button class="btn sm" data-a="no" data-id="${a.id}">${a.req.kind === 'coord' ? 'Refuse' : 'Unable'}</button></div>` : ''}
     ${a.emg && !a.emgAck ? `<div class="row-btns"><button class="btn sm warn" data-a="ack" data-id="${a.id}">Acknowledge emergency</button></div>` : ''}
     ${a.rcf ? '<div class="note warn">No two-way contact. Clearances will not be read back.</div>' : ''}
     <div class="cmds">
@@ -140,7 +151,7 @@ function renderAcBox() {
 function updateKv(a) {
   const k = $('acKv'); if (!k) return;
   const w = a.route[a.ri];
-  k.innerHTML = `<div><span>FL</span>${fmtFL(a.fl)}</div><div><span>CFL</span>${fmtFL(a.cfl)}${a.bust ? ' <b style="color:var(--alert)">≠' + fmtFL(a.sfl) + '</b>' : ''}</div><div><span>GS</span>${Math.round(a.gs)}</div><div><span>HDG</span>${String(Math.round(a.hdg) || 360).padStart(3, '0')}</div><div><span>Next</span>${w ? w.id : '—'}</div><div><span>Dist</span>${w ? Math.round(dist([a.x, a.y], w.xy)) + ' NM' : '—'}</div><div><span>Mode</span>${a.mode === 'nav' ? 'OWN NAV' : 'HDG'}</div><div><span>SSR</span>${a.sq}</div>`;
+  k.innerHTML = `<div><span>FL</span>${fmtFL(a.fl)}</div><div><span>CFL</span>${fmtFL(a.cfl)}${a.bust ? ' <b style="color:var(--alert)">≠' + fmtFL(a.sfl) + '</b>' : ''}</div><div><span>GS</span>${Math.round(a.gs)}</div><div><span>HDG</span>${String(Math.round(a.hdg) || 360).padStart(3, '0')}</div><div><span>Next</span>${w ? w.id : '—'}</div><div><span>Dist</span>${w ? Math.round(dist([a.x, a.y], w.xy)) + ' NM' : '—'}</div><div><span>Mode</span>${a.mode === 'nav' ? 'OWN NAV' : 'HDG'}</div><div><span>SSR</span>${a.sq}</div><div><span>XFL</span>${a.xfl === null ? '—' : fmtFL(a.xfl) + (a.ctl === 'ass' && Math.round(a.cfl) !== a.xfl ? ' <b style="color:var(--warn)">≠CFL</b>' : '')}</div><div><span>Exit</span>${a.ctl === 'ass' && a.tExit !== null ? fmtT(a.tExit) : a.tEntry !== null ? 'in ' + fmtT(a.tEntry) : '—'}</div>`;
 }
 
 function renderScenarioCard() {
@@ -183,7 +194,7 @@ function renderDataTab() {
   navaids.json   [{id, name, freq, pos:"DMS"}]   ENR 4.1
   points.json    [{id, pos:"DMS", role:E|X|EX|L|I}]   ENR 4.4
   airports.json  [{icao, name, pos:"DMS"}]
-  traffic.json   gates, flows, operators, mainAirports[{icao, approach, handoffNM, arr, dep}]
+  traffic.json   gates, flows, operators, mainAirports[{icao, approach, handoffNM, arr, dep}], exitLevels{gates, arrivals, app}
   map.json       neighbours, coast`;
 }
 
@@ -202,6 +213,9 @@ function showDebrief() {
     ['Avg. response', d.avgResponse === null ? '—' : d.avgResponse + ' s', d.avgResponse !== null && d.avgResponse > 60 ? 'w' : ''],
     ['Weather self-deviations', d.selfDev, d.selfDev ? 'w' : ''],
     ['TSA infringements', d.tsaInf, d.tsaInf ? 'a' : ''],
+    ['Late assumes', d.lateAssume, d.lateAssume ? 'w' : ''],
+    ['Late transfers', d.lateXfer, d.lateXfer ? 'w' : ''],
+    ['Wrong exit levels', d.wrongXfl, d.wrongXfl ? 'a' : ''],
     ['Clearances issued', d.cmds, ''],
     ['Injects fired', `${d.injectsFired}/${d.injectsTotal}`, '']
   ];
@@ -251,6 +265,8 @@ function bindInput() {
     const b = e.target.closest('button[data-a]');
     if (b) {
       const id = +b.dataset.id;
+      if (b.dataset.a === 'assume') result(sim.assume(id));
+      if (b.dataset.a === 'xfer') result(sim.transfer(id));
       if (b.dataset.a === 'ok') result(sim.answer(id, true));
       if (b.dataset.a === 'no') result(sim.answer(id, false));
       if (b.dataset.a === 'ack') result(sim.ackEmergency(id));

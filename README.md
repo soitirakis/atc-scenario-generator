@@ -13,8 +13,11 @@ En-route radar training simulator that builds scenarios and injects for a chosen
   - TSA activation
   - uncoordinated traffic
   - level requests
+  - exit level coordination requests from the next sector
+  - late transfers from the previous sector
 - **Clearances**: level, heading, direct-to, speed, and approve/unable on requests.
-- **Debrief** at the end of the session.
+- **Assume and transfer of control**: traffic about to enter the sector is transferred to you as pending and must be assumed; traffic leaving must be transferred before it crosses the boundary, cleared to its agreed exit level (XFL). Only aircraft on your frequency (pending or assumed) take clearances.
+- **Debrief** at the end of the session, including late assumes, late transfers and wrong exit levels.
 - **Repeatable sessions**: the same seed, sector and difficulty always give the same traffic.
 
 ## Run it
@@ -66,7 +69,7 @@ tests/
 | `navaids.json` | 16 VOR/DME | eAIP ENR 4.1 (AIRAC AMDT 11/26, page 3: 01/25) |
 | `points.json` | 131 significant points with FRA role | eAIP ENR 4.4 (AIRAC AMDT 11/26) |
 | `airports.json` | aerodrome reference points | eAIP AD 2 |
-| `traffic.json` | gates, flow weights, operators, main airports (LROP) | modelling choice, not published data |
+| `traffic.json` | gates, flow weights, operators, main airports (LROP), agreed exit levels | modelling choice, not published data; exit levels are **modelled, not from a published Letter of Agreement** |
 
 eAIP: https://aisro.ro/aip/2026-10-29/html/ro/aip_toc_enr.html
 
@@ -94,7 +97,7 @@ The Ukrainian entry and exit points are kept in the data but carry no traffic (`
 | `navaids.json` | 9 DVOR/DME | eAIP ENR 4.1 (AIRAC AMDT 006/2026) |
 | `points.json` | 107 FRA significant points with role | eAIP ENR 4.4.1 (AIRAC AMDT 006/2026) |
 | `airports.json` | aerodrome reference points | eAIP AD 2.2 |
-| `traffic.json` | gates, flow weights, operators, main airport (LHBP) | modelling choice, not published data |
+| `traffic.json` | gates, flow weights, operators, main airport (LHBP), agreed exit levels | modelling choice, not published data; exit levels are **modelled, not from a published Letter of Agreement** |
 
 eAIP: https://ais-en.hungarocontrol.hu/aip/2026-09-03/ (AIRAC AMDT 006/2026, effective 2026-09-03). AMDT 007/2026 (effective 2026-11-26) does not change ENR 2.1, 4.1, 4.4.1 or the sector chart.
 
@@ -154,6 +157,21 @@ What the script does and doesn't do, for both countries:
    - Arrivals are transferred to `approach` once they are within `handoffNM` of the airport.
 
    Leave `mainAirports` out for a transit-only country.
+
+   Add `exitLevels` for the assume and transfer routine, and label it as modelled in its `_note` unless it comes from a real Letter of Agreement:
+
+   ```json
+   "exitLevels": {
+     "_note": "MODELLED for training, NOT taken from a published Letter of Agreement…",
+     "gates": { "W": 360, "E": 370 },
+     "arrivals": { "LROP": 250 },
+     "app": { "LROP": 110 }
+   }
+   ```
+
+   - `gates`: the level at which traffic leaves the training sector towards that exit gate. Match the main direction of flight through the gate (odd eastbound, even westbound); part of the traffic is then planned at that level.
+   - `arrivals`: the level for arrivals leaving the training sector for another en-route sector.
+   - `app`: the level for arrivals handed to the approach unit from the training sector. It is also the level arrivals ask to descend to.
 4. Register it in `data/countries.js`.
 5. Copy `tests/unit/country.test.js` for the new module. Its checks catch most data mistakes: sectors that don't contain their own label, overlapping sectors, aerodromes outside the FIR, gates that don't exist, and main airports with missing connection points.
 
