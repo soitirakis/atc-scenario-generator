@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { bestWorstOverlap } from './best-layout.js';
 
 test.beforeEach(async ({ page }) => {
   const errors = [];
@@ -99,11 +100,11 @@ const worstOverlap = ls => {
   return { worst, pair };
 };
 
-test('advanced ARGES: no two data blocks overlap by more than 20%', async ({ page }, info) => {
-  // On the phone scope (about 378 px wide) ARGES tracks sit so close that even the best of the four
-  // positions exceeds 20% at times (up to about 33% in this session), so there the test only guards
-  // against a badly broken layout; labels stacked on each other would be near 100%.
-  const limit = info.project.name === 'phone' ? 0.65 : 0.2;
+test('advanced ARGES: data blocks overlap no more than 20%, or 10 points above the best layout possible', async ({ page }, info) => {
+  // Where tracks bunch, no choice of the four positions gets every pair under 20%; then the layout
+  // must be within 10 points of the best one possible (computed each minute by best-layout.js).
+  // On the phone scope (about 378 px wide) the floor is 65%: labels stacked on each other would be near 100%.
+  const base = info.project.name === 'phone' ? 0.65 : 0.2;
   await page.locator('#difficulty').selectOption('advanced');
   await expect(page.locator('#pausedSub')).toContainText('ARGES');
   for (let k = 0; k < 10; k++) {
@@ -112,7 +113,10 @@ test('advanced ARGES: no two data blocks overlap by more than 20%', async ({ pag
     const ls = await labels(page);
     expect(ls.length, 'labels drawn').toBeGreaterThan(5);
     const { worst, pair } = worstOverlap(ls);
-    expect(worst, `minute ${k}: labels ${pair} overlap ${(worst * 100).toFixed(0)}%`).toBeLessThanOrEqual(limit);
+    const best = bestWorstOverlap(ls.map(l => [l.box[0] - l.off[0], l.box[1] - l.off[1]]));
+    const limit = Math.max(base, best + 0.1);
+    const pct = x => (x * 100).toFixed(0) + '%';
+    expect(worst, `minute ${k}: labels ${pair} overlap ${pct(worst)}; best possible ${pct(best)}, limit ${pct(limit)}`).toBeLessThanOrEqual(limit);
   }
 });
 
@@ -210,6 +214,36 @@ test('a flight arrives without transfer; the trainee coordinates and assumes it'
   await item.locator('button[data-a="assume"]').click();
   await expect(page.locator('#log')).toContainText(`${cs} assumed`);
   expect(await page.evaluate(cs => window.__sim.ac.find(a => a.cs === cs).ctl, cs)).toBe('ass');
+});
+
+test('Mach and rate clearances and the wind editor work from the panels', async ({ page }) => {
+  await page.locator('#pausedStart').click();
+  await page.locator('#playBtn').click(); // pause
+  await page.evaluate(() => { for (let i = 0; i < 30; i++) window.__sim.step(); });
+  const { id, cs, cfl } = await page.evaluate(() => {
+    const a = window.__sim.ac.find(x => x.ctl === 'ass' && x.fl >= 300 && x.fl <= 360);
+    window.__radar.sel = a.id;
+    return { id: a.id, cs: a.cs, cfl: a.cfl };
+  });
+  await expect(page.locator('#acBox .ac-head b')).toHaveText(cs);
+  await page.locator('#cMach').fill('0.74');
+  await page.locator('#bMach').click();
+  await expect(page.locator('#log')).toContainText(`${cs} maintain M.74`);
+  expect(await page.evaluate(id => window.__sim.get(id).spd, id)).toEqual({ mode: 'mach', v: 0.74 });
+
+  await page.locator('#cFl').selectOption(String(cfl + 20));
+  await page.locator('#bFl').click();
+  await page.locator('#cRate').fill('800');
+  await page.locator('#cRateKind').selectOption('max');
+  await page.locator('#bRate').click();
+  await expect(page.locator('#log')).toContainText(`${cs} climb at 800 ft/min or less`);
+
+  await page.locator('#tab-scenario').click();
+  const row = k => page.locator(`#windTable input[data-w="${k}"][data-i="0"]`);
+  await row('fl').fill('300'); await row('dir').fill('90'); await row('kt').fill('60');
+  await page.locator('#windApply').click();
+  await expect(page.locator('#toast')).toHaveText('Wind applied');
+  expect(await page.evaluate(() => window.__sim.wind.find(w => w.fl === 300))).toEqual({ fl: 300, dir: 90, kt: 60 });
 });
 
 test('session ends with a debrief', async ({ page }) => {

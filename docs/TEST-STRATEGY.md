@@ -7,15 +7,16 @@ This document describes what each test layer covers, and why it is there.
 | Layer | Tool | Where | Size | Runs |
 |---|---|---|---|---|
 | Data integrity | Vitest | `tests/unit/country.test.js`, `country-hu.test.js` | 31 tests | `npm test`, CI |
-| Determinism and simulation behaviour | Vitest | `tests/unit/sim.test.js` | 48 tests | `npm test`, CI |
+| Determinism and simulation behaviour | Vitest | `tests/unit/sim.test.js` | 58 tests | `npm test`, CI |
+| Aircraft performance, ISA and wind | Vitest | `tests/unit/performance.test.js`, `sim.test.js` | 12 + 9 tests | `npm test`, CI |
 | Two-window link | Vitest | `tests/unit/link.test.js` | 14 tests | `npm test`, CI |
 | Scenario builder and Claude reply validator | Vitest | `tests/unit/scenario.test.js` | 10 tests | `npm test`, CI |
 | AIP parsers against fixtures | Vitest | `tests/unit/airac.test.js`, `tests/fixtures/` | 19 tests | `npm test`, CI |
 | Geometry | Vitest | `tests/unit/geo.test.js` | 12 tests | `npm test`, CI |
-| End to end, two viewports | Playwright | `tests/e2e/app.spec.js`, `two-windows.spec.js` | 17 tests × 2 viewports | `npm run test:e2e`, CI |
+| End to end, two viewports | Playwright | `tests/e2e/app.spec.js`, `two-windows.spec.js` | 18 tests × 2 viewports | `npm run test:e2e`, CI |
 | Coverage gate | Vitest (V8) | `vite.config.js` | 85% per file on `src/sim.js`, `src/scenario.js` | `npm run test:coverage`, CI |
 
-The 134 unit tests run in Node in under five seconds and need no browser or network. End-to-end tests run against the production build. CI (`.github/workflows/ci.yml`) runs the unit tests with coverage, then the end-to-end tests, on every push and pull request. A push to `main` deploys to GitHub Pages only if both pass.
+The 156 unit tests run in Node in under ten seconds and need no browser or network. End-to-end tests run against the production build. CI (`.github/workflows/ci.yml`) runs the unit tests with coverage, then the end-to-end tests, on every push and pull request. A push to `main` deploys to GitHub Pages only if both pass.
 
 ## Data integrity
 
@@ -97,6 +98,24 @@ During refactors that should not change behaviour, the same idea is applied more
 
 **Why.** The trainee window must not learn what is coming. That rule is enforced in one function (`makeSnapshot`) and one list (`TRAINEE_COMMANDS`), so these tests check both directly. Faking the channel keeps the tests in Node and makes timing deterministic.
 
+## Aircraft performance, ISA and wind
+
+**What.**
+- **Conversion** (`performance.test.js`): the WRAP parser is tested against OpenAP's own `a320.txt` (`tests/fixtures/openap-wrap-a320.txt`, unchanged), including unit conversion and a table with a missing row. `data/performance.json` must cover every type in the traffic files, keep its source, commit and licence, and have every typical value inside its range. The one quirk in OpenAP's own data is listed by name.
+- **Atmosphere and wind:** ISA reference values (sea level, tropopause, speed of sound); textbook conversions (250 KCAS at FL100 is about 289 KTAS; M0.80 at FL370 is about 459 KTAS); the wind's sign convention, interpolation and validation; a seeded default wind.
+- **Behaviour** (`sim.test.js`, one aircraft alone, calm air unless a wind is set):
+  - an A320 and a B77W given the same climb clearance reach the level at different times, each inside the range WRAP gives for that band;
+  - a crosswind gives a track different from the heading, and a heading clearance drifts by the expected angle and distance;
+  - own navigation corrects for the wind;
+  - ground speed is TAS plus the head or tail wind;
+  - each type cruises at its own Mach;
+  - Mach and IAS clearances reach the matching TAS, within the type's maximum Mach;
+  - "or greater" and "or less" rate clearances change the time to level, and end at the level; a rate the type cannot make is refused;
+  - STCA's level profile matches the simulated climb second by second across a band change.
+- **Fair traffic:** no aircraft starts inside 5 NM and 1000 ft of another, except the scripted conflict pairs.
+
+**Why.** Performance decides when aircraft reach their levels, which is what a trainee plans separation around, so the times are checked against the published data ranges rather than fixed numbers. The atmosphere and wind are pure functions, so reference values pin them down. A sweep of a disciplined trainee over 152 sessions (both countries, every sector, 8 seeds) found no routine errors after the change; the unit suite keeps a one-seed version of that check.
+
 ## Scenario builder and Claude reply validator
 
 **What.**
@@ -142,7 +161,7 @@ The live download (`npm run airac`) is not run in CI, because it depends on thir
 - firing an inject and seeing it in the priorities;
 - rebuilding a session for another sector;
 - switching country;
-- label placement: no two data blocks overlap by more than 20% on desktop; labels stay put between radar updates; a dragged label stays where it was put;
+- label placement: in an advanced ARGES session, data blocks overlap by no more than 20% on desktop, or by no more than 10 points above the best layout possible when tracks bunch; labels stay put between radar updates; a dragged label stays where it was put;
 - the sector routine through the panels: assume a pending flight, transfer one at its exit level, accept a coordination request, assume a flight that arrived without transfer;
 - the debrief, including the routine counters;
 - **two windows** (`two-windows.spec.js`): the instructor and trainee pages open in one browser context, so they share a BroadcastChannel as two windows on one computer do:
@@ -155,7 +174,7 @@ The live download (`npm run airac`) is not run in CI, because it depends on thir
 
 **Why.** Unit tests do not see the DOM, the canvas, or the build. These tests run the artefact that is deployed. The phone viewport is there because the UI must work at about 400 px (`CLAUDE.md`).
 
-The label overlap limit is 65% on the phone instead of 20%. At phone zoom the advanced ARGES tracks sit so close that even the best of the four label positions overlaps by up to about 33%. On the phone the test guards against a broken layout, where labels stacked on each other would be near 100%.
+The label limit is relative where it has to be. Each minute, the test computes the best layout possible with the four label positions (`tests/e2e/best-layout.js`, a seeded search), and allows `max(20%, best + 10 points)` on desktop and `max(65%, best + 10 points)` on the phone. Where tracks bunch, as they do in the denser minutes of this session with wind and per-type speeds, even the best layout overlaps by about 30% on desktop and 65% on the phone, so a fixed 20% would test the traffic, not the code. The relative limit still fails when the layout is clearly worse than it could be: it caught the renderer keeping a stale 21% layout where 7% was possible.
 
 ## Coverage gate
 

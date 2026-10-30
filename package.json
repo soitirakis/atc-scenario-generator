@@ -1,6 +1,7 @@
 {
   "name": "atc-scenario-generator",
   "version": "0.2.0",
+  "license": "GPL-3.0-only",
   "description": "En-route ATC radar training simulator with scenario and inject generation, built on real eAIP data. Romania (LRBB) first.",
   "type": "module",
   "private": true,

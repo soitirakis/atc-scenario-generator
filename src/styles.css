@@ -115,6 +115,12 @@ select { padding-right: 4px; }
 .kv { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px 8px; font-family: var(--f-data); font-size: 12px; }
 .kv div span { display: block; color: var(--muted); font-family: var(--f-ui); font-size: 10.5px; text-transform: uppercase; letter-spacing: 1px; }
 .cmds { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px 8px; align-items: center; }
+.rate-in { display: flex; gap: 4px; min-width: 0; }
+.rate-in input { flex: 1 1 64px; min-width: 64px; }
+.rate-in select { flex: 0 1 auto; min-width: 0; }
+.wind { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; align-items: center; font-size: 13px; }
+.wind span { font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); }
+.wind input { width: 100%; min-width: 0; }
 .cmds label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
 .cmds input, .cmds select { width: 100%; font-family: var(--f-data); font-size: 13px; }
 

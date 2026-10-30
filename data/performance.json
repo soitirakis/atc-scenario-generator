@@ -1,0 +1,1365 @@
+{
+  "_note": "Aircraft performance for the simulator, converted from OpenAP WRAP by scripts/openap-wrap.mjs. Each value is { opt, min, max } from WRAP (opt: typical; min/max: the range WRAP gives). Units: speeds in kt (CAS), Mach as a number, vertical rates in ft/min (positive), altitudes in ft. Not BADA. Not for operational use.",
+  "_source": {
+    "name": "OpenAP: WRAP (Wide-Range Aircraft Performance) kinematic model",
+    "authors": "Junzi Sun and contributors, TU Delft",
+    "url": "https://github.com/TUDelft-CNS-ATM/openap/tree/46753acb988c1e8c9d47ec5ae72d6fb75b9cf260/openap/data/wrap",
+    "commit": "46753acb988c1e8c9d47ec5ae72d6fb75b9cf260",
+    "licence": "GPL-3.0 (openap/data/LICENSE). OpenAP code is LGPL-3.0.",
+    "reference": "Sun, J., Hoekstra, J.M., Ellerbroek, J. (2020). OpenAP: An open-source aircraft performance model for air transportation studies and simulations. Aerospace, 7(8), 104."
+  },
+  "types": {
+    "A20N": {
+      "wrap": "a320",
+      "why": "OpenAP synonym (a20n -> a320)",
+      "climb": {
+        "casKt": {
+          "opt": 294,
+          "min": 272,
+          "max": 313
+        },
+        "mach": {
+          "opt": 0.78,
+          "min": 0.73,
+          "max": 0.8
+        },
+        "casFromFt": {
+          "opt": 12139,
+          "min": 6234,
+          "max": 17717
+        },
+        "machFromFt": {
+          "opt": 28871,
+          "min": 25919,
+          "max": 32152
+        },
+        "fpm": {
+          "belowCas": {
+            "opt": 2018,
+            "min": 1502,
+            "max": 2533
+          },
+          "cas": {
+            "opt": 1659,
+            "min": 1236,
+            "max": 2087
+          },
+          "mach": {
+            "opt": 1039,
+            "min": 709,
+            "max": 1372
+          }
+        }
+      },
+      "cruise": {
+        "casKt": {
+          "opt": 259,
+          "min": 241,
+          "max": 278
+        },
+        "mach": {
+          "opt": 0.78,
+          "min": 0.75,
+          "max": 0.8
+        },
+        "maxMach": {
+          "opt": 0.8,
+          "min": 0.77,
+          "max": 0.83
+        },
+        "maxFt": {
+          "opt": 36286,
+          "min": 33465,
+          "max": 39108
+        }
+      },
+      "descent": {
+        "mach": {
+          "opt": 0.77,
+          "min": 0.73,
+          "max": 0.81
+        },
+        "casKt": {
+          "opt": 280,
+          "min": 262,
+          "max": 317
+        },
+        "machAboveFt": {
+          "opt": 31496,
+          "min": 25919,
+          "max": 35105
+        },
+        "casAboveFt": {
+          "opt": 18701,
+          "min": 9843,
+          "max": 27887
+        },
+        "fpm": {
+          "mach": {
+            "opt": 1134,
+            "min": 445,
+            "max": 2648
+          },
+          "cas": {
+            "opt": 1974,
+            "min": 1053,
+            "max": 2890
+          },
+          "belowCas": {
+            "opt": 1197,
+            "min": 841,
+            "max": 1551
+          }
+        }
+      }
+    },
+    "A21N": {
+      "wrap": "a321",
+      "why": "same airframe size as the A321; OpenAP's synonym table maps a21n to a320",
+      "climb": {
+        "casKt": {
+          "opt": 301,
+          "min": 280,
+          "max": 323
+        },
+        "mach": {
+          "opt": 0.77,
+          "min": 0.74,
+          "max": 0.81
+        },
+        "casFromFt": {
+          "opt": 12139,
+          "min": 6890,
+          "max": 17717
+        },
+        "machFromFt": {
+          "opt": 27559,
+          "min": 24606,
+          "max": 30512
+        },
+        "fpm": {
+          "belowCas": {
+            "opt": 1846,
+            "min": 1384,
+            "max": 2309
+          },
+          "cas": {
+            "opt": 1608,
+            "min": 1163,
+            "max": 2055
+          },
+          "mach": {
+            "opt": 1022,
+            "min": 656,
+            "max": 1388
+          }
+        }
+      },
+      "cruise": {
+        "casKt": {
+          "opt": 268,
+          "min": 247,
+          "max": 290
+        },
+        "mach": {
+          "opt": 0.78,
+          "min": 0.75,
+          "max": 0.8
+        },
+        "maxMach": {
+          "opt": 0.79,
+          "min": 0.77,
+          "max": 0.84
+        },
+        "maxFt": {
+          "opt": 34646,
+          "min": 31496,
+          "max": 37795
+        }
+      },
+      "descent": {
+        "mach": {
+          "opt": 0.77,
+          "min": 0.74,
+          "max": 0.8
+        },
+        "casKt": {
+          "opt": 292,
+          "min": 268,
+          "max": 317
+        },
+        "machAboveFt": {
+          "opt": 29528,
+          "min": 25591,
+          "max": 33793
+        },
+        "casAboveFt": {
+          "opt": 20341,
+          "min": 10827,
+          "max": 27887
+        },
+        "fpm": {
+          "mach": {
+            "opt": 1087,
+            "min": 427,
+            "max": 2335
+          },
+          "cas": {
+            "opt": 1852,
+            "min": 1014,
+            "max": 2685
+          },
+          "belowCas": {
+            "opt": 1183,
+            "min": 835,
+            "max": 1531
+          }
+        }
+      }
+    },
+    "A320": {
+      "wrap": "a320",
+      "why": "WRAP model for this type",
+      "climb": {
+        "casKt": {
+          "opt": 294,
+          "min": 272,
+          "max": 313
+        },
+        "mach": {
+          "opt": 0.78,
+          "min": 0.73,
+          "max": 0.8
+        },
+        "casFromFt": {
+          "opt": 12139,
+          "min": 6234,
+          "max": 17717
+        },
+        "machFromFt": {
+          "opt": 28871,
+          "min": 25919,
+          "max": 32152
+        },
+        "fpm": {
+          "belowCas": {
+            "opt": 2018,
+            "min": 1502,
+            "max": 2533
+          },
+          "cas": {
+            "opt": 1659,
+            "min": 1236,
+            "max": 2087
+          },
+          "mach": {
+            "opt": 1039,
+            "min": 709,
+            "max": 1372
+          }
+        }
+      },
+      "cruise": {
+        "casKt": {
+          "opt": 259,
+          "min": 241,
+          "max": 278
+        },
+        "mach": {
+          "opt": 0.78,
+          "min": 0.75,
+          "max": 0.8
+        },
+        "maxMach": {
+          "opt": 0.8,
+          "min": 0.77,
+          "max": 0.83
+        },
+        "maxFt": {
+          "opt": 36286,
+          "min": 33465,
+          "max": 39108
+        }
+      },
+      "descent": {
+        "mach": {
+          "opt": 0.77,
+          "min": 0.73,
+          "max": 0.81
+        },
+        "casKt": {
+          "opt": 280,
+          "min": 262,
+          "max": 317
+        },
+        "machAboveFt": {
+          "opt": 31496,
+          "min": 25919,
+          "max": 35105
+        },
+        "casAboveFt": {
+          "opt": 18701,
+          "min": 9843,
+          "max": 27887
+        },
+        "fpm": {
+          "mach": {
+            "opt": 1134,
+            "min": 445,
+            "max": 2648
+          },
+          "cas": {
+            "opt": 1974,
+            "min": 1053,
+            "max": 2890
+          },
+          "belowCas": {
+            "opt": 1197,
+            "min": 841,
+            "max": 1551
+          }
+        }
+      }
+    },
+    "A321": {
+      "wrap": "a321",
+      "why": "WRAP model for this type",
+      "climb": {
+        "casKt": {
+          "opt": 301,
+          "min": 280,
+          "max": 323
+        },
+        "mach": {
+          "opt": 0.77,
+          "min": 0.74,
+          "max": 0.81
+        },
+        "casFromFt": {
+          "opt": 12139,
+          "min": 6890,
+          "max": 17717
+        },
+        "machFromFt": {
+          "opt": 27559,
+          "min": 24606,
+          "max": 30512
+        },
+        "fpm": {
+          "belowCas": {
+            "opt": 1846,
+            "min": 1384,
+            "max": 2309
+          },
+          "cas": {
+            "opt": 1608,
+            "min": 1163,
+            "max": 2055
+          },
+          "mach": {
+            "opt": 1022,
+            "min": 656,
+            "max": 1388
+          }
+        }
+      },
+      "cruise": {
+        "casKt": {
+          "opt": 268,
+          "min": 247,
+          "max": 290
+        },
+        "mach": {
+          "opt": 0.78,
+          "min": 0.75,
+          "max": 0.8
+        },
+        "maxMach": {
+          "opt": 0.79,
+          "min": 0.77,
+          "max": 0.84
+        },
+        "maxFt": {
+          "opt": 34646,
+          "min": 31496,
+          "max": 37795
+        }
+      },
+      "descent": {
+        "mach": {
+          "opt": 0.77,
+          "min": 0.74,
+          "max": 0.8
+        },
+        "casKt": {
+          "opt": 292,
+          "min": 268,
+          "max": 317
+        },
+        "machAboveFt": {
+          "opt": 29528,
+          "min": 25591,
+          "max": 33793
+        },
+        "casAboveFt": {
+          "opt": 20341,
+          "min": 10827,
+          "max": 27887
+        },
+        "fpm": {
+          "mach": {
+            "opt": 1087,
+            "min": 427,
+            "max": 2335
+          },
+          "cas": {
+            "opt": 1852,
+            "min": 1014,
+            "max": 2685
+          },
+          "belowCas": {
+            "opt": 1183,
+            "min": 835,
+            "max": 1531
+          }
+        }
+      }
+    },
+    "A333": {
+      "wrap": "a333",
+      "why": "WRAP model for this type",
+      "climb": {
+        "casKt": {
+          "opt": 297,
+          "min": 276,
+          "max": 321
+        },
+        "mach": {
+          "opt": 0.8,
+          "min": 0.75,
+          "max": 0.84
+        },
+        "casFromFt": {
+          "opt": 10171,
+          "min": 6234,
+          "max": 20341
+        },
+        "machFromFt": {
+          "opt": 29856,
+          "min": 26247,
+          "max": 33465
+        },
+        "fpm": {
+          "belowCas": {
+            "opt": 1736,
+            "min": 1272,
+            "max": 2203
+          },
+          "cas": {
+            "opt": 1506,
+            "min": 1031,
+            "max": 1984
+          },
+          "mach": {
+            "opt": 898,
+            "min": 618,
+            "max": 1555
+          }
+        }
+      },
+      "cruise": {
+        "casKt": {
+          "opt": 255,
+          "min": 241,
+          "max": 280
+        },
+        "mach": {
+          "opt": 0.81,
+          "min": 0.79,
+          "max": 0.83
+        },
+        "maxMach": {
+          "opt": 0.83,
+          "min": 0.81,
+          "max": 0.87
+        },
+        "maxFt": {
+          "opt": 41109,
+          "min": 34875,
+          "max": 40945
+        }
+      },
+      "descent": {
+        "mach": {
+          "opt": 0.81,
+          "min": 0.77,
+          "max": 0.84
+        },
+        "casKt": {
+          "opt": 292,
+          "min": 266,
+          "max": 315
+        },
+        "machAboveFt": {
+          "opt": 33465,
+          "min": 27887,
+          "max": 37073
+        },
+        "casAboveFt": {
+          "opt": 20669,
+          "min": 11155,
+          "max": 29856
+        },
+        "fpm": {
+          "mach": {
+            "opt": 1215,
+            "min": 528,
+            "max": 2461
+          },
+          "cas": {
+            "opt": 1778,
+            "min": 976,
+            "max": 2573
+          },
+          "belowCas": {
+            "opt": 1130,
+            "min": 799,
+            "max": 1459
+          }
+        }
+      }
+    },
+    "A359": {
+      "wrap": "b789",
+      "why": "OpenAP synonym (a359 -> b789)",
+      "climb": {
+        "casKt": {
+          "opt": 317,
+          "min": 294,
+          "max": 338
+        },
+        "mach": {
+          "opt": 0.84,
+          "min": 0.82,
+          "max": 0.87
+        },
+        "casFromFt": {
+          "opt": 13451,
+          "min": 7546,
+          "max": 19357
+        },
+        "machFromFt": {
+          "opt": 29856,
+          "min": 26575,
+          "max": 33465
+        },
+        "fpm": {
+          "belowCas": {
+            "opt": 1862,
+            "min": 1413,
+            "max": 2313
+          },
+          "cas": {
+            "opt": 1709,
+            "min": 1189,
+            "max": 2325
+          },
+          "mach": {
+            "opt": 1191,
+            "min": 715,
+            "max": 1667
+          }
+        }
+      },
+      "cruise": {
+        "casKt": {
+          "opt": 270,
+          "min": 251,
+          "max": 290
+        },
+        "mach": {
+          "opt": 0.85,
+          "min": 0.83,
+          "max": 0.87
+        },
+        "maxMach": {
+          "opt": 0.87,
+          "min": 0.85,
+          "max": 0.92
+        },
+        "maxFt": {
+          "opt": 39337,
+          "min": 37008,
+          "max": 41667
+        }
+      },
+      "descent": {
+        "mach": {
+          "opt": 0.84,
+          "min": 0.79,
+          "max": 0.87
+        },
+        "casKt": {
+          "opt": 299,
+          "min": 270,
+          "max": 329
+        },
+        "machAboveFt": {
+          "opt": 34449,
+          "min": 28215,
+          "max": 38058
+        },
+        "casAboveFt": {
+          "opt": 22966,
+          "min": 14108,
+          "max": 31496
+        },
+        "fpm": {
+          "mach": {
+            "opt": 1409,
+            "min": 553,
+            "max": 2535
+          },
+          "cas": {
+            "opt": 1799,
+            "min": 953,
+            "max": 2640
+          },
+          "belowCas": {
+            "opt": 1219,
+            "min": 878,
+            "max": 1557
+          }
+        }
+      }
+    },
+    "A388": {
+      "wrap": "a388",
+      "why": "WRAP model for this type",
+      "climb": {
+        "casKt": {
+          "opt": 317,
+          "min": 301,
+          "max": 330
+        },
+        "mach": {
+          "opt": 0.84,
+          "min": 0.8,
+          "max": 0.86
+        },
+        "casFromFt": {
+          "opt": 10827,
+          "min": 4265,
+          "max": 17388
+        },
+        "machFromFt": {
+          "opt": 29199,
+          "min": 26903,
+          "max": 31824
+        },
+        "fpm": {
+          "belowCas": {
+            "opt": 1545,
+            "min": 1171,
+            "max": 1919
+          },
+          "cas": {
+            "opt": 1478,
+            "min": 1024,
+            "max": 1933
+          },
+          "mach": {
+            "opt": 1094,
+            "min": 636,
+            "max": 1557
+          }
+        }
+      },
+      "cruise": {
+        "casKt": {
+          "opt": 264,
+          "min": 253,
+          "max": 282
+        },
+        "mach": {
+          "opt": 0.84,
+          "min": 0.82,
+          "max": 0.86
+        },
+        "maxMach": {
+          "opt": 0.87,
+          "min": 0.85,
+          "max": 0.9
+        },
+        "maxFt": {
+          "opt": 39567,
+          "min": 37795,
+          "max": 41339
+        }
+      },
+      "descent": {
+        "mach": {
+          "opt": 0.83,
+          "min": 0.8,
+          "max": 0.87
+        },
+        "casKt": {
+          "opt": 299,
+          "min": 276,
+          "max": 325
+        },
+        "machAboveFt": {
+          "opt": 33136,
+          "min": 28215,
+          "max": 37730
+        },
+        "casAboveFt": {
+          "opt": 21654,
+          "min": 12795,
+          "max": 30840
+        },
+        "fpm": {
+          "mach": {
+            "opt": 1193,
+            "min": 585,
+            "max": 2343
+          },
+          "cas": {
+            "opt": 1646,
+            "min": 978,
+            "max": 2311
+          },
+          "belowCas": {
+            "opt": 1079,
+            "min": 791,
+            "max": 1364
+          }
+        }
+      }
+    },
+    "B38M": {
+      "wrap": "b738",
+      "why": "same fuselage length as the 737-800; OpenAP's synonym table maps b38m to b737",
+      "climb": {
+        "casKt": {
+          "opt": 294,
+          "min": 272,
+          "max": 313
+        },
+        "mach": {
+          "opt": 0.77,
+          "min": 0.75,
+          "max": 0.8
+        },
+        "casFromFt": {
+          "opt": 11811,
+          "min": 5906,
+          "max": 17717
+        },
+        "machFromFt": {
+          "opt": 29199,
+          "min": 25919,
+          "max": 32152
+        },
+        "fpm": {
+          "belowCas": {
+            "opt": 2089,
+            "min": 1541,
+            "max": 2640
+          },
+          "cas": {
+            "opt": 2016,
+            "min": 1516,
+            "max": 2520
+          },
+          "mach": {
+            "opt": 1220,
+            "min": 848,
+            "max": 1596
+          }
+        }
+      },
+      "cruise": {
+        "casKt": {
+          "opt": 253,
+          "min": 235,
+          "max": 270
+        },
+        "mach": {
+          "opt": 0.78,
+          "min": 0.75,
+          "max": 0.8
+        },
+        "maxMach": {
+          "opt": 0.8,
+          "min": 0.77,
+          "max": 0.83
+        },
+        "maxFt": {
+          "opt": 37336,
+          "min": 34678,
+          "max": 39993
+        }
+      },
+      "descent": {
+        "mach": {
+          "opt": 0.77,
+          "min": 0.73,
+          "max": 0.81
+        },
+        "casKt": {
+          "opt": 282,
+          "min": 257,
+          "max": 309
+        },
+        "machAboveFt": {
+          "opt": 31824,
+          "min": 27231,
+          "max": 36417
+        },
+        "casAboveFt": {
+          "opt": 19357,
+          "min": 10499,
+          "max": 28543
+        },
+        "fpm": {
+          "mach": {
+            "opt": 1142,
+            "min": 415,
+            "max": 2506
+          },
+          "cas": {
+            "opt": 1959,
+            "min": 1079,
+            "max": 2833
+          },
+          "belowCas": {
+            "opt": 1226,
+            "min": 892,
+            "max": 1557
+          }
+        }
+      }
+    },
+    "B738": {
+      "wrap": "b738",
+      "why": "WRAP model for this type",
+      "climb": {
+        "casKt": {
+          "opt": 294,
+          "min": 272,
+          "max": 313
+        },
+        "mach": {
+          "opt": 0.77,
+          "min": 0.75,
+          "max": 0.8
+        },
+        "casFromFt": {
+          "opt": 11811,
+          "min": 5906,
+          "max": 17717
+        },
+        "machFromFt": {
+          "opt": 29199,
+          "min": 25919,
+          "max": 32152
+        },
+        "fpm": {
+          "belowCas": {
+            "opt": 2089,
+            "min": 1541,
+            "max": 2640
+          },
+          "cas": {
+            "opt": 2016,
+            "min": 1516,
+            "max": 2520
+          },
+          "mach": {
+            "opt": 1220,
+            "min": 848,
+            "max": 1596
+          }
+        }
+      },
+      "cruise": {
+        "casKt": {
+          "opt": 253,
+          "min": 235,
+          "max": 270
+        },
+        "mach": {
+          "opt": 0.78,
+          "min": 0.75,
+          "max": 0.8
+        },
+        "maxMach": {
+          "opt": 0.8,
+          "min": 0.77,
+          "max": 0.83
+        },
+        "maxFt": {
+          "opt": 37336,
+          "min": 34678,
+          "max": 39993
+        }
+      },
+      "descent": {
+        "mach": {
+          "opt": 0.77,
+          "min": 0.73,
+          "max": 0.81
+        },
+        "casKt": {
+          "opt": 282,
+          "min": 257,
+          "max": 309
+        },
+        "machAboveFt": {
+          "opt": 31824,
+          "min": 27231,
+          "max": 36417
+        },
+        "casAboveFt": {
+          "opt": 19357,
+          "min": 10499,
+          "max": 28543
+        },
+        "fpm": {
+          "mach": {
+            "opt": 1142,
+            "min": 415,
+            "max": 2506
+          },
+          "cas": {
+            "opt": 1959,
+            "min": 1079,
+            "max": 2833
+          },
+          "belowCas": {
+            "opt": 1226,
+            "min": 892,
+            "max": 1557
+          }
+        }
+      }
+    },
+    "B77W": {
+      "wrap": "b77w",
+      "why": "WRAP model for this type",
+      "climb": {
+        "casKt": {
+          "opt": 319,
+          "min": 307,
+          "max": 330
+        },
+        "mach": {
+          "opt": 0.83,
+          "min": 0.8,
+          "max": 0.86
+        },
+        "casFromFt": {
+          "opt": 12467,
+          "min": 5906,
+          "max": 19357
+        },
+        "machFromFt": {
+          "opt": 28871,
+          "min": 26575,
+          "max": 31168
+        },
+        "fpm": {
+          "belowCas": {
+            "opt": 1770,
+            "min": 1339,
+            "max": 2203
+          },
+          "cas": {
+            "opt": 1683,
+            "min": 1262,
+            "max": 2549
+          },
+          "mach": {
+            "opt": 1134,
+            "min": 652,
+            "max": 2128
+          }
+        }
+      },
+      "cruise": {
+        "casKt": {
+          "opt": 288,
+          "min": 270,
+          "max": 307
+        },
+        "mach": {
+          "opt": 0.84,
+          "min": 0.82,
+          "max": 0.86
+        },
+        "maxMach": {
+          "opt": 0.86,
+          "min": 0.84,
+          "max": 0.91
+        },
+        "maxFt": {
+          "opt": 36089,
+          "min": 33825,
+          "max": 38353
+        }
+      },
+      "descent": {
+        "mach": {
+          "opt": 0.82,
+          "min": 0.79,
+          "max": 0.86
+        },
+        "casKt": {
+          "opt": 303,
+          "min": 272,
+          "max": 325
+        },
+        "machAboveFt": {
+          "opt": 31824,
+          "min": 28215,
+          "max": 35433
+        },
+        "casAboveFt": {
+          "opt": 21982,
+          "min": 13780,
+          "max": 30184
+        },
+        "fpm": {
+          "mach": {
+            "opt": 1386,
+            "min": 398,
+            "max": 2368
+          },
+          "cas": {
+            "opt": 1781,
+            "min": 929,
+            "max": 2630
+          },
+          "belowCas": {
+            "opt": 1240,
+            "min": 919,
+            "max": 1559
+          }
+        }
+      }
+    },
+    "B788": {
+      "wrap": "b788",
+      "why": "WRAP model for this type",
+      "climb": {
+        "casKt": {
+          "opt": 307,
+          "min": 284,
+          "max": 330
+        },
+        "mach": {
+          "opt": 0.85,
+          "min": 0.81,
+          "max": 0.87
+        },
+        "casFromFt": {
+          "opt": 12467,
+          "min": 8202,
+          "max": 20669
+        },
+        "machFromFt": {
+          "opt": 31168,
+          "min": 27559,
+          "max": 34777
+        },
+        "fpm": {
+          "belowCas": {
+            "opt": 1886,
+            "min": 1441,
+            "max": 2333
+          },
+          "cas": {
+            "opt": 1776,
+            "min": 1205,
+            "max": 2348
+          },
+          "mach": {
+            "opt": 1185,
+            "min": 707,
+            "max": 1667
+          }
+        }
+      },
+      "cruise": {
+        "casKt": {
+          "opt": 257,
+          "min": 245,
+          "max": 284
+        },
+        "mach": {
+          "opt": 0.85,
+          "min": 0.83,
+          "max": 0.87
+        },
+        "maxMach": {
+          "opt": 0.87,
+          "min": 0.85,
+          "max": 0.91
+        },
+        "maxFt": {
+          "opt": 40289,
+          "min": 37795,
+          "max": 42848
+        }
+      },
+      "descent": {
+        "mach": {
+          "opt": 0.84,
+          "min": 0.8,
+          "max": 0.87
+        },
+        "casKt": {
+          "opt": 297,
+          "min": 272,
+          "max": 325
+        },
+        "machAboveFt": {
+          "opt": 34449,
+          "min": 28871,
+          "max": 38386
+        },
+        "casAboveFt": {
+          "opt": 22966,
+          "min": 14436,
+          "max": 31824
+        },
+        "fpm": {
+          "mach": {
+            "opt": 1494,
+            "min": 659,
+            "max": 2787
+          },
+          "cas": {
+            "opt": 1874,
+            "min": 1006,
+            "max": 2738
+          },
+          "belowCas": {
+            "opt": 1220,
+            "min": 876,
+            "max": 1563
+          }
+        }
+      }
+    },
+    "BCS3": {
+      "wrap": "e190",
+      "why": "not in OpenAP; nearest size class in WRAP",
+      "climb": {
+        "casKt": {
+          "opt": 272,
+          "min": 259,
+          "max": 303
+        },
+        "mach": {
+          "opt": 0.75,
+          "min": 0.71,
+          "max": 0.8
+        },
+        "casFromFt": {
+          "opt": 9843,
+          "min": 5906,
+          "max": 21325
+        },
+        "machFromFt": {
+          "opt": 30184,
+          "min": 26575,
+          "max": 33465
+        },
+        "fpm": {
+          "belowCas": {
+            "opt": 2055,
+            "min": 1413,
+            "max": 2699
+          },
+          "cas": {
+            "opt": 1758,
+            "min": 1234,
+            "max": 2283
+          },
+          "mach": {
+            "opt": 949,
+            "min": 581,
+            "max": 1319
+          }
+        }
+      },
+      "cruise": {
+        "casKt": {
+          "opt": 255,
+          "min": 233,
+          "max": 274
+        },
+        "mach": {
+          "opt": 0.77,
+          "min": 0.74,
+          "max": 0.81
+        },
+        "maxMach": {
+          "opt": 0.79,
+          "min": 0.76,
+          "max": 0.85
+        },
+        "maxFt": {
+          "opt": 36614,
+          "min": 33497,
+          "max": 39797
+        }
+      },
+      "descent": {
+        "mach": {
+          "opt": 0.77,
+          "min": 0.72,
+          "max": 0.81
+        },
+        "casKt": {
+          "opt": 288,
+          "min": 260,
+          "max": 309
+        },
+        "machAboveFt": {
+          "opt": 30512,
+          "min": 26247,
+          "max": 34777
+        },
+        "casAboveFt": {
+          "opt": 17717,
+          "min": 8530,
+          "max": 26903
+        },
+        "fpm": {
+          "mach": {
+            "opt": 1033,
+            "min": 413,
+            "max": 2321
+          },
+          "cas": {
+            "opt": 1787,
+            "min": 955,
+            "max": 2616
+          },
+          "belowCas": {
+            "opt": 1161,
+            "min": 764,
+            "max": 1559
+          }
+        }
+      }
+    },
+    "E195": {
+      "wrap": "e190",
+      "why": "OpenAP synonym (e195 -> e190)",
+      "climb": {
+        "casKt": {
+          "opt": 272,
+          "min": 259,
+          "max": 303
+        },
+        "mach": {
+          "opt": 0.75,
+          "min": 0.71,
+          "max": 0.8
+        },
+        "casFromFt": {
+          "opt": 9843,
+          "min": 5906,
+          "max": 21325
+        },
+        "machFromFt": {
+          "opt": 30184,
+          "min": 26575,
+          "max": 33465
+        },
+        "fpm": {
+          "belowCas": {
+            "opt": 2055,
+            "min": 1413,
+            "max": 2699
+          },
+          "cas": {
+            "opt": 1758,
+            "min": 1234,
+            "max": 2283
+          },
+          "mach": {
+            "opt": 949,
+            "min": 581,
+            "max": 1319
+          }
+        }
+      },
+      "cruise": {
+        "casKt": {
+          "opt": 255,
+          "min": 233,
+          "max": 274
+        },
+        "mach": {
+          "opt": 0.77,
+          "min": 0.74,
+          "max": 0.81
+        },
+        "maxMach": {
+          "opt": 0.79,
+          "min": 0.76,
+          "max": 0.85
+        },
+        "maxFt": {
+          "opt": 36614,
+          "min": 33497,
+          "max": 39797
+        }
+      },
+      "descent": {
+        "mach": {
+          "opt": 0.77,
+          "min": 0.72,
+          "max": 0.81
+        },
+        "casKt": {
+          "opt": 288,
+          "min": 260,
+          "max": 309
+        },
+        "machAboveFt": {
+          "opt": 30512,
+          "min": 26247,
+          "max": 34777
+        },
+        "casAboveFt": {
+          "opt": 17717,
+          "min": 8530,
+          "max": 26903
+        },
+        "fpm": {
+          "mach": {
+            "opt": 1033,
+            "min": 413,
+            "max": 2321
+          },
+          "cas": {
+            "opt": 1787,
+            "min": 955,
+            "max": 2616
+          },
+          "belowCas": {
+            "opt": 1161,
+            "min": 764,
+            "max": 1559
+          }
+        }
+      }
+    }
+  }
+}
