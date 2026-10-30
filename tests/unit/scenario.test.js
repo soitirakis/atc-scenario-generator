@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import RO from '../../data/RO/index.js';
 import { loadCountry } from '../../src/country.js';
 import { TYPES } from '../../src/sim.js';
-import { buildLocalScenario, buildClaudePrompt, parseClaudeScenario } from '../../src/scenario.js';
+import { buildLocalScenario, buildClaudePrompt, parseClaudeScenario, INJECT_TEXT } from '../../src/scenario.js';
 
 const C = loadCountry(RO);
 const cfg = (o = {}) => ({ sector: 'DIN', difficulty: 'intermediate', duration: 30, seed: 7, objective: 'Busy sector.', ...o });
@@ -55,6 +55,31 @@ describe('Claude scenario', () => {
     expect(s.injects[1].min).toBe(28);
     expect(s.conflicts).toBe(5);
     expect(s.source).toBe('claude');
+  });
+
+  it('prompt asks for an inject count that matches the difficulty', () => {
+    expect(buildClaudePrompt(C, cfg({ difficulty: 'foundational' }))).toContain('2-3');
+    expect(buildClaudePrompt(C, cfg({ difficulty: 'intermediate' }))).toContain('3-5');
+    expect(buildClaudePrompt(C, cfg({ difficulty: 'advanced' }))).toContain('5-7');
+  });
+
+  it('validator fills gaps in a sparse reply from the session settings', () => {
+    const s = parseClaudeScenario({ conflicts: 'many', challenges: 'not a list', injects: [{ type: 'RADIO_FAILURE' }] }, cfg({ difficulty: 'advanced', objective: 'Own objective.' }));
+    expect(s.title).toBe('Generated scenario');
+    expect(s.objective).toBe('Own objective.');
+    expect(s.conflicts).toBe(4);                            // advanced default
+    expect(s.challenges).toEqual([]);
+    expect(s.criteria).toEqual(['No loss of separation (5 NM / 1000 ft)']);
+    expect(s.injects).toEqual([{ min: 3, type: 'RADIO_FAILURE', text: INJECT_TEXT.RADIO_FAILURE }]);
+  });
+
+  it('validator caps lengths and counts from an over-long reply', () => {
+    const s = parseClaudeScenario({ title: 'T'.repeat(200), criteria: ['a', 'b', 'c', 'd', 'e', 'f'], conflicts: -3, injects: [{ min: -5, type: 'LEVEL_BUST', text: 'x'.repeat(300) }] }, cfg());
+    expect(s.title).toHaveLength(90);
+    expect(s.criteria).toHaveLength(4);
+    expect(s.conflicts).toBe(0);
+    expect(s.injects[0].min).toBe(1);
+    expect(s.injects[0].text).toHaveLength(160);
   });
 
   it('validator rejects a reply with no usable injects', () => {

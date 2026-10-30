@@ -9,12 +9,16 @@
     "build": "vite build",
     "preview": "vite preview --port 4173 --strictPort",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "screenshots": "node scripts/screenshots.mjs",
     "airac": "node scripts/airac-update.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
+    "@vitest/coverage-v8": "^2.1.8",
+    "gifenc": "^1.0.3",
     "pdfjs-dist": "^4.9.155",
     "vite": "^5.4.11",
     "vite-plugin-singlefile": "^2.0.3",

@@ -348,6 +348,34 @@ describe('sector routine injects', () => {
   });
 });
 
+describe('robustness', () => {
+  it('every inject copes with an empty sector', () => {
+    for (const type of Object.keys(TYPES)) {
+      const sim = fresh({}, [{ min: 1, type, text: '' }]);
+      sim.ac = [];
+      expect(() => sim.fireNow(0), type).not.toThrow();
+      expect(sim.scenario.injects[0].status, type).toBe('fired');
+      // only the TSA and the two injects that bring their own traffic need no aircraft in the sector
+      if (!['MILITARY_TSA', 'POPUP_TRAFFIC', 'LATE_TRANSFER'].includes(type)) expect(sim.logs[0].text, type).toMatch(/no suitable aircraft in sector/);
+      expect(() => run(sim, 30), type).not.toThrow();
+    }
+  });
+
+  it('commands reject unknown aircraft and invalid requests', () => {
+    const sim = fresh({}, []);
+    const mine = sim.ac.find(a => a.ctl === 'ass');
+    for (const r of [sim.assume(9999), sim.transfer(9999), sim.clearLevel(9999, 300), sim.answer(9999, true), sim.ackEmergency(9999)]) expect(r.ok).toBe(false);
+    expect(sim.assume(mine.id).msg).toMatch(/already assumed/);
+    expect(sim.answer(mine.id, true).msg).toBe('No open request');
+    expect(sim.ackEmergency(mine.id).msg).toBe('No emergency');
+  });
+
+  it('refuses to load an unknown sector', () => {
+    const sim = new Sim(C);
+    expect(() => sim.load({ ...buildLocalScenario(C, cfg()), sector: 'NOPE' })).toThrow(/Unknown sector NOPE/);
+  });
+});
+
 describe('countries without a main airport', () => {
   it('run transit-only traffic', () => {
     const { mainAirports, ...rest } = RO.traffic;
