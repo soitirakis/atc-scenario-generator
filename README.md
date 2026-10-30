@@ -25,7 +25,7 @@ npm run dev          # http://localhost:5173
 npm run build        # one self-contained file: dist/index.html
 ```
 
-`dist/index.html` has the code, styles and data inlined. Open it directly, host it anywhere, or publish it as a claude.ai artifact.
+`dist/index.html` has the code, styles and data inlined. Open it directly, host it anywhere, or publish it as a claude.ai artifact. The latest `main` is live at https://soitirakis.github.io/atc-scenario-generator/.
 
 ## Tests
 
@@ -34,7 +34,7 @@ npm test             # unit tests (Vitest): geometry, data integrity, simulation
 npm run test:e2e     # end-to-end (Playwright) against the built file, desktop and phone viewports
 ```
 
-CI runs both on every push and pull request, and uploads the single-file build.
+CI runs both on every push and pull request, and uploads the single-file build. On `main`, once both pass, it deploys that same file to GitHub Pages: https://soitirakis.github.io/atc-scenario-generator/
 
 ## Project layout
 
