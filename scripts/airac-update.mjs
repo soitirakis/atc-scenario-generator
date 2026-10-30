@@ -61,7 +61,11 @@ const COUNTRIES = {
     },
     min: { points: 100, navaids: 10 },
     addRoles: ['E', 'X', 'EX'],
-    updateMeta(meta, ed) { meta.airac.edition = ed.edition; }
+    updateMeta(meta, ed) {
+      const old = meta.airac.edition;
+      meta.airac.edition = ed.edition;
+      for (const s of meta.sources) s.url = s.url.split(`/aip/${old}/`).join(`/aip/${ed.edition}/`);
+    }
   },
   HU: {
     cache: ed => path.join(root, '.airac-cache', 'HU', ed),
