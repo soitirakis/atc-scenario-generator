@@ -1,0 +1,12 @@
+{
+  "neighbours": [
+    { "label": "WIEN FIR · LOVV", "lat": 47.33, "lon": 16.04 },
+    { "label": "BRATISLAVA FIR · LZBB", "lat": 48.56, "lon": 19.23 },
+    { "label": "L’VIV FIR · UKLV", "lat": 48.42, "lon": 22.73 },
+    { "label": "BUCUREȘTI FIR · LRBB", "lat": 47.09, "lon": 22.54 },
+    { "label": "BEOGRAD FIR · LYBA", "lat": 45.88, "lon": 19.75 },
+    { "label": "ZAGREB FIR · LDZO", "lat": 46.12, "lon": 16.91 },
+    { "label": "LJUBLJANA FIR · LJLA", "lat": 46.64, "lon": 16.2 }
+  ],
+  "coast": []
+}

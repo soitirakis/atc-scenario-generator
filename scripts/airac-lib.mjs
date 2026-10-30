@@ -31,15 +31,36 @@ export function classifyRole(remarks) {
 }
 
 /** Parse ENR 4.4 text into [{id, pos, role}] (role may be null). */
-export function parseEnr44(text) {
+export function parseEnr44(text, classify = classifyRole) {
   const re = /\b([A-Z]{5})\s+(\d{6}[NS])\s*(\d{7}[EW])\b/g;
   const hits = [];
   let m;
   while ((m = re.exec(text))) hits.push({ id: m[1], pos: `${m[2]} ${m[3]}`, start: m.index, end: re.lastIndex });
   return hits.map((h, i) => {
     const remarks = text.slice(h.end, i + 1 < hits.length ? hits[i + 1].start : text.length);
-    return { id: h.id, pos: h.pos, role: classifyRole(remarks) };
+    return { id: h.id, pos: h.pos, role: classify(remarks) };
   });
+}
+
+/**
+ * Hungary publishes FRA relevance as letter codes with an optional level band,
+ * e.g. "(I) FL245-FL660 Nil (X) 9500 FT AMSL-FL245". Rewrite it in the
+ * "FRA (X) FL095-FL245" form classifyRole reads; 9500 FT AMSL counts as FL095.
+ */
+export function lhRelevance(text) {
+  const txt = text.replace(/\s+/g, ' ');
+  const re = /\(([EXIAD]{1,5})\)(?:\s*(?:(\d{4,5})\s*FT\s*AMSL|FL\s?(\d{3}))\s*-\s*FL\s?(\d{3}))?/g;
+  let out = '', m;
+  while ((m = re.exec(txt))) {
+    const band = m[4] ? ` FL${m[2] ? String(Math.round(+m[2] / 100)).padStart(3, '0') : m[3]}-FL${m[4]}` : '';
+    for (const k of m[1]) out += `FRA (${k})${band} `;
+  }
+  return out.trim();
+}
+
+/** Parse Hungary ENR 4.4.1 text into [{id, pos, role}] (role may be null). */
+export function parseLhEnr441(text) {
+  return parseEnr44(text, remarks => classifyRole(lhRelevance(remarks)));
 }
 
 /** Parse ENR 4.1 text into VOR / VOR-DME stations [{id, freq, pos}]. DME-only (4-digit MHz) are skipped. */

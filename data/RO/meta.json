@@ -8,12 +8,14 @@
     45.9,
     25
   ],
+  "defaultSector": "ARG",
   "airac": {
     "edition": "2026-10-01",
     "enr41": "AIRAC AMDT 09/25",
     "enr44": "AIRAC AMDT 06/26 (pages to 08/26)",
     "sectors": "NM RAD sector file 14-08-25"
   },
+  "simNote": "Traffic flies Free Route (SEE FRA) directs between real entry and exit points, on semicircular levels: odd eastbound, even westbound. Main flows are Western Europe to Istanbul and the Gulf through the Black Sea gates, plus Moldova and Bucharest arrivals and departures. The Ukrainian gates are shown greyed and carry no traffic while those FIRs are closed to civil flights; update the flow table if that changes. Border segments between published sector vertices are approximated from the national boundary, and the TSA geometry is a training construct, not a published area. STCA uses 5 NM and 1000 ft with a 3-minute linear look-ahead. Radar plots refresh every 4 seconds.",
   "sources": [
     {
       "title": "eAIP Romania",

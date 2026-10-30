@@ -2,8 +2,9 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { classifyRole, parseEnr44, parseEnr41, diffPoints, diffNavaids, airacDates } from '../../scripts/airac-lib.mjs';
+import { classifyRole, parseEnr44, parseEnr41, parseLhEnr441, lhRelevance, diffPoints, diffNavaids, airacDates } from '../../scripts/airac-lib.mjs';
 import points from '../../data/RO/points.json';
+import huPoints from '../../data/HU/points.json';
 import navaids from '../../data/RO/navaids.json';
 
 const fx = f => fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'fixtures', f), 'utf8');
@@ -41,6 +42,49 @@ describe('ENR 4.4 parsing', () => {
 
   it('role rule edge case: upper entry plus lower exit is an entry', () => {
     expect(classifyRole('FRA (E): ODD FRA (X): FL105-FL175: EVEN')).toBe('E');
+  });
+});
+
+describe('Hungary ENR 4.4.1 parsing', () => {
+  const parsed = Object.fromEntries(parseLhEnr441(fx('lh-enr441-excerpt.txt')).map(p => [p.id, p]));
+
+  it('finds every point in the excerpt', () => {
+    expect(Object.keys(parsed)).toEqual(['ABETI', 'ABULI', 'ALAMU', 'ANIWE', 'ARSIN', 'BABIT', 'BABOX', 'BADOR', 'BAREB', 'DEGET', 'KOPRY', 'ODCIH', 'PARAK', 'VEBAL']);
+    expect(parsed.KOPRY.pos).toBe('461425N 0165746E');
+  });
+
+  it('rewrites level-banded codes for classifyRole, 9500 FT AMSL as FL095', () => {
+    expect(lhRelevance('(I) FL245-FL660 Nil (X) 9500 FT AMSL-FL245')).toBe('FRA (I) FL245-FL660 FRA (X) FL095-FL245');
+    expect(lhRelevance('(EXA) Mandatory waypoint')).toBe('FRA (E) FRA (X) FRA (A)');
+  });
+
+  it('classifies FRA relevance with the same rule as Romania', () => {
+    expect(parsed.ABETI.role).toBe('I');
+    expect(parsed.BABIT.role).toBe('EX');
+    expect(parsed.PARAK.role).toBe('EX');
+    expect(parsed.ABULI.role).toBe('X');   // exit only up to FL245: above FL175, so not L
+    expect(parsed.ALAMU.role).toBe('E');
+    expect(parsed.BAREB.role).toBe('EX');  // (EXD) up to FL205
+    expect(parsed.BADOR.role).toBe('L');   // exit only up to FL105
+    expect(parsed.DEGET.role).toBe('L');   // entry only up to FL175
+    expect(parsed.ODCIH.role).toBe('L');
+    expect(parsed.ARSIN.role).toBe('I');   // (ID)
+    expect(parsed.BABOX.role).toBeNull();  // departure connection only
+    expect(parsed.ANIWE.role).toBeNull();  // no FRA relevance
+  });
+
+  it('reads four-letter codes such as (EXAD)', () => {
+    // a {1,3} letter limit once read KOPRY and VEBAL as intermediate only
+    expect(parsed.KOPRY.role).toBe('EX');
+    expect(parsed.VEBAL.role).toBe('EX');
+  });
+
+  it('the committed Hungary data agrees with the parser for every point in the excerpt', () => {
+    for (const p of huPoints) if (parsed[p.id]) {
+      expect(p.pos, p.id).toBe(parsed[p.id].pos);
+      expect(p.role, p.id).toBe(parsed[p.id].role);
+    }
+    for (const id of ['ANIWE', 'BABOX']) expect(huPoints.find(p => p.id === id), id).toBeUndefined();
   });
 });
 

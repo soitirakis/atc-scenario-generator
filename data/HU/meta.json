@@ -1,0 +1,41 @@
+{
+  "code": "HU",
+  "name": "Hungary",
+  "fir": "LHCC",
+  "firName": "BUDAPEST FIR",
+  "unit": "BUDAPEST ACC",
+  "center": [
+    47.2,
+    19.4
+  ],
+  "defaultSector": "EAST",
+  "airac": {
+    "edition": "2026-09-03",
+    "enr41": "AIRAC AMDT 006/2026",
+    "enr44": "ENR 4.4.1, AIRAC AMDT 006/2026",
+    "sectors": "traced from eAIP chart ENR 6-LHCC-SECTOR (19 MAR 2026), approximate"
+  },
+  "simNote": "Traffic flies Free Route directs between real FRA points on the Budapest FIR boundary, on semicircular levels: odd eastbound, even westbound. Main flows are north-west Europe to Romania, Bulgaria and Turkey through the Romanian and Serbian gates, Poland to the Balkans, plus Budapest arrivals and departures. The Ukrainian gates are shown greyed and carry no traffic while that FIR is closed to civil flights. Sector boundaries are traced from the eAIP sector index chart because Hungary does not publish them as coordinates; national border segments are approximated, and the TSA geometry is a training construct, not a published area. STCA uses 5 NM and 1000 ft with a 3-minute linear look-ahead. Radar plots refresh every 4 seconds.",
+  "sources": [
+    {
+      "title": "eAIP Hungary (AIRAC AMDT 006/2026)",
+      "url": "https://ais-en.hungarocontrol.hu/aip/2026-09-03/"
+    },
+    {
+      "title": "ENR 2.1 FIR, UIR, TMA and CTA",
+      "url": "https://ais-en.hungarocontrol.hu/aip/2026-09-03/2026-09-03-AIRAC/html/eAIP/LH-ENR-2.1-en-HU.html"
+    },
+    {
+      "title": "ENR 4.1 Radio navigation aids",
+      "url": "https://ais-en.hungarocontrol.hu/aip/2026-09-03/2026-09-03-AIRAC/html/eAIP/LH-ENR-4.1-en-HU.html"
+    },
+    {
+      "title": "ENR 4.4.1 FRA significant points",
+      "url": "https://ais-en.hungarocontrol.hu/aip/2026-09-03/2026-09-03-AIRAC/html/eAIP/LH-ENR-4.4.1-en-HU.html"
+    },
+    {
+      "title": "ENR 6-LHCC-SECTOR ATC sectors index chart",
+      "url": "https://ais-en.hungarocontrol.hu/aip/2026-09-03/2026-09-03-AIRAC/graphics/eAIP/LH_ENR_6_LHCC_SECTOR_en.pdf"
+    }
+  ]
+}

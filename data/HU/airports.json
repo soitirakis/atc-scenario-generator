@@ -1,0 +1,42 @@
+[
+  {
+    "icao": "LHBP",
+    "name": "Budapest Liszt Ferenc",
+    "pos": "472622N 0191543E"
+  },
+  {
+    "icao": "LHBC",
+    "name": "Békéscsaba",
+    "pos": "464100N 0210945E"
+  },
+  {
+    "icao": "LHDC",
+    "name": "Debrecen",
+    "pos": "472920N 0213655E"
+  },
+  {
+    "icao": "LHNY",
+    "name": "Nyíregyháza",
+    "pos": "475846N 0214132E"
+  },
+  {
+    "icao": "LHPP",
+    "name": "Pécs-Pogány",
+    "pos": "455921N 0181432E"
+  },
+  {
+    "icao": "LHPR",
+    "name": "Győr-Pér",
+    "pos": "473738N 0174830E"
+  },
+  {
+    "icao": "LHSM",
+    "name": "Hévíz-Balaton",
+    "pos": "464111N 0170933E"
+  },
+  {
+    "icao": "LHUD",
+    "name": "Szeged",
+    "pos": "461503N 0200521E"
+  }
+]
