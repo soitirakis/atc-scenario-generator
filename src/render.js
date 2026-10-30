@@ -4,13 +4,99 @@ import { D2R, fmtFL, fmtT } from './geo.js';
 const MONO = '"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace';
 const UI = '"Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif';
 
+// Data block geometry (screen px). Candidate positions, as box top-left relative to the plot: NE, SE, SW, NW.
+const LW = 98, LH = 40, GAP = 10;
+const SLOTS = [[GAP, -GAP - LH], [GAP, GAP], [-GAP - LW, GAP], [-GAP - LW, -GAP - LH]];
+const PLOT = 7;              // half-size of the area a track symbol occupies
+const HYST = 0.05 * LW * LH; // a label only moves if another slot is better by more than this (px²)
+
+const overlap = (a, b) => Math.max(0, Math.min(a[0] + a[2], b[0] + b[2]) - Math.max(a[0], b[0])) * Math.max(0, Math.min(a[1] + a[3], b[1] + b[3]) - Math.max(a[1], b[1]));
+
 export class Renderer {
   constructor(canvas, sim) {
     this.cv = canvas; this.ctx = canvas.getContext('2d'); this.sim = sim;
     this.V = { cx: 0, cy: 0, sc: 1, w: 0, h: 0, dpr: 1 };
     this.layers = { sectors: true, points: 'ex', navaids: true, airports: true, labels: true, vec: 2 };
     this.sel = null; this.col = {};
+    // label state per aircraft id: { slot, user: [dx, dy] | null, box: [x, y, w, h] | null }
+    this.lab = new Map(); this.labSig = '';
     this.readColors(); this.resize();
+  }
+
+  /** Forget label positions, including dragged ones (aircraft ids restart with each session). */
+  resetLabels() { this.lab.clear(); this.labSig = ''; }
+
+  /** Drawn data blocks, for hit tests and e2e checks: [{ id, box }]. */
+  labelBoxes() { return [...this.lab].filter(([, l]) => l.box).map(([id, l]) => ({ id, box: l.box })); }
+
+  labelAt(mx, my) {
+    for (const { id, box: b } of this.labelBoxes()) if (mx >= b[0] && mx <= b[0] + b[2] && my >= b[1] && my <= b[1] + b[3]) return id;
+    return null;
+  }
+  /** Current label offset from the plot (screen px), used as the start of a drag. */
+  labelOffset(id) {
+    const l = this.lab.get(id), a = this.sim.get(id);
+    if (!l || !l.box || !a) return null;
+    return [l.box[0] - this.sx([a.px, a.py]), l.box[1] - this.sy([a.px, a.py])];
+  }
+  /** Pin a label at an offset from its plot; kept for that aircraft until the session restarts. */
+  moveLabel(id, dx, dy) {
+    const l = this.lab.get(id) || { slot: 0, user: null, box: null };
+    l.user = [dx, dy]; this.lab.set(id, l); this.labSig = '';
+  }
+
+  /**
+   * Choose a slot for each data block. Recomputed only when screen positions change
+   * (radar refresh, zoom, pan, aircraft added or removed), starting from the previous
+   * choice, so labels stay put between radar updates. items: [{ id, X, Y }].
+   */
+  layoutLabels(items, W, H) {
+    const sig = items.map(i => `${i.id}:${Math.round(i.X)},${Math.round(i.Y)}`).join(';') + `|${W}x${H}`;
+    if (sig === this.labSig) return;
+    this.labSig = sig;
+    const ids = new Set(items.map(i => i.id));
+    for (const id of this.lab.keys()) if (!ids.has(id) && !this.sim.get(id)) this.lab.delete(id);
+    for (const l of this.lab.values()) l.box = null;
+    const plots = items.map(i => [i.X - PLOT, i.Y - PLOT, PLOT * 2, PLOT * 2]);
+    const boxAt = (it, slot) => [it.X + SLOTS[slot][0], it.Y + SLOTS[slot][1], LW, LH];
+    const L = items.map(it => {
+      const l = this.lab.get(it.id), fresh = !l;
+      const e = l || { slot: 0, user: null, box: null };
+      this.lab.set(it.id, e);
+      e.box = e.user ? [it.X + e.user[0], it.Y + e.user[1], LW, LH] : fresh ? null : boxAt(it, e.slot);
+      return { it, l: e };
+    });
+    // label-label overlap counts squared, so one large overlap costs more than several slight ones
+    const cost = (k, box) => {
+      let c = 0;
+      for (let j = 0; j < L.length; j++) {
+        if (j === k) continue;
+        const b = L[j].l.box;
+        if (b) { const o = overlap(box, b); c += o + o * o / (LW * LH); }
+        c += overlap(box, plots[j]);
+      }
+      const inside = overlap(box, [0, 0, W, H]);
+      return c + (LW * LH - inside) * 0.5; // prefer slots that stay on screen
+    };
+    // new labels take the best slot given the labels already placed
+    L.forEach(({ it, l }, k) => {
+      if (l.box) return;
+      let best = 0, bc = Infinity;
+      for (let s = 0; s < SLOTS.length; s++) { const c = cost(k, boxAt(it, s)); if (c < bc) { bc = c; best = s; } }
+      l.slot = best; l.box = boxAt(it, best);
+    });
+    // local search: each pass moves a label to its best slot if that is clearly better
+    for (let pass = 0; pass < 8; pass++) {
+      let changed = false;
+      L.forEach(({ it, l }, k) => {
+        if (l.user) return;
+        const cur = cost(k, l.box);
+        let best = l.slot, bc = cur;
+        for (let s = 0; s < SLOTS.length; s++) { if (s === l.slot) continue; const c = cost(k, boxAt(it, s)); if (c < bc) { bc = c; best = s; } }
+        if (best !== l.slot && bc < cur - HYST) { l.slot = best; l.box = boxAt(it, best); changed = true; }
+      });
+      if (!changed) break;
+    }
   }
 
   readColors() {
@@ -52,19 +138,22 @@ export class Renderer {
     if (X < 40 || Y < 40 || X > this.V.w - 40 || Y > this.V.h - 40) { this.V.cx = a.x; this.V.cy = a.y; }
   }
 
-  /** Aircraft under a screen point (plot symbol or label block). */
-  hitTest(mx, my) {
+  /** Aircraft whose plot symbol is under a screen point. */
+  plotAt(mx, my) {
     let best = null, bd = 16;
     for (const a of this.sim.ac) {
       const d = Math.hypot(this.sx([a.px, a.py]) - mx, this.sy([a.px, a.py]) - my);
       if (d < bd) { bd = d; best = a; }
     }
-    if (best) return best;
-    for (const a of this.sim.ac) {
-      const b = a._lb;
-      if (b && mx >= b[0] && mx <= b[0] + b[2] && my >= b[1] && my <= b[1] + b[3]) return a;
-    }
-    return null;
+    return best;
+  }
+
+  /** Aircraft under a screen point (plot symbol or label block). */
+  hitTest(mx, my) {
+    const a = this.plotAt(mx, my);
+    if (a) return a;
+    const id = this.labelAt(mx, my);
+    return id === null ? null : this.sim.get(id);
   }
 
   acColor(a) {
@@ -191,10 +280,10 @@ export class Renderer {
     const stcaIds = new Map();
     for (const c of sim.stca) for (const a of [c.a, c.b]) if (!stcaIds.has(a.id) || c.level === 'los') stcaIds.set(a.id, c.level);
 
-    // aircraft
+    // aircraft: tracks first, then data blocks placed around them
     ctx.font = `11px ${MONO}`;
+    const labelled = [];
     for (const a of sim.ac) {
-      a._lb = null;
       const color = this.acColor(a), X = sx([a.px, a.py]), Y = sy([a.px, a.py]);
       if (X < -80 || Y < -60 || X > W + 80 || Y > H + 60) continue;
       ctx.fillStyle = color;
@@ -209,16 +298,25 @@ export class Renderer {
       if (a.lastIn) { ctx.fillStyle = color; ctx.fillRect(X - 2, Y - 2, 4, 4); }
       if (a.id === this.sel) { ctx.strokeStyle = col.accent; ctx.lineWidth = 1; ctx.strokeRect(X - 8, Y - 8, 16, 16); }
       if (!layers.labels && a.id !== this.sel && !a.lastIn) continue;
-      const lx = X + 12, ly = Y - 18;
-      ctx.strokeStyle = color; ctx.globalAlpha = 0.5; ctx.beginPath(); ctx.moveTo(X + 5, Y - 5); ctx.lineTo(lx - 2, ly + 10); ctx.stroke(); ctx.globalAlpha = 1;
+      labelled.push({ id: a.id, X, Y, a, color, st });
+    }
+    this.layoutLabels(labelled, W, H);
+    for (const { a, X, Y, color, st } of labelled) {
+      const [bx, by] = this.lab.get(a.id).box, lx = bx + 3, ly = by + 1;
+      // leader line from the track symbol to the nearest point of the data block
+      const qx = Math.max(bx, Math.min(X, bx + LW)), qy = Math.max(by, Math.min(Y, by + LH));
+      const d = Math.hypot(qx - X, qy - Y);
+      if (d > 6) {
+        ctx.strokeStyle = color; ctx.globalAlpha = 0.5; ctx.lineWidth = 1; ctx.beginPath();
+        ctx.moveTo(X + (qx - X) / d * 5, Y + (qy - Y) / d * 5); ctx.lineTo(qx, qy); ctx.stroke(); ctx.globalAlpha = 1;
+      }
       const trend = Math.abs(a.sfl - a.fl) > 0.3 ? (a.sfl > a.fl ? '↑' : '↓') : ' ';
       const l1 = a.cs + (a.sq === '7700' ? ' EMG' : a.sq === '7600' ? ' RCF' : '') + (a.req ? ' REQ' : '') + (a.popupUntil > sim.t ? ' NEW' : '');
-      if (st) { ctx.fillStyle = st === 'los' ? 'rgba(255,93,79,0.18)' : 'rgba(240,178,60,0.14)'; ctx.fillRect(lx - 3, ly - 1, 98, 40); }
+      if (st) { ctx.fillStyle = st === 'los' ? 'rgba(255,93,79,0.18)' : 'rgba(240,178,60,0.14)'; ctx.fillRect(bx, by, LW, LH); }
       ctx.fillStyle = a.req ? col.pend : color; ctx.fillText(l1, lx, ly + 10);
       ctx.fillStyle = color; ctx.fillText(fmtFL(a.fl) + trend, lx, ly + 23);
       ctx.fillStyle = a.bust ? col.alert : color; ctx.fillText(fmtFL(a.cfl) + (a.bust ? '≠' + fmtFL(a.sfl) : ''), lx + 34, ly + 23);
       ctx.fillStyle = color; ctx.globalAlpha = 0.85; ctx.fillText(String(Math.round(a.gs / 10)).padStart(2, '0') + ' ' + a.type, lx, ly + 36); ctx.globalAlpha = 1;
-      a._lb = [lx - 3, ly - 1, 98, 40];
     }
   }
 }

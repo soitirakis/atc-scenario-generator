@@ -17,6 +17,7 @@ const sim = new Sim(C);
 const R = new Renderer($('scope'), sim);
 const ui = { running: false, speed: 1, debriefShown: false, acBoxFor: null, acBoxSig: '', lastPanel: 0, toastT: 0 };
 window.__sim = sim; // handy for e2e tests and console debugging
+window.__radar = R;
 
 /* ---------- session control ---------- */
 function readCfg() {
@@ -33,7 +34,7 @@ function applyScenario(scn) {
 }
 function startSession(scn = sim.scenario) {
   sim.load(scn);
-  ui.debriefShown = false; R.sel = null; ui.acBoxFor = -1;
+  ui.debriefShown = false; R.sel = null; ui.acBoxFor = -1; R.resetLabels();
   setRunning(false);
   $('pausedTag').hidden = false;
   $('pausedTitle').textContent = 'Scenario ready';
@@ -213,12 +214,20 @@ function showDebrief() {
 function bindInput() {
   const cv = $('scope');
   let drag = null;
-  cv.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, cx: R.V.cx, cy: R.V.cy, moved: false }; cv.setPointerCapture(e.pointerId); });
+  cv.addEventListener('pointerdown', e => {
+    const r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
+    // pressing on a data block (not a track symbol) drags that label; anywhere else pans the scope
+    const label = R.plotAt(mx, my) ? null : R.labelAt(mx, my);
+    drag = { x: e.clientX, y: e.clientY, cx: R.V.cx, cy: R.V.cy, moved: false, label, from: label === null ? null : R.labelOffset(label) };
+    cv.setPointerCapture(e.pointerId);
+  });
   cv.addEventListener('pointermove', e => {
     if (!drag) return;
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
     if (Math.abs(dx) + Math.abs(dy) > 4) drag.moved = true;
-    if (drag.moved) { R.V.cx = drag.cx - dx / R.V.sc; R.V.cy = drag.cy - dy / R.V.sc; }
+    if (!drag.moved) return;
+    if (drag.label !== null) R.moveLabel(drag.label, drag.from[0] + dx, drag.from[1] + dy);
+    else { R.V.cx = drag.cx - dx / R.V.sc; R.V.cy = drag.cy - dy / R.V.sc; }
   });
   cv.addEventListener('pointerup', e => {
     if (drag && !drag.moved) {
