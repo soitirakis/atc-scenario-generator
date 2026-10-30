@@ -15,8 +15,8 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - name: Unit tests
-        run: npm test
+      - name: Unit tests with coverage (85% minimum on src/sim.js and src/scenario.js)
+        run: npm run test:coverage
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
       - name: End-to-end tests (desktop + phone)
@@ -31,7 +31,10 @@ jobs:
         with:
           name: atc-scenario-generator
           path: dist/index.html
-      # the same dist/index.html the end-to-end tests ran against
+      # the build step of the end-to-end tests empties dist/, so the badge is written after it
+      - name: Coverage badge
+        run: node scripts/coverage-badge.mjs coverage/coverage-summary.json dist/coverage.json
+      # the same dist/index.html the end-to-end tests ran against, plus the coverage badge
       - name: Package site for GitHub Pages
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v5
