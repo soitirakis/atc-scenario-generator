@@ -106,20 +106,30 @@ eAIP: https://ais-en.hungarocontrol.hu/aip/2026-09-03/ (AIRAC AMDT 006/2026, eff
 
 ## Updating for a new AIRAC cycle
 
-AIRAC cycles change every 28 days. `npm run airac` covers Romania only for now; Hungary's ENR 4.4.1 parser is in `airac-lib.mjs` but there is no download script for it yet. The ROMATSA eAIP has no data API, so updates are a scripted pull of the PDFs:
+AIRAC cycles change every 28 days. Neither eAIP has a data API, so updates are a scripted pull of the published pages, followed by a diff against `data/<CODE>`. Nothing is written without `--write`.
 
 ```bash
-npm run airac                          # report changes for the current cycle
-npm run airac -- --edition 2026-10-29  # a specific eAIP edition
-npm run airac -- --write               # apply, then run npm test and commit
+npm run airac                                    # Romania (default), current cycle, report only
+npm run airac -- --country HU                    # Hungary, edition in force today
+npm run airac -- --country HU --date 2026-11-26  # Hungary, edition in force on a date
+npm run airac -- --edition 2026-10-29            # a specific eAIP edition
+npm run airac -- --country HU --write            # apply, then run npm test and commit
 ```
 
-What the script does and doesn't do:
+| | Romania (`RO`) | Hungary (`HU`) |
+|---|---|---|
+| Source | ROMATSA eAIP, PDF: ENR 4.1, ENR 4.4 | HungaroControl eAIP, HTML: ENR 4.1, ENR 4.4.1 |
+| Editions | a new edition every AIRAC cycle | amended on some cycles only; without `--edition`, the script reads the eAIP index and uses the edition in force on `--date` (default today) |
+| New points added by `--write` | entry/exit points only (`E`, `X`, `EX`); the point set is curated | every point with an FRA role, as `data/HU` keeps them all |
+| `meta.json` on `--write` | `airac.edition` | `airac.edition`, the AMDT number in `airac.enr41`/`enr44`, and the edition in the source links |
+
+Hungary example: on 29 OCT 2026 there is no new Hungarian edition. AMDT 006/2026 (effective 2026-09-03) is still in force, so `--country HU` reports against 2026-09-03, and `--edition 2026-10-29` stops with the list of published effective dates. The next edition, AMDT 007/2026, takes effect 2026-11-26.
+
+What the script does and doesn't do, for both countries:
 - **Updates** coordinates and roles of existing points, and frequency/position of VORs.
-- **Adds** new entry/exit points.
-- **Reports** points that have been removed. It will not delete a point that `traffic.json` still uses.
-- **Does not** add new intermediate points, because the point set is curated.
-- **Does not** touch sector polygons. Update `sectors.json` by hand when EUROCONTROL NM publishes a new LR sector file.
+- **Adds** new points with the roles shown above.
+- **Reports** points that have been removed, or that lost their FRA role. It will not delete a point that `traffic.json` still uses (gates or main-airport connection points).
+- **Does not** touch sector polygons or borders. Update `sectors.json` by hand when EUROCONTROL NM publishes a new LR sector file. For Hungary, re-trace only if ENR 6-LHCC-SECTOR changes.
 
 ## Adding a country
 

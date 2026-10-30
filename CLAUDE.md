@@ -10,7 +10,7 @@ En-route ATC radar training simulator. Vanilla JS (ES modules) built with Vite i
 - `npm test` — Vitest unit tests (fast; run after every change)
 - `npm run test:e2e` — Playwright against the production build, desktop + phone
 - `npm run build` — single-file `dist/index.html`
-- `npm run airac` — AIRAC diff for Romania (needs network to aisro.ro)
+- `npm run airac` — AIRAC diff for Romania; `-- --country HU` for Hungary (needs network to aisro.ro / ais-en.hungarocontrol.hu)
 
 ## Architecture rules
 - `src/sim.js` must stay DOM-free. All simulation state lives on the `Sim` instance; the UI only reads it and calls command methods (`clearLevel`, `turn`, `direct`, `speed`, `answer`, `ackEmergency`, `fireNow`), which return `{ ok, msg }`.
