@@ -63,12 +63,12 @@ tests/
 |---|---|---|
 | `sectors.json` | 9 elementary + 4 collapsed ACC sectors | EUROCONTROL NM RAD sector file `LR_Sector ID_14-08-25` |
 | `borders.json` | border vertices between published sector corners | **approximated** from the national boundary |
-| `navaids.json` | 16 VOR/DME | eAIP ENR 4.1 (AIRAC AMDT 09/25) |
-| `points.json` | 131 significant points with FRA role | eAIP ENR 4.4 (AIRAC AMDT 06/26) |
+| `navaids.json` | 16 VOR/DME | eAIP ENR 4.1 (AIRAC AMDT 11/26, page 3: 01/25) |
+| `points.json` | 131 significant points with FRA role | eAIP ENR 4.4 (AIRAC AMDT 11/26) |
 | `airports.json` | aerodrome reference points | eAIP AD 2 |
 | `traffic.json` | gates, flow weights, operators, main airports (LROP) | modelling choice, not published data |
 
-eAIP: https://aisro.ro/aip/2026-10-01/html/ro/aip_toc_enr.html
+eAIP: https://aisro.ro/aip/2026-10-29/html/ro/aip_toc_enr.html
 
 **FRA point roles** in `points.json`:
 
@@ -121,7 +121,7 @@ npm run airac -- --country HU --write            # apply, then run npm test and 
 | Source | ROMATSA eAIP, PDF: ENR 4.1, ENR 4.4 | HungaroControl eAIP, HTML: ENR 4.1, ENR 4.4.1 |
 | Editions | a new edition every AIRAC cycle | amended on some cycles only; without `--edition`, the script reads the eAIP index and uses the edition in force on `--date` (default today) |
 | New points added by `--write` | entry/exit points only (`E`, `X`, `EX`); the point set is curated | every point with an FRA role, as `data/HU` keeps them all |
-| `meta.json` on `--write` | `airac.edition` | `airac.edition`, the AMDT number in `airac.enr41`/`enr44`, and the edition in the source links |
+| `meta.json` on `--write` | `airac.edition` and the edition in the eAIP source links (the AMDT labels in `enr41`/`enr44` are per page; check them by hand) | `airac.edition`, the AMDT number in `airac.enr41`/`enr44`, and the edition in the source links |
 
 Hungary example: on 29 OCT 2026 there is no new Hungarian edition. AMDT 006/2026 (effective 2026-09-03) is still in force, so `--country HU` reports against 2026-09-03, and `--edition 2026-10-29` stops with the list of published effective dates. The next edition, AMDT 007/2026, takes effect 2026-11-26.
 
