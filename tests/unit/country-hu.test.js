@@ -91,6 +91,17 @@ describe('Hungary data module', () => {
     }
   });
 
+  it('exit levels: every open gate and main airport has a modelled agreed level', () => {
+    const X = HU.traffic.exitLevels;
+    expect(X._note).toMatch(/MODELLED/);
+    expect(X._note).toMatch(/NOT taken from a published Letter of Agreement/);
+    for (const [k, g] of Object.entries(HU.traffic.gates)) if (!g.closed) expect(X.gates[k], k).toBeTruthy();
+    for (const m of HU.traffic.mainAirports) { expect(X.app[m.icao], m.icao).toBeTruthy(); expect(X.arrivals[m.icao], m.icao).toBeTruthy(); }
+    for (const v of [...Object.values(X.gates), ...Object.values(X.app), ...Object.values(X.arrivals)]) {
+      expect(v % 10).toBe(0); expect(v).toBeGreaterThanOrEqual(100); expect(v).toBeLessThanOrEqual(410);
+    }
+  });
+
   it('flows never use closed gates', () => {
     const closed = Object.entries(HU.traffic.gates).filter(([, g]) => g.closed).map(([k]) => k);
     expect(closed).toEqual(['UA']);

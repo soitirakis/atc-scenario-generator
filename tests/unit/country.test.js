@@ -80,6 +80,17 @@ describe('Romania data module', () => {
     expect(() => loadCountry({ ...RO, traffic })).toThrow(/LRXX/);
   });
 
+  it('exit levels: every open gate and main airport has a modelled agreed level', () => {
+    const X = RO.traffic.exitLevels;
+    expect(X._note).toMatch(/MODELLED/);
+    expect(X._note).toMatch(/NOT taken from a published Letter of Agreement/);
+    for (const [k, g] of Object.entries(RO.traffic.gates)) if (!g.closed) expect(X.gates[k], k).toBeTruthy();
+    for (const m of RO.traffic.mainAirports) { expect(X.app[m.icao], m.icao).toBeTruthy(); expect(X.arrivals[m.icao], m.icao).toBeTruthy(); }
+    for (const v of [...Object.values(X.gates), ...Object.values(X.app), ...Object.values(X.arrivals)]) {
+      expect(v % 10).toBe(0); expect(v).toBeGreaterThanOrEqual(100); expect(v).toBeLessThanOrEqual(410);
+    }
+  });
+
   it('flows never use the closed Ukrainian gates', () => {
     for (const f of RO.traffic.flows) expect(f.slice(0, 2)).not.toContain('N');
   });

@@ -8,8 +8,9 @@ export function loadCountry(raw) {
   const c = {
     meta, traffic, proj,
     sectors: {}, sectorList: [], elementary: [],
-    points: {}, pointList: [], navaids: [], airports: {}, airportList: [], mainAirports: {}
+    points: {}, pointList: [], navaids: [], airports: {}, airportList: [], mainAirports: {}, gateOf: {}
   };
+  for (const [k, g] of Object.entries(traffic.gates)) for (const id of g.pts) c.gateOf[id] = k;
 
   for (const s of sectorFile.sectors) {
     const ll = [];

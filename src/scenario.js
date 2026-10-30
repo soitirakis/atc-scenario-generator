@@ -10,6 +10,8 @@ const KEYWORDS = [
   [/emergenc|7700|pressur|medical|mayday/i, 'EMERGENCY_DESCENT'],
   [/radio|comm|7600|rcf|frequency/i, 'RADIO_FAILURE'],
   [/milit|tsa|\btra\b|fua|segregat/i, 'MILITARY_TSA'],
+  [/coordinat|exit level|\bxfl\b|\bloa\b/i, 'COORD_REQUEST'],
+  [/late transfer|not transferred|transfer of control|hand.?over/i, 'LATE_TRANSFER'],
   [/bust|level|vertical/i, 'LEVEL_BUST'],
   [/request|workload|busy|load/i, 'CLIMB_REQUEST'],
   [/unplanned|pop.?up|unexpected|late/i, 'POPUP_TRAFFIC']
@@ -17,8 +19,8 @@ const KEYWORDS = [
 
 const BASE = {
   foundational: ['CLIMB_REQUEST', 'LEVEL_BUST', 'WEATHER_CELL'],
-  intermediate: ['CLIMB_REQUEST', 'WEATHER_CELL', 'LEVEL_BUST', 'RADIO_FAILURE', 'POPUP_TRAFFIC'],
-  advanced: ['WEATHER_CELL', 'LEVEL_BUST', 'RADIO_FAILURE', 'MILITARY_TSA', 'EMERGENCY_DESCENT', 'POPUP_TRAFFIC', 'CLIMB_REQUEST']
+  intermediate: ['CLIMB_REQUEST', 'WEATHER_CELL', 'LEVEL_BUST', 'RADIO_FAILURE', 'POPUP_TRAFFIC', 'COORD_REQUEST', 'LATE_TRANSFER'],
+  advanced: ['WEATHER_CELL', 'LEVEL_BUST', 'RADIO_FAILURE', 'MILITARY_TSA', 'EMERGENCY_DESCENT', 'POPUP_TRAFFIC', 'CLIMB_REQUEST', 'COORD_REQUEST', 'LATE_TRANSFER']
 };
 
 export const INJECT_TEXT = {
@@ -28,13 +30,16 @@ export const INJECT_TEXT = {
   RADIO_FAILURE: 'An aircraft in sector stops answering and squawks 7600.',
   EMERGENCY_DESCENT: 'Pressurisation failure: emergency descent to FL100, squawk 7700.',
   MILITARY_TSA: 'A temporary segregated area activates in sector, FL195 and above. Clear traffic out of it.',
-  POPUP_TRAFFIC: 'An aircraft enters the sector without prior coordination.'
+  POPUP_TRAFFIC: 'An aircraft enters the sector without prior coordination.',
+  COORD_REQUEST: 'The next sector asks for a different exit level for an aircraft about to leave. Accept or refuse.',
+  LATE_TRANSFER: 'An inbound aircraft reaches the sector without having been transferred. Coordinate and assume it.'
 };
 
 const FOCUS = {
   WEATHER_CELL: 'weather deviations', LEVEL_BUST: 'vertical discipline', RADIO_FAILURE: 'communication failure',
   EMERGENCY_DESCENT: 'emergency handling', MILITARY_TSA: 'civil-military coordination',
-  CLIMB_REQUEST: 'request handling under load', POPUP_TRAFFIC: 'unplanned traffic'
+  CLIMB_REQUEST: 'request handling under load', POPUP_TRAFFIC: 'unplanned traffic',
+  COORD_REQUEST: 'exit level coordination', LATE_TRANSFER: 'transfer of control'
 };
 
 export function buildLocalScenario(C, cfg) {
@@ -55,7 +60,7 @@ export function buildLocalScenario(C, cfg) {
       `${TYPES[chosen[0]]} while normal traffic keeps calling`,
       chosen[1] ? `${TYPES[chosen[1]]} overlapping with the first event` : 'Keeping the overall sector picture'
     ],
-    criteria: ['No loss of separation (5 NM / 1000 ft)', 'Every request answered within 60 s', 'Correct priority order: emergencies and STCA before routine requests'],
+    criteria: ['No loss of separation (5 NM / 1000 ft)', 'Every request answered within 60 s', 'Correct priority order: emergencies and STCA before routine requests', 'Every flight assumed before it enters and transferred at its agreed exit level'],
     injects, source: 'local'
   };
 }

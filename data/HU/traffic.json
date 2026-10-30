@@ -174,6 +174,23 @@
       }
     }
   ],
+  "exitLevels": {
+    "_note": "Agreed exit levels (XFL) for the training sector routine. MODELLED for training, NOT taken from a published Letter of Agreement. gates: level at which traffic leaves the training sector towards that exit gate, chosen to match the main direction of flight through it (odd eastbound, even westbound). arrivals: level for arrivals leaving the training sector towards the airport. app: level for arrivals handed to the approach unit when the airport lies in the training sector. Transferring at any other cleared level counts as a coordination error.",
+    "gates": {
+      "W": 360,
+      "NW": 380,
+      "NE": 370,
+      "E": 350,
+      "S": 330,
+      "SW": 340
+    },
+    "arrivals": {
+      "LHBP": 250
+    },
+    "app": {
+      "LHBP": 110
+    }
+  },
   "operators": [
     {
       "icao": "WZZ",

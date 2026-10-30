@@ -48,8 +48,8 @@
       <canvas id="scope" aria-label="Radar display of the selected airspace with simulated traffic"></canvas>
       <div class="overlay ov-tl" id="layerChips"></div>
       <div class="overlay ov-bl"><div class="legend" id="legend">
-        <span><i style="background:var(--assumed)"></i>In sector</span>
-        <span><i style="background:var(--pend)"></i>Inbound ≤6 min</span>
+        <span><i style="background:var(--assumed)"></i>Assumed</span>
+        <span><i style="background:var(--pend)"></i>Pending</span>
         <span><i style="background:var(--unc)"></i>Other</span>
         <span><i style="background:var(--warn)"></i>STCA predicted</span>
         <span><i style="background:var(--alert)"></i>Loss of separation</span>
@@ -80,7 +80,7 @@
           <h2>Sector <small id="secName">ARGES</small></h2>
           <div class="stats">
             <div class="stat"><div class="k">In sector</div><div class="v" id="stIn">0</div></div>
-            <div class="stat"><div class="k">Inbound</div><div class="v" id="stInb">0</div></div>
+            <div class="stat"><div class="k">Pending</div><div class="v" id="stInb">0</div></div>
             <div class="stat"><div class="k">STCA</div><div class="v" id="stStca">0</div></div>
             <div class="stat"><div class="k">Next inject</div><div class="v" id="stNext">—</div></div>
           </div>

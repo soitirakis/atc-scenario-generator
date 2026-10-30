@@ -10,7 +10,9 @@ export const TYPES = {
   RADIO_FAILURE: 'Radio failure (7600)',
   EMERGENCY_DESCENT: 'Emergency descent (7700)',
   MILITARY_TSA: 'TSA activation',
-  POPUP_TRAFFIC: 'Unplanned traffic'
+  POPUP_TRAFFIC: 'Unplanned traffic',
+  COORD_REQUEST: 'Exit level coordination',
+  LATE_TRANSFER: 'Late transfer from previous sector'
 };
 
 export const DIFF = {
@@ -24,6 +26,11 @@ const LEVELS_ODD = [290, 310, 330, 350, 370, 390];
 const LEVELS_EVEN = [300, 320, 340, 360, 380, 400];
 const RADAR_REFRESH_S = 4;
 const REQUEST_TIMEOUT_S = 120;
+// Sector routine. Control state per aircraft (a.ctl): 'none' (not ours), 'pend' (transferred to us,
+// to be assumed), 'ass' (assumed), 'xfer' (transferred onwards).
+// A flight that would only clip the sector for less than minStayS stays with the sector it is in.
+// A crossing only counts if the flight stays on the other side for at least crossS (gates sit on the border).
+export const ROUTINE = { assumeGraceS: 60, warnS: 120, xflShare: 0.65, minStayS: 90, crossS: 60 };
 
 export class Sim {
   constructor(country) {
@@ -76,12 +83,63 @@ export class Sim {
     });
   }
 
+  /** Agreed exit level towards an exit gate, from traffic.json exitLevels (modelled). */
+  gateXfl(exit) {
+    const X = this.C.traffic.exitLevels;
+    return (X && X.gates && X.gates[this.C.gateOf[exit]]) || null;
+  }
+  /**
+   * Look ahead along the flight's own path: its route legs in own navigation, its heading when vectored.
+   * Calls visit(s, [x, y]) every stepS seconds until it returns true, maxS is reached, or the flight leaves
+   * en-route control (end of route, or the APP hand-off radius for arrivals). Returns { s, xy, end }.
+   */
+  lookAhead(a, maxS, stepS, visit) {
+    const apt = a.cat === 'arr' ? this.C.mainAirports[a.exit] : null, d = a.gs / 3600 * stepS;
+    let p = [a.x, a.y], k = a.ri, h = a.hdg * D2R;
+    for (let s = stepS; s <= maxS; s += stepS) {
+      let left = d;
+      if (a.mode === 'nav') {
+        while (left > 0 && k < a.route.length) {
+          const w = a.route[k].xy, dw = dist(p, w);
+          if (dw <= left) { p = w; left -= dw; k++; } else { p = [p[0] + (w[0] - p[0]) / dw * left, p[1] + (w[1] - p[1]) / dw * left]; left = 0; }
+        }
+        if (k >= a.route.length) return { s, xy: p, end: true };
+      } else p = [p[0] + Math.sin(h) * d, p[1] - Math.cos(h) * d];
+      if (apt && dist(p, apt.xy) < apt.handoffNM) return { s, xy: p, end: true };
+      if (visit && visit(s, p)) return { s, xy: p, end: false };
+    }
+    return { s: null, xy: p, end: false };
+  }
+  /** Where a flight leaves en-route control: the APP hand-off point for arrivals, otherwise the end of its route. */
+  endPoint(a) {
+    const r = this.lookAhead(a, 4 * 3600, 10);
+    return r.end ? r.xy : null;
+  }
+  /** Agreed exit level for a flight: its gate's level, or for arrivals the APP level if we hand it to APP, else the arrival level. */
+  xflOf(a) {
+    if (a.cat !== 'arr') return this.gateXfl(a.exit);
+    const X = this.C.traffic.exitLevels, ep = this.endPoint(a);
+    if (!X || !ep) return null;
+    return (inSector(ep, this.sector) ? X.app && X.app[a.exit] : X.arrivals && X.arrivals[a.exit]) || null;
+  }
+
+  /** Cruise level for a planned flight: mostly the exit gate's XFL when it suits the direction, else a semicircular level. */
+  planLevel(exit, odd, list) {
+    const x = this.gateXfl(exit);
+    if (x && (Math.round(x / 10) % 2 === 1) === odd && list.includes(x) && this.rng() < ROUTINE.xflShare) return x;
+    return this.pick(list);
+  }
+
+  /** On our frequency: transferred to us (pending) or assumed. */
+  onFreq(a) { return a.ctl === 'ass' || a.ctl === 'pend'; }
+
   makeAircraft(o) {
     const ac = Object.assign({
       id: this.nextId++, x: 0, y: 0, hdg: 0, gs: 450, tgs: 450, fl: 350, cfl: 350, sfl: 350, vr: 1500,
       route: [], ri: 0, mode: 'nav', thdg: 0, sq: this.squawk(), plots: [], px: 0, py: 0,
       rcf: 0, emg: false, emgAck: false, bust: false, req: null, wxCleared: null, wxAsked: null,
-      popupUntil: 0, born: this.t, cat: 'transit', lastIn: false, inbound: false, inTsa: false
+      popupUntil: 0, born: this.t, cat: 'transit', lastIn: false, inbound: false, inTsa: false,
+      ctl: 'none', xfl: null, pendAt: null, noXfer: false, everIn: false, lateA: false, tEntry: null, tExit: null
     }, o);
     ac.px = ac.x; ac.py = ac.y;
     return ac;
@@ -121,7 +179,7 @@ export class Sim {
         const route = [{ id: conn.id, xy: conn.xy }, { id: gate.id, xy: gate.xy }];
         const b = brg(apt.xy, conn.xy);
         const st = [apt.xy[0] + Math.sin(b * D2R) * 18, apt.xy[1] - Math.cos(b * D2R) * 18];
-        const rfl = brg(conn.xy, gate.xy) < 180 ? this.pick(LEVELS_ODD) : this.pick(LEVELS_EVEN);
+        const odd = brg(conn.xy, gate.xy) < 180, rfl = this.planLevel(gate.id, odd, odd ? LEVELS_ODD : LEVELS_EVEN);
         if (opts.mustCross && !this.routeCrosses(st, route, opts.mustCross)) continue;
         return { ...cs, cat: 'dep', start: st, route, fl: 100, cfl: 240, rfl, entry: apt.id, exit: gate.id, gs: 330 };
       }
@@ -130,7 +188,7 @@ export class Sim {
       const route = [{ id: b.id, xy: b.xy }];
       if (opts.mustCross && !this.routeCrosses(a.xy, route, opts.mustCross)) continue;
       const odd = brg(a.xy, b.xy) < 180; // semicircular rule: odd eastbound, even westbound
-      const lv = cs.heavy ? (odd ? this.pick([350, 370, 390]) : this.pick([360, 380, 400])) : (odd ? this.pick(LEVELS_ODD) : this.pick(LEVELS_EVEN));
+      const lv = this.planLevel(b.id, odd, cs.heavy ? (odd ? [350, 370, 390] : [360, 380, 400]) : (odd ? LEVELS_ODD : LEVELS_EVEN));
       return { ...cs, cat: 'transit', start: a.xy, route, fl: lv, cfl: lv, rfl: lv, entry: a.id, exit: b.id };
     }
     return null;
@@ -143,6 +201,9 @@ export class Sim {
     if (p.cat === 'dep') fl = Math.min(p.cfl, 100 + frac * 300);
     const gs = p.gs || (fl > 280 ? 440 + Math.floor(this.rng() * 50) : 360);
     const ac = this.makeAircraft({ cs: p.cs, type: p.type, cat: p.cat, x, y, hdg: brg([x, y], first), gs, tgs: gs, fl, cfl: p.cfl, sfl: p.cfl, rfl: p.rfl, route: p.route, entry: p.entry, exit: p.exit });
+    ac.xfl = this.xflOf(ac);
+    // a flight that starts inside the sector (a departure from an airport in it) is handed over by APP
+    if (inSector([x, y], this.sector)) { ac.ctl = 'pend'; ac.pendAt = this.t; ac.lastIn = ac.everIn = true; }
     this.ac.push(ac);
     return ac;
   }
@@ -167,6 +228,7 @@ export class Sim {
       const acA = this.makeAircraft({ cs: a.cs, type: a.type, x: pa[0], y: pa[1], hdg: ha, gs, tgs: gs, fl: L, cfl: L, sfl: L, rfl: L, route: a.route, entry: a.entry, exit: a.exit, conflict: true });
       const bFL = climbing ? L - 30 : L, bCFL = climbing ? L + 10 : L;
       const acB = this.makeAircraft({ cs: b.cs, type: b.type, x: pb[0], y: pb[1], hdg: hb, gs, tgs: gs, fl: bFL, cfl: bCFL, sfl: bCFL, rfl: bCFL, route: b.route, entry: b.entry, exit: b.exit, vr: climbing ? 1000 : 1500, conflict: true });
+      acA.xfl = this.xflOf(acA); acB.xfl = this.xflOf(acB);
       this.ac.push(acA, acB);
       return [acA, acB];
     }
@@ -182,7 +244,7 @@ export class Sim {
     this.sector = C.sectors[scenario.sector];
     if (!this.sector) throw new Error(`Unknown sector ${scenario.sector}`);
     this.target = DIFF[scenario.difficulty].count;
-    this.stats = { losCount: 0, losSec: 0, minSep: null, reqs: 0, reqAnswered: 0, reqTimeSum: 0, reqMissed: 0, selfDev: 0, tsaInf: 0, cmds: 0, emgAckT: null };
+    this.stats = { losCount: 0, losSec: 0, minSep: null, reqs: 0, reqAnswered: 0, reqTimeSum: 0, reqMissed: 0, selfDev: 0, tsaInf: 0, cmds: 0, emgAckT: null, lateAssume: 0, lateXfer: 0, wrongXfl: 0 };
     for (const inj of scenario.injects) { inj.status = 'pending'; inj.firedAt = null; inj.target = null; }
 
     const nC = scenario.conflicts;
@@ -202,9 +264,16 @@ export class Sim {
         }
         if (fe >= 0) frac = Math.max(0.02, Math.min(0.9, fe + (this.rng() - 0.55) * 0.3));
       }
+      // an arrival placed inside the APP hand-off radius would be handed over on the first step
+      const apt = p.cat === 'arr' ? C.mainAirports[p.exit] : null, f0 = p.route[0].xy;
+      if (apt && dist([p.start[0] + (f0[0] - p.start[0]) * frac, p.start[1] + (f0[1] - p.start[1]) * frac], apt.xy) < apt.handoffNM + 10) continue;
       this.spawnFromPlan(p, frac);
     }
-    for (const a of this.ac) { a.plots = []; a.px = a.x; a.py = a.y; a.lastIn = inSector([a.x, a.y], this.sector); }
+    // the session starts with traffic in the sector already assumed; inbound traffic becomes pending
+    for (const a of this.ac) {
+      a.plots = []; a.px = a.x; a.py = a.y; a.lastIn = a.everIn = inSector([a.x, a.y], this.sector);
+      a.ctl = a.lastIn ? 'ass' : 'none'; a.pendAt = null;
+    }
     this.computeInbound();
     this.log(`Session loaded: ${scenario.title}`);
   }
@@ -240,21 +309,27 @@ export class Sim {
 
       if (a.rcf > 0 && this.t >= a.rcf) { a.rcf = 0; a.sq = this.squawk(); this.log(`${a.cs} re-established contact on secondary frequency`, 'w'); }
       const inside = inSector([a.x, a.y], sec);
-      if (inside && !a.lastIn) a.enteredAt = this.t;
+      if (inside && !a.lastIn) this.entered(a);
+      else if (!inside && a.lastIn) this.left(a);
       a.lastIn = inside;
+      if (inside && !a.lateA && a.pendAt !== null && (a.ctl === 'pend' || (a.noXfer && a.ctl === 'none')) && this.t - a.pendAt > ROUTINE.assumeGraceS) {
+        a.lateA = true; this.stats.lateAssume++;
+        this.log(`${a.cs} in ${sec.name} and not assumed`, 'w');
+      }
 
-      if (a.cat === 'dep' && !a.req && Math.abs(a.fl - a.cfl) < 0.1 && a.cfl < a.rfl && !a.rcf && !a.reqAskedClimb) {
+      if (a.cat === 'dep' && this.onFreq(a) && !a.req && Math.abs(a.fl - a.cfl) < 0.1 && a.cfl < a.rfl && !a.rcf && !a.reqAskedClimb) {
         a.reqAskedClimb = true; this.raiseRequest(a, 'climb', a.rfl, `requests climb FL${fmtFL(a.rfl)}`);
       }
-      if (apt && !a.req && !a.reqAskedDesc && a.cfl > 200 && dist([a.x, a.y], apt.xy) < 110) {
-        a.reqAskedDesc = true; this.raiseRequest(a, 'descend', 110, 'requests descent');
+      if (apt && this.onFreq(a) && !a.req && !a.reqAskedDesc && a.cfl > 200 && dist([a.x, a.y], apt.xy) < 110) {
+        const X = C.traffic.exitLevels, appFl = (X && X.app && X.app[apt.id]) || 110;
+        a.reqAskedDesc = true; this.raiseRequest(a, 'descend', appFl, 'requests descent');
       }
       for (const cell of this.wx) {
         if (a.wxCleared === cell) continue;
         const dc = dist([a.x, a.y], [cell.x, cell.y]);
         const rel = angDiff(a.hdg, brg([a.x, a.y], [cell.x, cell.y]));
         const ahead = Math.abs(rel) < 35 && a.fl > 200;
-        if (ahead && dc < cell.r + 45 && !a.wxAsked && !a.req && !a.rcf) {
+        if (ahead && dc < cell.r + 45 && !a.wxAsked && !a.req && !a.rcf && this.onFreq(a)) {
           a.wxAsked = cell; const side = rel > 0 ? -25 : 25;
           this.raiseRequest(a, 'wx', side, `requests ${Math.abs(side)}° ${side < 0 ? 'left' : 'right'} for weather`);
         }
@@ -262,7 +337,7 @@ export class Sim {
           const side = rel > 0 ? -30 : 30;
           a.mode = 'hdg'; a.thdg = (a.hdg + side + 360) % 360; a.wxCleared = cell;
           if (a.req && a.req.kind === 'wx') { this.stats.reqMissed++; a.req = null; }
-          this.stats.selfDev++; this.log(`${a.cs} deviating for weather without clearance`, 'a');
+          if (this.onFreq(a)) { this.stats.selfDev++; this.log(`${a.cs} deviating for weather without clearance`, 'a'); }
         }
       }
       for (const z of this.tsa) {
@@ -281,6 +356,8 @@ export class Sim {
       if (Math.abs(a.x) > 420 || Math.abs(a.y) > 300) a.done = 'exit';
       if (a.req && this.t - a.req.t > REQUEST_TIMEOUT_S) { this.stats.reqMissed++; this.log(`${a.cs} ${a.req.text} — no answer`, 'w'); a.req = null; }
     }
+    // leaving the simulation still assumed (reached the exit gate or the APP hand-off) is a late transfer too
+    for (const a of this.ac) if (a.done && a.done !== 'emg' && a.ctl === 'ass') this.lateTransfer(a, a.done === 'arr' ? `reached the ${(C.mainAirports[a.exit] || {}).approach || 'APP'} hand-off` : 'reached its exit');
     this.ac = this.ac.filter(a => !a.done);
 
     this.spawnTimer--;
@@ -330,15 +407,68 @@ export class Sim {
     this.stca = res;
   }
 
+  /**
+   * Look-ahead along each flight's path: inbound traffic and its time to entry, and for traffic in
+   * the sector the time to exit (or to the end of en-route control). The previous sector transfers
+   * inbound traffic to us, so it becomes pending here.
+   */
   computeInbound() {
+    const sec = this.sector;
     for (const a of this.ac) {
-      a.inbound = false;
-      if (a.lastIn) continue;
-      for (let s = 30; s <= 360; s += 30) {
-        const p = [a.x + Math.sin(a.hdg * D2R) * a.gs / 3600 * s, a.y - Math.cos(a.hdg * D2R) * a.gs / 3600 * s];
-        if (inSector(p, this.sector)) { a.inbound = true; break; }
+      a.inbound = false; a.tEntry = null; a.tExit = null;
+      if (a.lastIn) {
+        // where it leaves for good (outside for crossS or more), or leaves en-route control while still inside
+        let out = null;
+        const r = this.lookAhead(a, 900 + ROUTINE.crossS, 15, (s, p) => {
+          if (inSector(p, sec)) { out = null; return false; }
+          if (out === null) out = s;
+          return s - out >= ROUTINE.crossS;
+        });
+        a.tExit = r.s === null ? null : out !== null ? out : r.s;
+      } else {
+        let s0 = null, s1 = null;
+        const r = this.lookAhead(a, 360 + ROUTINE.minStayS, 15, (s, p) => {
+          const inside = inSector(p, sec);
+          if (inside && s0 === null) { if (s > 360) return true; s0 = s; } else if (!inside && s0 !== null) { s1 = s; return true; }
+          return false;
+        });
+        const stay = s0 === null ? 0 : (s1 ?? (r.end ? r.s : Infinity)) - s0;
+        if (s0 !== null && stay >= ROUTINE.minStayS) { a.inbound = true; a.tEntry = s0; }
+        // assumed before entry but leaving en-route control (e.g. handed to APP) before it gets here
+        else if (a.ctl === 'ass') { const e = this.lookAhead(a, 3600, 15); a.tExit = e.end ? e.s : null; }
       }
+      // an assumed flight that drifted out along the boundary and is not coming back has left
+      if (a.ctl === 'ass' && !a.lastIn && a.everIn && this.staysOut(a)) this.lateTransfer(a, `left ${sec.name}`);
+      if (a.ctl === 'none' && a.inbound && !a.noXfer && !a.everIn) { a.ctl = 'pend'; a.pendAt = this.t; }
+      else if (a.ctl === 'pend' && !a.inbound && !a.lastIn && !a.everIn) { a.ctl = 'none'; a.pendAt = null; } // turned away
     }
+  }
+
+  entered(a) {
+    a.enteredAt = this.t; a.everIn = true;
+    if (a.noXfer && a.ctl === 'none') { a.pendAt = this.t; this.log(`${a.cs} entering ${this.sector.name}, not transferred by the previous sector`, 'w'); }
+  }
+  /** Out of the sector and not back within crossS: a real exit, not a wobble along the boundary. */
+  staysOut(a) {
+    const r = this.lookAhead(a, ROUTINE.crossS, 5, (s, p) => inSector(p, this.sector));
+    return r.s === null || r.end;
+  }
+  left(a) {
+    if (a.ctl === 'ass') { if (this.staysOut(a)) this.lateTransfer(a, `left ${this.sector.name}`); }
+    else if (a.ctl !== 'xfer' && this.staysOut(a)) { a.ctl = 'none'; a.noXfer = false; }
+  }
+  /** Transfer of control at the wrong cleared level is a coordination error. */
+  checkXfl(a) {
+    if (a.xfl !== null && Math.round(a.cfl) !== a.xfl) {
+      this.stats.wrongXfl++;
+      this.log(`${a.cs} transferred at FL${fmtFL(a.cfl)}, agreed exit FL${fmtFL(a.xfl)}`, 'w');
+    }
+  }
+  lateTransfer(a, what) {
+    this.stats.lateXfer++;
+    this.log(`${a.cs} ${what} without transfer`, 'w');
+    this.checkXfl(a);
+    a.ctl = 'xfer';
   }
 
   raiseRequest(a, kind, value, text) {
@@ -410,6 +540,33 @@ export class Sim {
         ac.px = ac.x; ac.py = ac.y; ac.popupUntil = this.t + 90; inj.target = ac.cs;
         this.log(`${ac.cs} calling, not coordinated, FL${fmtFL(ac.fl)}`, 'w'); break;
       }
+      case 'COORD_REQUEST': {
+        // the next sector asks for a different exit level; prefer a flight with time left before its exit
+        const cand = this.ac.filter(a => a.ctl === 'ass' && a.lastIn && a.cat !== 'arr' && a.xfl !== null && !a.req && !a.emg)
+          .sort((a, b) => (a.tExit ?? 1e9) - (b.tExit ?? 1e9));
+        const t2 = cand.find(a => a.tExit !== null && a.tExit >= ROUTINE.warnS) || cand[0];
+        if (!t2) break; inj.target = t2.cs;
+        let nx = t2.xfl + (this.rng() < 0.5 ? 20 : -20);
+        if (nx > 410 || nx < 250) nx = t2.xfl * 2 - nx;
+        this.raiseRequest(t2, 'coord', nx, `next sector requests exit FL${fmtFL(nx)} instead of FL${fmtFL(t2.xfl)}`); break;
+      }
+      case 'LATE_TRANSFER': {
+        // an inbound flight the previous sector does not transfer: it reaches the sector unannounced
+        let t2 = this.ac.filter(a => !a.lastIn && a.inbound && a.ctl !== 'ass' && !a.emg && a.tEntry !== null && a.tEntry <= ROUTINE.warnS)
+          .sort((a, b) => a.tEntry - b.tEntry)[0];
+        if (!t2) {
+          const p = this.planFlight({ mustCross: sec });
+          if (!p) break;
+          t2 = this.spawnFromPlan(p, 0);
+          let k = 0, past = 0;
+          while (k++ < 400 && past < 3) { // walk it along its track to just inside the boundary
+            t2.x += Math.sin(t2.hdg * D2R); t2.y -= Math.cos(t2.hdg * D2R);
+            if (inSector([t2.x, t2.y], sec)) past++;
+          }
+          t2.px = t2.x; t2.py = t2.y;
+        }
+        t2.ctl = 'none'; t2.noXfer = true; t2.pendAt = t2.lastIn ? this.t : null; inj.target = t2.cs; break;
+      }
     }
     if (!inj.target && inj.type !== 'MILITARY_TSA') this.log(`Inject ${TYPES[inj.type]}: no suitable aircraft in sector`, 'w');
   }
@@ -428,8 +585,29 @@ export class Sim {
   _cmd(id, what, fn) {
     const a = this.get(id);
     if (!a) return { ok: false, msg: 'Aircraft no longer on frequency' };
+    if (!this.onFreq(a)) return { ok: false, msg: `${a.cs} is not on your frequency${a.ctl === 'xfer' ? ' (transferred)' : a.noXfer ? ' (not transferred to you yet)' : ''}` };
     if (a.rcf) { this.log(`${what} to ${a.cs} — no reply`, 'w'); return { ok: false, msg: `${a.cs}: no reply (radio failure)` }; }
     fn(a); this.stats.cmds++; this.log(`${a.cs} ${what}`);
+    return { ok: true };
+  }
+  /** Take control of a flight transferred to us, or of one the previous sector failed to transfer (after coordination). */
+  assume(id) {
+    const a = this.get(id);
+    if (!a) return { ok: false, msg: 'Aircraft no longer on frequency' };
+    if (a.ctl === 'ass') return { ok: false, msg: `${a.cs} is already assumed` };
+    if (a.ctl !== 'pend' && !a.noXfer) return { ok: false, msg: `${a.cs} has not been transferred to you` };
+    a.ctl = 'ass'; a.noXfer = false;
+    this.log(`${a.cs} assumed${a.lastIn ? '' : `, entering ${this.sector.name} in ${fmtT(a.tEntry || 0)}`}`);
+    return { ok: true };
+  }
+  /** Hand an assumed flight to the next unit. The cleared level must be the agreed exit level. */
+  transfer(id) {
+    const a = this.get(id);
+    if (!a) return { ok: false, msg: 'Aircraft no longer on frequency' };
+    if (a.ctl !== 'ass') return { ok: false, msg: `${a.cs} is not assumed` };
+    this.checkXfl(a);
+    a.ctl = 'xfer'; this.stats.cmds++;
+    this.log(`${a.cs} transferred${a.xfl !== null ? ` at FL${fmtFL(a.cfl)}` : ''}`);
     return { ok: true };
   }
   _closeReq(a, kinds) {
@@ -465,10 +643,15 @@ export class Sim {
   answer(id, approve) {
     const a = this.get(id);
     if (!a || !a.req) return { ok: false, msg: 'No open request' };
-    if (a.rcf) return { ok: false, msg: `${a.cs}: no reply` };
-    const r = a.req;
-    this.stats.reqAnswered++; this.stats.reqTimeSum += this.t - r.t; this.stats.cmds++;
-    if (approve) {
+    const r = a.req, coord = r.kind === 'coord'; // coordination is with the next sector, not with the aircraft
+    if (!coord && !this.onFreq(a)) return { ok: false, msg: `${a.cs} is not on your frequency` };
+    if (!coord && a.rcf) return { ok: false, msg: `${a.cs}: no reply` };
+    this.stats.reqAnswered++; this.stats.reqTimeSum += this.t - r.t;
+    if (!coord) this.stats.cmds++;
+    if (coord) {
+      if (approve) { a.xfl = r.value; this.log(`${a.cs} exit level FL${fmtFL(r.value)} agreed with the next sector`); }
+      else this.log(`${a.cs} exit level change refused, FL${fmtFL(a.xfl)} stands`);
+    } else if (approve) {
       if (r.kind === 'climb' || r.kind === 'descend') { a.cfl = r.value; a.sfl = r.value; a.bust = false; }
       if (r.kind === 'wx') { a.mode = 'hdg'; a.thdg = (a.hdg + r.value + 360) % 360; a.wxCleared = a.wxAsked; }
       this.log(`${a.cs} ${r.kind === 'wx' ? 'deviation approved' : (r.kind === 'climb' ? 'climb' : 'descend') + ' FL' + fmtFL(r.value)}`);
@@ -503,7 +686,17 @@ export class Sim {
       items.push({ p: 2, h: `${z.name} activates in ${fmtT(z.at - this.t)}`, s: `${n} aircraft at FL195+ inside or close to it` });
     }
     for (const a of this.ac) {
-      if (a.req) items.push({ p: a.req.kind === 'wx' ? 2 : 3, ac: a, h: `${a.cs} ${a.req.text}`, s: `Waiting ${this.t - a.req.t} s`, act: 'req' });
+      // sector routine: assume what comes in, transfer what goes out at the agreed level
+      if (a.lastIn && (a.ctl === 'pend' || (a.noXfer && a.ctl === 'none'))) {
+        items.push({ p: 1, ac: a, h: a.noXfer ? `${a.cs} in sector without transfer` : `${a.cs} in sector, not assumed`, s: a.noXfer ? 'The previous sector has not transferred it. Coordinate, then assume.' : `FL${fmtFL(a.fl)}, from ${a.entry}. Assume it now.`, act: 'assume' });
+      } else if ((a.ctl === 'pend' || a.noXfer) && a.tEntry !== null && a.tEntry <= ROUTINE.warnS) {
+        items.push({ p: 3, ac: a, h: `${a.cs} pending, enters in ${fmtT(a.tEntry)}`, s: `FL${fmtFL(a.fl)}, from ${a.entry}. Assume on first call.`, act: 'assume' });
+      }
+      if (a.ctl === 'ass' && a.tExit !== null && a.tExit <= ROUTINE.warnS) {
+        const atXfl = a.xfl === null || Math.round(a.cfl) === a.xfl;
+        items.push({ p: atXfl ? 3 : 2, ac: a, h: `${a.cs} transfer, exits in ${fmtT(a.tExit)}`, s: a.xfl === null ? `FL${fmtFL(a.cfl)}, no agreed exit level` : atXfl ? `Cleared FL${fmtFL(a.cfl)}, the agreed exit level` : `Cleared FL${fmtFL(a.cfl)}, agreed exit FL${fmtFL(a.xfl)}. Re-clear before transfer.`, act: 'xfer' });
+      }
+      if (a.req) items.push({ p: a.req.kind === 'wx' || a.req.kind === 'coord' ? 2 : 3, ac: a, h: `${a.cs} ${a.req.text}`, s: `Waiting ${this.t - a.req.t} s`, act: 'req' });
       if (a.popupUntil > this.t) items.push({ p: 2, ac: a, h: `${a.cs} uncoordinated`, s: `Entering at FL${fmtFL(a.fl)}. Check conflicts and accept or turn.` });
     }
     const next = this.scenario.injects.find(i => i.status === 'pending');
