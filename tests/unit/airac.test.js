@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { classifyRole, parseEnr44, parseEnr41, parseLhEnr441, lhRelevance, diffPoints, diffNavaids, airacDates } from '../../scripts/airac-lib.mjs';
+import { classifyRole, parseEnr44, parseEnr41, parseLhEnr441, parseLhEnr41, lhRelevance, lhEditionOn, htmlText, diffPoints, diffNavaids, airacDates } from '../../scripts/airac-lib.mjs';
+import huNavaids from '../../data/HU/navaids.json';
 import points from '../../data/RO/points.json';
 import huPoints from '../../data/HU/points.json';
 import navaids from '../../data/RO/navaids.json';
@@ -88,6 +89,35 @@ describe('Hungary ENR 4.4.1 parsing', () => {
   });
 });
 
+describe('Hungary ENR 4.1 and eAIP index', () => {
+  it('reads DVOR/DME stations, frequency to three decimals', () => {
+    const v = parseLhEnr41(fx('lh-enr41-excerpt.txt'));
+    expect(v.map(n => n.id)).toEqual(['BKS', 'BUD', 'BUG']);
+    expect(v[1]).toEqual({ id: 'BUD', name: 'BUDAPEST', freq: '117.300', pos: '472702N 0191458E' }); // not the DME COORD 472701N
+  });
+  it('the committed Hungary navaids agree with the excerpt', () => {
+    for (const n of parseLhEnr41(fx('lh-enr41-excerpt.txt'))) {
+      const c = huNavaids.find(x => x.id === n.id);
+      expect(c, n.id).toEqual(n);
+    }
+  });
+
+  const index = `Currently effective and future AIP amendments with related AIRAC dates AMDT identifier Cut-off date Publication date Effective date Download
+    AMDT identifier AIRAC AMDT 006/2026 Cut-off date 2026-05-16 Publication date 2026-07-23 Effective date 2026-09-03 Download
+    AMDT identifier AIRAC AMDT 007/2026 Cut-off date 2026-08-08 Publication date 2026-10-15 Effective date 2026-11-26 Download
+    Effective Date: the day when the information published becomes effective.`;
+  it('picks the edition in force on a date, since Hungary is not amended every cycle', () => {
+    expect(lhEditionOn(index, '2026-10-29')).toEqual({ amdt: '006/2026', edition: '2026-09-03' });
+    expect(lhEditionOn(index, '2026-11-26')).toEqual({ amdt: '007/2026', edition: '2026-11-26' });
+    expect(lhEditionOn(index, '2026-01-01')).toBeNull();
+  });
+
+  it('turns eAIP HTML into text', () => {
+    expect(htmlText('<td class="x">BÉKÉS&nbsp;DVOR/DME</td><td>&#40;decl.: +6&#xB0;&#41;</td><script>var a = "<b>";</script>').replace(/\s+/g, ' ').trim())
+      .toBe('BÉKÉS DVOR/DME (decl.: +6°)');
+  });
+});
+
 describe('ENR 4.1 parsing', () => {
   it('reads VOR/DME stations and skips DME-only entries', () => {
     const v = parseEnr41(fx('enr41-excerpt.txt'));
@@ -110,6 +140,8 @@ describe('diffs', () => {
     expect(d.changed).toEqual([{ id: 'AAAAA', pos: ['450000N 0250000E', '450001N 0250000E'] }]);
     expect(d.removed.map(r => r.id)).toEqual(['BBBBB']);
     expect(d.added.map(r => r.id)).toEqual(['CCCCC']); // intermediate points are not auto-added
+    // Hungary keeps every FRA-relevant point, so it passes all roles
+    expect(diffPoints(cur, par, ['E', 'X', 'EX', 'L', 'I']).added.map(r => r.id)).toEqual(['CCCCC', 'DDDDD']);
   });
   it('reports role changes, including a point that loses its FRA role', () => {
     const cur = [{ id: 'AAAAA', pos: 'p', role: 'I' }, { id: 'BBBBB', pos: 'p', role: 'E' }, { id: 'CCCCC', pos: 'p', role: 'L' }];

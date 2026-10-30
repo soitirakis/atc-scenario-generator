@@ -1,38 +1,42 @@
 #!/usr/bin/env node
-// AIRAC update for Romania. Downloads ENR 4.1 and ENR 4.4 from the ROMATSA
-// eAIP for an edition date, parses them, and reports what changed against
-// data/RO. Nothing is written unless --write is given.
+// AIRAC update. Downloads ENR 4.1 and the ENR 4.4 significant points for an
+// eAIP edition, parses them, and reports what changed against data/<CODE>.
+// Nothing is written unless --write is given.
 //
-//   npm run airac                          # current cycle, report only
-//   npm run airac -- --edition 2026-10-29  # a specific eAIP edition
-//   npm run airac -- --write               # apply coordinate/role changes and add new E/X points
+//   npm run airac                                  # Romania, current cycle, report only
+//   npm run airac -- --country HU                  # Hungary, edition in force today
+//   npm run airac -- --edition 2026-10-29          # a specific eAIP edition
+//   npm run airac -- --country HU --date 2026-11-26  # Hungary, edition in force on a date
+//   npm run airac -- --write                       # apply coordinate/role changes and add new points
 //
-// Sector polygons come from the EUROCONTROL NM sector file and are updated by
-// hand when NM publishes a new one (see README).
+// Romania: ROMATSA eAIP PDFs (ENR 4.1, ENR 4.4), a new edition every AIRAC cycle.
+// Hungary: HungaroControl eAIP HTML (ENR 4.1, ENR 4.4.1), amended on some cycles only,
+// so the edition in force is read from the eAIP index.
+//
+// Sector polygons are updated by hand (see README).
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseEnr44, parseEnr41, diffPoints, diffNavaids, airacDates } from './airac-lib.mjs';
+import { parseEnr44, parseEnr41, parseLhEnr441, parseLhEnr41, lhEditionOn, htmlText, diffPoints, diffNavaids, airacDates } from './airac-lib.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const dataDir = path.join(root, 'data', 'RO');
 const args = process.argv.slice(2);
 const arg = name => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : null; };
-const edition = arg('--edition') || airacDates(new Date())[0];
+const code = (arg('--country') || 'RO').toUpperCase();
 const write = args.includes('--write');
-const base = `https://aisro.ro/aip/${edition}/DOCS/AIP/ENR/ENR4`;
-const cacheDir = path.join(root, '.airac-cache', edition);
+const today = arg('--date') || new Date().toISOString().slice(0, 10);
 
-async function pdfText(url, file) {
-  fs.mkdirSync(cacheDir, { recursive: true });
-  const local = path.join(cacheDir, file);
-  if (!fs.existsSync(local)) {
-    process.stdout.write(`Downloading ${url} … `);
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}. Is ${edition} a published eAIP edition?`);
-    fs.writeFileSync(local, Buffer.from(await res.arrayBuffer()));
-    console.log('ok');
-  }
+async function download(url, local) {
+  if (fs.existsSync(local)) return;
+  process.stdout.write(`Downloading ${url} … `);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}. Is this a published eAIP edition?`);
+  fs.mkdirSync(path.dirname(local), { recursive: true });
+  fs.writeFileSync(local, Buffer.from(await res.arrayBuffer()));
+  console.log('ok');
+}
+
+async function pdfText(local) {
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
   const doc = await pdfjs.getDocument({ data: new Uint8Array(fs.readFileSync(local)), useSystemFonts: true }).promise;
   let text = '';
@@ -44,6 +48,61 @@ async function pdfText(url, file) {
   return text;
 }
 
+const COUNTRIES = {
+  RO: {
+    cache: ed => path.join(root, '.airac-cache', ed),
+    async edition() { return { edition: arg('--edition') || airacDates(new Date(today))[0] }; },
+    async fetch(ed, cache) {
+      const base = `https://aisro.ro/aip/${ed}/DOCS/AIP/ENR/ENR4`;
+      await download(`${base}/LR_ENR_4_1_en.pdf`, path.join(cache, 'ENR_4_1.pdf'));
+      await download(`${base}/LR_ENR_4_4_en.pdf`, path.join(cache, 'ENR_4_4.pdf'));
+      const [enr41, enr44] = await Promise.all([pdfText(path.join(cache, 'ENR_4_1.pdf')), pdfText(path.join(cache, 'ENR_4_4.pdf'))]);
+      return { points: parseEnr44(enr44), navaids: parseEnr41(enr41) };
+    },
+    min: { points: 100, navaids: 10 },
+    addRoles: ['E', 'X', 'EX'],
+    updateMeta(meta, ed) { meta.airac.edition = ed.edition; }
+  },
+  HU: {
+    cache: ed => path.join(root, '.airac-cache', 'HU', ed),
+    async edition() {
+      const index = 'https://ais-en.hungarocontrol.hu/aip/';
+      const res = await fetch(index);
+      if (!res.ok) throw new Error(`HTTP ${res.status} for ${index}`);
+      const text = htmlText(await res.text()).replace(/\s+/g, ' ');
+      const want = arg('--edition');
+      if (want) {
+        const ed = lhEditionOn(text, want);
+        if (!ed || ed.edition !== want) throw new Error(`No HungaroControl eAIP edition effective ${want}. The index lists AMDTs effective on: ${[...text.matchAll(/Effective date (\d{4}-\d{2}-\d{2})/g)].map(m => m[1]).join(', ')}. Use --date ${want} for the edition in force on that day.`);
+        return ed;
+      }
+      const ed = lhEditionOn(text, today);
+      if (!ed) throw new Error(`The HungaroControl eAIP index lists no edition in force on ${today}`);
+      return ed;
+    },
+    async fetch(ed, cache) {
+      const base = `https://ais-en.hungarocontrol.hu/aip/${ed}/${ed}-AIRAC/html/eAIP`;
+      await download(`${base}/LH-ENR-4.1-en-HU.html`, path.join(cache, 'ENR_4_1.html'));
+      await download(`${base}/LH-ENR-4.4.1-en-HU.html`, path.join(cache, 'ENR_4_4_1.html'));
+      const txt = f => htmlText(fs.readFileSync(path.join(cache, f), 'utf8'));
+      return { points: parseLhEnr441(txt('ENR_4_4_1.html')), navaids: parseLhEnr41(txt('ENR_4_1.html')) };
+    },
+    min: { points: 100, navaids: 5 },
+    // data/HU keeps every point with an FRA role, so any new one is added
+    addRoles: ['E', 'X', 'EX', 'L', 'I'],
+    updateMeta(meta, ed) {
+      const old = meta.airac.edition;
+      meta.airac.edition = ed.edition;
+      meta.airac.enr41 = `AIRAC AMDT ${ed.amdt}`;
+      meta.airac.enr44 = `ENR 4.4.1, AIRAC AMDT ${ed.amdt}`;
+      for (const s of meta.sources) { s.url = s.url.split(old).join(ed.edition); s.title = s.title.replace(/AIRAC AMDT \d{3}\/\d{4}/, `AIRAC AMDT ${ed.amdt}`); }
+    }
+  }
+};
+
+const K = COUNTRIES[code];
+if (!K) { console.error(`Unknown --country ${code}. Known: ${Object.keys(COUNTRIES).join(', ')}`); process.exit(1); }
+const dataDir = path.join(root, 'data', code);
 const readJSON = f => JSON.parse(fs.readFileSync(path.join(dataDir, f), 'utf8'));
 const writeJSON = (f, o) => fs.writeFileSync(path.join(dataDir, f), JSON.stringify(o, null, 2) + '\n');
 
@@ -54,19 +113,23 @@ function print(title, d) {
   for (const a of d.added) console.log('  +', a.id, a.pos, a.role || '');
 }
 
-const [enr41, enr44] = await Promise.all([
-  pdfText(`${base}/LR_ENR_4_1_en.pdf`, 'ENR_4_1.pdf'),
-  pdfText(`${base}/LR_ENR_4_4_en.pdf`, 'ENR_4_4.pdf')
-]);
-const parsedPts = parseEnr44(enr44), parsedNav = parseEnr41(enr41);
-console.log(`eAIP edition ${edition}: parsed ${parsedPts.length} significant points, ${parsedNav.length} VOR stations`);
-if (parsedPts.length < 100 || parsedNav.length < 10) {
-  console.error('Parsed far fewer items than expected. The PDF layout may have changed; check scripts/airac-lib.mjs.');
+let ed, parsedPts, parsedNav;
+try {
+  ed = await K.edition();
+  ({ points: parsedPts, navaids: parsedNav } = await K.fetch(ed.edition, K.cache(ed.edition)));
+} catch (e) {
+  console.error(e.message);
+  process.exit(1);
+}
+const meta0 = readJSON('meta.json');
+console.log(`${code} eAIP edition ${ed.edition}${ed.amdt ? ` (AIRAC AMDT ${ed.amdt})` : ''}: parsed ${parsedPts.length} significant points, ${parsedNav.length} VOR stations. data/${code} is on ${meta0.airac.edition}.`);
+if (parsedPts.length < K.min.points || parsedNav.length < K.min.navaids) {
+  console.error('Parsed far fewer items than expected. The page layout may have changed; check scripts/airac-lib.mjs.');
   process.exit(2);
 }
 
 const points = readJSON('points.json'), navaids = readJSON('navaids.json'), traffic = readJSON('traffic.json');
-const dp = diffPoints(points, parsedPts), dn = diffNavaids(navaids, parsedNav);
+const dp = diffPoints(points, parsedPts, K.addRoles), dn = diffNavaids(navaids, parsedNav);
 print('Significant points', dp);
 print('VOR/DME', dn);
 
@@ -76,6 +139,7 @@ if (blocked.length) console.log(`\n! Removed points still used by traffic.json: 
 const lostRole = dp.changed.filter(c => c.role && c.role[1] === null);
 if (lostRole.length) console.log(`\n! No longer FRA relevant in the AIP: ${lostRole.map(c => c.id).join(', ')}. --write keeps their old role; drop them or reassign them in traffic.json by hand.`);
 
+const changes = dp.changed.length + dp.removed.length + dp.added.length + dn.changed.length + dn.removed.length + dn.added.length;
 if (write) {
   const byId = new Map(parsedPts.map(p => [p.id, p]));
   const keep = points
@@ -86,9 +150,9 @@ if (write) {
   const navById = new Map(parsedNav.map(n => [n.id, n]));
   writeJSON('navaids.json', navaids.map(n => { const p = navById.get(n.id); return p ? { ...n, pos: p.pos, freq: p.freq } : n; }));
   const meta = readJSON('meta.json');
-  meta.airac.edition = edition;
+  K.updateMeta(meta, ed);
   writeJSON('meta.json', meta);
-  console.log('\nWrote data/RO/points.json, navaids.json and meta.json. Run `npm test` before committing.');
-} else if (dp.changed.length + dp.removed.length + dp.added.length + dn.changed.length + dn.removed.length + dn.added.length) {
+  console.log(`\nWrote data/${code}/points.json, navaids.json and meta.json. Run \`npm test\` before committing.`);
+} else if (changes) {
   console.log('\nRe-run with --write to apply.');
-} else console.log('\nNo changes. Data is current for this edition.');
+} else console.log(`\nNo changes. Data is current for this edition${meta0.airac.edition !== ed.edition ? ` (--write would only move meta.json from ${meta0.airac.edition} to ${ed.edition})` : ''}.`);
