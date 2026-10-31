@@ -387,9 +387,11 @@ export class Renderer {
       if (st) { ctx.fillStyle = st === 'los' ? 'rgba(255,93,79,0.18)' : 'rgba(240,178,60,0.14)'; ctx.fillRect(bx, by, LW, LH); }
       ctx.fillStyle = a.req ? col.pend : color; ctx.fillText(l1, lx, ly + 10);
       ctx.fillStyle = color; ctx.fillText(fmtFL(a.fl) + trend, lx, ly + 23);
-      ctx.fillStyle = a.bust ? col.alert : color; ctx.fillText(fmtFL(a.cfl) + (a.bust ? '≠' + fmtFL(a.sfl) : ''), lx + 34, ly + 23);
+      // Mode S selected level that differs from the cleared level (CLAM shows the same), from the radar picture
+      const sflOff = Math.round(a.sfl) !== Math.round(a.cfl);
+      ctx.fillStyle = sflOff ? col.alert : color; ctx.fillText(fmtFL(a.cfl) + (sflOff ? '≠' + fmtFL(a.sfl) : ''), lx + 34, ly + 23);
       // agreed exit level, amber while the cleared level differs from it
-      if (!a.bust && a.xfl !== null && (a.ctl === 'ass' || a.ctl === 'pend')) {
+      if (!sflOff && a.xfl !== null && (a.ctl === 'ass' || a.ctl === 'pend')) {
         ctx.fillStyle = a.ctl === 'ass' && Math.round(a.cfl) !== a.xfl ? col.warn : color;
         ctx.fillText('X' + fmtFL(a.xfl), lx + 62, ly + 23);
       }
