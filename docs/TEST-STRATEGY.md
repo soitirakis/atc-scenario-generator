@@ -14,7 +14,7 @@ This document describes what each test layer covers, and why it is there.
 | AIP parsers against fixtures | Vitest | `tests/unit/airac.test.js`, `tests/fixtures/` | 19 tests | `npm test`, CI |
 | Geometry | Vitest | `tests/unit/geo.test.js` | 12 tests | `npm test`, CI |
 | End to end, two viewports | Playwright | `tests/e2e/app.spec.js`, `two-windows.spec.js` | 18 tests × 2 viewports | `npm run test:e2e`, CI |
-| Coverage gate | Vitest (V8) | `vite.config.js` | 85% per file on `src/sim.js`, `src/scenario.js`, `src/nets/*.js` | `npm run test:coverage`, CI |
+| Coverage gate | Vitest (V8) | `vite.config.js` | 85% per file on `src/sim.js`, `src/scenario.js`, `src/nets/*.js`, `src/tools/*.js` | `npm run test:coverage`, CI |
 
 The 156 unit tests run in Node in under ten seconds and need no browser or network. End-to-end tests run against the production build. CI (`.github/workflows/ci.yml`) runs the unit tests with coverage, then the end-to-end tests, on every push and pull request. A push to `main` deploys to GitHub Pages only if both pass.
 
@@ -178,7 +178,7 @@ The label limit is relative where it has to be. Each minute, the test computes t
 
 ## Coverage gate
 
-**What.** `npm run test:coverage` runs the unit suite with V8 coverage on `src/sim.js`, `src/scenario.js` and the safety net modules in `src/nets/`, and fails if statements, branches, functions or lines fall below 85% in any of them. CI writes the result to `coverage.json` on the Pages site, which feeds the README badge.
+**What.** `npm run test:coverage` runs the unit suite with V8 coverage on `src/sim.js`, `src/scenario.js` and the safety net and tool modules in `src/nets/` and `src/tools/`, and fails if statements, branches, functions or lines fall below 85% in any of them. CI writes the result to `coverage.json` on the Pages site, which feeds the README badge.
 
 **Why these two files.** They hold the logic that decides what a trainee experiences and is scored on, and they have no DOM, so unit tests can reach almost every branch. `src/render.js` and `src/main.js` are covered by the end-to-end tests instead. `src/geo.js` and `src/country.js` are covered indirectly by every test that loads a country.
 

@@ -1,5 +1,7 @@
 // Canvas radar display. Reads a Sim; never changes simulation state.
 import { D2R, fmtFL, fmtT } from './geo.js';
+import { endXY, rangeBearing, rblText } from './tools/rbl.js';
+import { sep } from './tools/sep.js';
 
 const MONO = '"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace';
 const UI = '"Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif';
@@ -17,6 +19,7 @@ export class Renderer {
     this.cv = canvas; this.ctx = canvas.getContext('2d'); this.sim = sim;
     this.V = { cx: 0, cy: 0, sc: 1, w: 0, h: 0, dpr: 1 };
     this.layers = { sectors: true, mil: false, points: 'ex', navaids: true, airports: true, labels: true, vec: 2 };
+    this.tools = { mode: null, first: null, rbl: [], sep: [] }; // owned by main.js; drawn here, never changed
     this.sel = null; this.col = {};
     // label state per aircraft id: { slot, user: [dx, dy] | null, box: [x, y, w, h] | null }
     this.lab = new Map(); this.labSig = '';
@@ -177,6 +180,8 @@ export class Renderer {
   }
 
   sx(p) { return (p[0] - this.V.cx) * this.V.sc + this.V.w / 2; }
+  /** Screen point to the NM plane. */
+  toNM(mx, my) { return [(mx - this.V.w / 2) / this.V.sc + this.V.cx, (my - this.V.h / 2) / this.V.sc + this.V.cy]; }
   sy(p) { return (p[1] - this.V.cy) * this.V.sc + this.V.h / 2; }
   toWorld(mx, my) { const V = this.V; return [(mx - V.w / 2) / V.sc + V.cx, (my - V.h / 2) / V.sc + V.cy]; }
 
@@ -397,5 +402,37 @@ export class Renderer {
       }
       ctx.fillStyle = color; ctx.globalAlpha = 0.85; ctx.fillText(String(Math.round(a.gs / 10)).padStart(2, '0') + ' ' + a.type, lx, ly + 36); ctx.globalAlpha = 1;
     }
+    this.drawTools();
+  }
+
+  /** Range-bearing lines and SEP pairs (state in this.tools, set by main.js). */
+  drawTools() {
+    const { ctx, col, sim, tools } = this, get = id => sim.get(id);
+    const sx = p => this.sx(p), sy = p => this.sy(p);
+    const tag = (text, p, colour) => {
+      ctx.font = `11px ${MONO}`; const w = ctx.measureText(text).width + 8;
+      ctx.fillStyle = 'rgba(9,14,20,0.85)'; ctx.fillRect(sx(p) - w / 2, sy(p) - 16, w, 15);
+      ctx.fillStyle = colour; ctx.textAlign = 'center'; ctx.fillText(text, sx(p), sy(p) - 5); ctx.textAlign = 'left';
+    };
+    ctx.lineWidth = 1.2;
+    for (const l of tools.rbl) {
+      const p = endXY(l.a, get), q = endXY(l.b, get);
+      if (!p || !q) continue;
+      ctx.strokeStyle = col.text; ctx.setLineDash([5, 4]);
+      ctx.beginPath(); ctx.moveTo(sx(p), sy(p)); ctx.lineTo(sx(q), sy(q)); ctx.stroke(); ctx.setLineDash([]);
+      tag(rblText(rangeBearing(p, q)), [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2], col.text);
+    }
+    for (const s of tools.sep) {
+      const a = get(s.a), b = get(s.b);
+      if (!a || !b) continue;
+      const r = sep(a, b), close = r.minNM < 5, colour = close ? col.warn : col.text;
+      ctx.strokeStyle = colour; ctx.setLineDash([2, 3]);
+      for (const [from, to] of [[[a.x, a.y], r.pa], [[b.x, b.y], r.pb]]) { ctx.beginPath(); ctx.moveTo(sx(from), sy(from)); ctx.lineTo(sx(to), sy(to)); ctx.stroke(); }
+      ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(sx(r.pa), sy(r.pa)); ctx.lineTo(sx(r.pb), sy(r.pb)); ctx.stroke();
+      for (const p of [r.pa, r.pb]) { ctx.beginPath(); ctx.arc(sx(p), sy(p), 3, 0, Math.PI * 2); ctx.stroke(); }
+      tag(r.tMin ? `SEP ${r.minNM.toFixed(1)} NM in ${fmtT(r.tMin)}` : `SEP ${r.nowNM.toFixed(1)} NM, diverging`, [(r.pa[0] + r.pb[0]) / 2, (r.pa[1] + r.pb[1]) / 2], colour);
+    }
+    if (tools.first && tools.first.xy) { ctx.strokeStyle = col.text; ctx.beginPath(); ctx.arc(sx(tools.first.xy), sy(tools.first.xy), 4, 0, Math.PI * 2); ctx.stroke(); }
   }
 }
