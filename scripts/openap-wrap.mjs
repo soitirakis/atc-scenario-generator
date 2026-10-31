@@ -50,11 +50,15 @@ const out = {
   _note: 'Aircraft performance for the simulator, converted from OpenAP WRAP by scripts/openap-wrap.mjs. Each value is { opt, min, max } from WRAP (opt: typical; min/max: the range WRAP gives). Units: speeds in kt (CAS), Mach as a number, vertical rates in ft/min (positive), altitudes in ft. Not BADA. Not for operational use.',
   _source: {
     name: 'OpenAP: WRAP (Wide-Range Aircraft Performance) kinematic model',
-    authors: 'Junzi Sun and contributors, TU Delft',
+    authors: 'Junzi Sun, Jacco M. Hoekstra, Joost Ellerbroek and contributors, TU Delft',
+    method: 'WRAP values are statistical models fitted to ADS-B flight data, not manufacturer or BADA data.',
     url: `https://github.com/TUDelft-CNS-ATM/openap/tree/${COMMIT}/openap/data/wrap`,
     commit: COMMIT,
     licence: 'GPL-3.0 (openap/data/LICENSE). OpenAP code is LGPL-3.0.',
-    reference: 'Sun, J., Hoekstra, J.M., Ellerbroek, J. (2020). OpenAP: An open-source aircraft performance model for air transportation studies and simulations. Aerospace, 7(8), 104.'
+    reference: [
+      'Sun, J., Hoekstra, J.M., Ellerbroek, J. (2020). OpenAP: An open-source aircraft performance model for air transportation studies and simulations. Aerospace, 7(8), 104.',
+      'Sun, J., Ellerbroek, J., Hoekstra, J.M. (2019). WRAP: An open-source kinematic aircraft performance model. Transportation Research Part C, 98, 118-138. https://doi.org/10.1016/j.trc.2018.11.009'
+    ]
   },
   types: Object.fromEntries(types.map(t => [t, { wrap: TYPE_MAP[t][0], why: TYPE_MAP[t][1], ...models[TYPE_MAP[t][0]] }]))
 };

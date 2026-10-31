@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/soitirakis/atc-scenario-generator/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/soitirakis/atc-scenario-generator/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fsoitirakis.github.io%2Fatc-scenario-generator%2Fcoverage.json)](docs/TEST-STRATEGY.md#coverage-gate)
+[![Licence: GPL-3.0](https://img.shields.io/badge/licence-GPL--3.0-blue)](LICENSE)
 
 **Live demo: https://soitirakis.github.io/atc-scenario-generator/** (runs in the browser, no install)
 
@@ -153,6 +154,7 @@ One value in OpenAP's own data is kept as published although it lies outside its
 | `points.json` | 131 significant points with FRA role | eAIP ENR 4.4 (AIRAC AMDT 11/26) |
 | `airports.json` | aerodrome reference points | eAIP AD 2 |
 | `traffic.json` | gates, flow weights, operators, main airports (LROP), agreed exit levels | modelling choice, not published data; exit levels are **modelled, not from a published Letter of Agreement** |
+| `data/performance.json` (shared) | per-type climb/descent rates by level band, climb/cruise/descent Mach and speeds | converted from [OpenAP](https://github.com/TUDelft-CNS-ATM/openap) WRAP kinematic data (TU Delft, GPL-3.0) at commit [`46753acb`](https://github.com/TUDelft-CNS-ATM/openap/tree/46753acb988c1e8c9d47ec5ae72d6fb75b9cf260/openap/data/wrap) by `scripts/openap-wrap.mjs` |
 
 eAIP: https://aisro.ro/aip/2026-10-29/html/ro/aip_toc_enr.html
 
@@ -167,7 +169,8 @@ eAIP: https://aisro.ro/aip/2026-10-29/html/ro/aip_toc_enr.html
 **What is not real:**
 - the TSA geometry, which is a training construct;
 - the flow weights;
-- the border segments between published sector corners.
+- the border segments between published sector corners;
+- aircraft performance: WRAP values are statistical models fitted to ADS-B flight data, not manufacturer or BADA data. BADA was not used because it requires a EUROCONTROL licence.
 
 The Ukrainian entry and exit points are kept in the data but carry no traffic (`closed: true`).
 
@@ -181,6 +184,7 @@ The Ukrainian entry and exit points are kept in the data but carry no traffic (`
 | `points.json` | 107 FRA significant points with role | eAIP ENR 4.4.1 (AIRAC AMDT 006/2026) |
 | `airports.json` | aerodrome reference points | eAIP AD 2.2 |
 | `traffic.json` | gates, flow weights, operators, main airport (LHBP), agreed exit levels | modelling choice, not published data; exit levels are **modelled, not from a published Letter of Agreement** |
+| `data/performance.json` (shared) | per-type climb/descent rates by level band, climb/cruise/descent Mach and speeds | converted from [OpenAP](https://github.com/TUDelft-CNS-ATM/openap) WRAP kinematic data (TU Delft, GPL-3.0) at commit [`46753acb`](https://github.com/TUDelft-CNS-ATM/openap/tree/46753acb988c1e8c9d47ec5ae72d6fb75b9cf260/openap/data/wrap) by `scripts/openap-wrap.mjs` |
 
 eAIP: https://ais-en.hungarocontrol.hu/aip/2026-09-03/ (AIRAC AMDT 006/2026, effective 2026-09-03). AMDT 007/2026 (effective 2026-11-26) does not change ENR 2.1, 4.1, 4.4.1 or the sector chart.
 
@@ -264,10 +268,10 @@ When the page runs inside a claude.ai artifact, **Generate with Claude** writes 
 
 Outside claude.ai the button stays hidden and the local builder is used. A standalone deployment that wants this would need a small backend holding an API key. Never put a key in browser code.
 
-## Licence
-
-GPL-3.0 (`LICENSE`). The aircraft performance data comes from OpenAP's `openap/data/` folder, which is licensed GPL-3.0 (OpenAP's code is LGPL-3.0). The single-file build bundles that data, so the repository uses the same licence. `data/performance.json` keeps the source, commit and licence notice.
-
 ## Status
 
 Concept and portfolio project. Not validated against any operational system.
+
+## Licence
+
+This project is licensed under GPL-3.0 (see [LICENSE](LICENSE)), because it includes data derived from [OpenAP](https://github.com/TUDelft-CNS-ATM/openap), the open aircraft performance model by Junzi Sun, Jacco M. Hoekstra, Joost Ellerbroek and contributors at TU Delft. The aircraft performance data in `data/performance.json` is converted from OpenAP's WRAP data, which is licensed GPL-3.0 (OpenAP's code is LGPL-3.0); that file keeps the source, commit and licence notice.
