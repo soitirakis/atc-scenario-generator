@@ -5,8 +5,8 @@ const MONO = '"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace';
 const UI = '"Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif';
 
 // Data block geometry (screen px). Candidate positions, as box top-left relative to the plot: NE, SE, SW, NW.
-const LW = 98, LH = 40, GAP = 10;
-const SLOTS = [[GAP, -GAP - LH], [GAP, GAP], [-GAP - LW, GAP], [-GAP - LW, -GAP - LH]];
+export const LW = 98, LH = 40, GAP = 10;
+export const SLOTS = [[GAP, -GAP - LH], [GAP, GAP], [-GAP - LW, GAP], [-GAP - LW, -GAP - LH]];
 const PLOT = 7;              // half-size of the area a track symbol occupies
 const HYST = 0.05 * LW * LH; // a label only moves if another slot is better by more than this (px²)
 
@@ -78,63 +78,88 @@ export class Renderer {
       const inside = overlap(box, [0, 0, W, H]);
       return c + (LW * LH - inside) * 0.5; // prefer slots that stay on screen
     };
-    // new labels take the best slot given the labels already placed
-    L.forEach(({ it, l }, k) => {
-      if (l.box) return;
-      let best = 0, bc = Infinity;
-      for (let s = 0; s < SLOTS.length; s++) { const c = cost(k, boxAt(it, s)); if (c < bc) { bc = c; best = s; } }
-      l.slot = best; l.box = boxAt(it, best);
-    });
-    // local search: each pass moves a label to its best slot if that is clearly better
-    for (let pass = 0; pass < 8; pass++) {
-      let changed = false;
-      L.forEach(({ it, l }, k) => {
-        if (l.user) return;
-        const cur = cost(k, l.box);
-        let best = l.slot, bc = cur;
-        for (let s = 0; s < SLOTS.length; s++) { if (s === l.slot) continue; const c = cost(k, boxAt(it, s)); if (c < bc) { bc = c; best = s; } }
-        if (best !== l.slot && bc < cur - HYST) { l.slot = best; l.box = boxAt(it, best); changed = true; }
-      });
-      if (!changed) break;
-    }
-    // pair moves: two overlapping labels where neither can improve alone try all slot combinations together
-    for (let pass = 0; pass < 3; pass++) {
-      let changed = false;
-      for (let i = 0; i < L.length; i++) for (let j = i + 1; j < L.length; j++) {
-        const A = L[i].l, B = L[j].l;
-        if (A.user || B.user || !overlap(A.box, B.box)) continue;
-        const keep = [A.box, B.box], cur = cost(i, A.box) + cost(j, B.box);
-        let best = null, bc = cur;
-        for (let sa = 0; sa < SLOTS.length; sa++) for (let sb = 0; sb < SLOTS.length; sb++) {
-          A.box = boxAt(L[i].it, sa); B.box = boxAt(L[j].it, sb);
-          const c = cost(i, A.box) + cost(j, B.box);
-          if (c < bc) { bc = c; best = [sa, sb]; }
-        }
-        [A.box, B.box] = keep;
-        if (best && bc < cur - HYST) {
-          A.slot = best[0]; A.box = boxAt(L[i].it, best[0]); B.slot = best[1]; B.box = boxAt(L[j].it, best[1]); changed = true;
-        }
-      }
-      if (!changed) break;
-    }
-    // repair the worst overlap directly: move one label of the worst pair if that lowers the worst overlap overall
+    // Repair the worst overlap directly. Candidates are the two labels of the worst pair and any label
+    // touching either of them: first try moving one candidate, then two together. A move is kept only
+    // if it lowers the worst overlap overall by more than HYST.
     const worst = () => {
       let w = 0, pr = null;
       for (let i = 0; i < L.length; i++) for (let j = i + 1; j < L.length; j++) { const o = overlap(L[i].l.box, L[j].l.box); if (o > w) { w = o; pr = [i, j]; } }
       return [w, pr];
     };
-    for (let n = 0; n < 30; n++) {
-      const [w, pr] = worst();
-      if (!pr || w <= 0.1 * LW * LH) break;
+    const tryMoves = (ks, w) => { // all slot combinations for the labels in ks; returns the best that beats w
       let best = null;
-      for (const k of pr) {
-        const l = L[k].l, keep = l.box;
-        if (l.user) continue;
-        for (let s = 0; s < SLOTS.length; s++) { l.box = boxAt(L[k].it, s); const [nw] = worst(); if (nw < w - HYST && (!best || nw < best[2])) best = [k, s, nw]; }
-        l.box = keep;
+      const keep = ks.map(k => L[k].l.box), combos = SLOTS.length ** ks.length;
+      for (let c = 0; c < combos; c++) {
+        ks.forEach((k, i) => { L[k].l.box = boxAt(L[k].it, Math.floor(c / SLOTS.length ** i) % SLOTS.length); });
+        const [nw] = worst();
+        if (nw < w - HYST && (!best || nw < best.w)) best = { w: nw, slots: ks.map((k, i) => Math.floor(c / SLOTS.length ** i) % SLOTS.length) };
       }
-      if (!best) break;
-      const l = L[best[0]].l; l.slot = best[1]; l.box = boxAt(L[best[0]].it, best[1]);
+      ks.forEach((k, i) => { L[k].l.box = keep[i]; });
+      return best && { ks, ...best };
+    };
+    // The search: unplaced labels first, then single moves, pair moves and the worst-overlap repair.
+    const search = () => {
+      // new labels take the best slot given the labels already placed
+      L.forEach(({ it, l }, k) => {
+        if (l.box) return;
+        let best = 0, bc = Infinity;
+        for (let s = 0; s < SLOTS.length; s++) { const c = cost(k, boxAt(it, s)); if (c < bc) { bc = c; best = s; } }
+        l.slot = best; l.box = boxAt(it, best);
+      });
+      // local search: each pass moves a label to its best slot if that is clearly better
+      for (let pass = 0; pass < 8; pass++) {
+        let changed = false;
+        L.forEach(({ it, l }, k) => {
+          if (l.user) return;
+          const cur = cost(k, l.box);
+          let best = l.slot, bc = cur;
+          for (let s = 0; s < SLOTS.length; s++) { if (s === l.slot) continue; const c = cost(k, boxAt(it, s)); if (c < bc) { bc = c; best = s; } }
+          if (best !== l.slot && bc < cur - HYST) { l.slot = best; l.box = boxAt(it, best); changed = true; }
+        });
+        if (!changed) break;
+      }
+      // pair moves: two overlapping labels where neither can improve alone try all slot combinations together
+      for (let pass = 0; pass < 3; pass++) {
+        let changed = false;
+        for (let i = 0; i < L.length; i++) for (let j = i + 1; j < L.length; j++) {
+          const A = L[i].l, B = L[j].l;
+          if (A.user || B.user || !overlap(A.box, B.box)) continue;
+          const keep = [A.box, B.box], cur = cost(i, A.box) + cost(j, B.box);
+          let best = null, bc = cur;
+          for (let sa = 0; sa < SLOTS.length; sa++) for (let sb = 0; sb < SLOTS.length; sb++) {
+            A.box = boxAt(L[i].it, sa); B.box = boxAt(L[j].it, sb);
+            const c = cost(i, A.box) + cost(j, B.box);
+            if (c < bc) { bc = c; best = [sa, sb]; }
+          }
+          [A.box, B.box] = keep;
+          if (best && bc < cur - HYST) {
+            A.slot = best[0]; A.box = boxAt(L[i].it, best[0]); B.slot = best[1]; B.box = boxAt(L[j].it, best[1]); changed = true;
+          }
+        }
+        if (!changed) break;
+      }
+      for (let n = 0; n < 30; n++) {
+        const [w, pr] = worst();
+        if (!pr || w <= 0.1 * LW * LH) break;
+        const cand = new Set(pr.filter(k => !L[k].l.user));
+        for (const k of pr) L.forEach(({ l }, j) => { if (!l.user && overlap(L[k].l.box, l.box)) cand.add(j); });
+        let move = null;
+        for (const k of cand) { const m = tryMoves([k], w); if (m && (!move || m.w < move.w)) move = m; }
+        if (!move) for (const a of pr) for (const b of cand) if (a !== b && cand.has(a)) { const m = tryMoves([a, b], w); if (m && (!move || m.w < move.w)) move = m; }
+        if (!move) break;
+        move.ks.forEach((k, i) => { L[k].l.slot = move.slots[i]; L[k].l.box = boxAt(L[k].it, move.slots[i]); });
+      }
+    };
+    search();
+    // Starting from the previous layout keeps labels still, but traffic can move on until that layout is
+    // stuck in a poor arrangement. If the worst overlap is over 15%, also try a layout from scratch and
+    // take it when it is at least 10 points better: labels then jump only when they badly overlap.
+    const [w] = worst();
+    if (w > 0.15 * LW * LH) {
+      const keep = L.map(({ l }) => [l.slot, l.box]);
+      for (const { l } of L) if (!l.user) l.box = null;
+      search();
+      if (!(worst()[0] < w - 0.1 * LW * LH)) L.forEach(({ l }, k) => { [l.slot, l.box] = keep[k]; });
     }
   }
 
@@ -330,7 +355,8 @@ export class Renderer {
       ctx.globalAlpha = 1;
       const vl = a.gs / 60 * layers.vec;
       ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(X, Y);
-      ctx.lineTo(X + Math.sin(a.hdg * D2R) * vl * V.sc, Y - Math.cos(a.hdg * D2R) * vl * V.sc); ctx.stroke();
+      const tr = (a.trk ?? a.hdg) * D2R; // the speed vector shows where the aircraft goes: track and ground speed
+      ctx.lineTo(X + Math.sin(tr) * vl * V.sc, Y - Math.cos(tr) * vl * V.sc); ctx.stroke();
       const st = stcaIds.get(a.id);
       ctx.strokeStyle = st === 'los' ? col.alert : st === 'pred' ? col.warn : color; ctx.lineWidth = 1.4;
       ctx.strokeRect(X - 4, Y - 4, 8, 8);

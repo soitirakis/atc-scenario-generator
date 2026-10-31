@@ -1,9 +1,10 @@
 // Scenario building: a deterministic local builder, plus the prompt and
 // validator used when Claude writes the scenario. Both produce the same shape:
 // { title, difficulty, sector, duration, seed, objective, conflicts,
-//   challenges[], criteria[], injects[{min, type, text}], source }
+//   challenges[], criteria[], injects[{min, type, text}], wind[{fl, dir, kt}], source }
 import { TYPES, DIFF } from './sim.js';
 import { inSector } from './country.js';
+import { defaultWind } from './atmos.js';
 
 const KEYWORDS = [
   [/weather|\bcb\b|storm|deviat|turbul/i, 'WEATHER_CELL'],
@@ -61,7 +62,7 @@ export function buildLocalScenario(C, cfg) {
       chosen[1] ? `${TYPES[chosen[1]]} overlapping with the first event` : 'Keeping the overall sector picture'
     ],
     criteria: ['No loss of separation (5 NM / 1000 ft)', 'Every request answered within 60 s', 'Correct priority order: emergencies and STCA before routine requests', 'Every flight assumed before it enters and transferred at its agreed exit level'],
-    injects, source: 'local'
+    injects, wind: defaultWind(cfg.seed), source: 'local'
   };
 }
 
@@ -102,6 +103,6 @@ export function parseClaudeScenario(j, cfg) {
     conflicts: Math.max(0, Math.min(5, Math.round(Number.isFinite(+j.conflicts) ? +j.conflicts : DIFF[cfg.difficulty].conflicts))),
     challenges: strs(j.challenges, []),
     criteria: strs(j.criteria, ['No loss of separation (5 NM / 1000 ft)']),
-    injects, source: 'claude'
+    injects, wind: defaultWind(cfg.seed), source: 'claude'
   };
 }

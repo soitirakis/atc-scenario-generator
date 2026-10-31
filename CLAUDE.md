@@ -25,6 +25,11 @@ En-route ATC radar training simulator. Vanilla JS (ES modules) built with Vite i
 - `makeSnapshot` decides what a trainee may see. Add aircraft fields to `AC_FIELDS` only if a controller would know them. Log lines meant only for the instructor use `sim.log(text, cls, 'i')`; priority items only for the instructor carry `instr: true`.
 - A trainee window may only run the commands in `TRAINEE_COMMANDS`. New controller actions go there; instructor actions (injects, pseudo-pilot) never do.
 
+## Performance and wind
+- Climb/descent rates, speeds and Mach come only from `data/performance.json` (OpenAP WRAP, GPL-3.0), regenerated with `node scripts/openap-wrap.mjs`; do not hand-edit it and do not add BADA data. A new aircraft type in `traffic.json` needs an entry in that script's `TYPE_MAP` with a reason.
+- `a.gs` and `a.trk` are derived (TAS + wind) every step; change `a.spd` (IAS/Mach clearance), `a.rate` (rate clearance) or `a.hdg`/route instead. `a.vr` is only for scripted overrides (built-in conflicts, level bust).
+- Anything that predicts motion (STCA, look-ahead) must use the same model: `levelProfile`/`flAfter` for levels, track and ground speed for position.
+
 ## Data rules
 - Country data lives in `data/<CODE>/` as JSON. Keep coordinates in AIP DMS notation, exactly as published, so they can be diffed against the source.
 - Anything not from an official source (border approximations, flows, TSA geometry) must be labelled as such in the file's `_note` and in the README.

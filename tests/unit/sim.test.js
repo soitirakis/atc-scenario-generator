@@ -1,9 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import RO from '../../data/RO/index.js';
 import HU from '../../data/HU/index.js';
 import { loadCountry, inSector } from '../../src/country.js';
 import { Sim, DIFF, TYPES } from '../../src/sim.js';
 import { buildLocalScenario } from '../../src/scenario.js';
+import { D2R, angDiff, brg } from '../../src/geo.js';
+import { machToTas, casToTas } from '../../src/atmos.js';
+import PERF from '../../data/performance.json';
 
 const C = loadCountry(RO);
 const cfg = (o = {}) => ({ sector: 'ARG', difficulty: 'intermediate', duration: 30, seed: 4127, objective: 'General radar handling.', ...o });
@@ -37,6 +40,18 @@ describe('session loading', () => {
     sim.computeInbound();
     const relevant = sim.ac.filter(a => a.lastIn || a.inbound || sim.routeCrosses([a.x, a.y], a.route.slice(a.ri), sim.sector)).length;
     expect(relevant / sim.ac.length).toBeGreaterThan(0.6);
+  });
+
+  it('no aircraft starts inside separation, except the built-in conflict pairs', () => {
+    for (const seed of [1, 2, 3, 4, 4127]) for (const sector of ['ARG', 'FIR']) {
+      const sim = fresh({ seed, sector, difficulty: 'advanced' });
+      for (let i = 0; i < sim.ac.length; i++) for (let j = i + 1; j < sim.ac.length; j++) {
+        const [a, b] = [sim.ac[i], sim.ac[j]];
+        if (a.conflict && b.conflict) continue;
+        const inside = Math.hypot(a.x - b.x, a.y - b.y) < 5 && Math.abs(a.fl - b.fl) < 10;
+        expect(inside, `${sector} seed ${seed}: ${a.cs}/${b.cs}`).toBe(false);
+      }
+    }
   });
 
   it('cruising transits use semicircular levels', () => {
@@ -179,11 +194,13 @@ describe('clearances', () => {
     expect(sim.direct(a.id, 'NERDI').ok).toBe(true);
     expect(a.route[0].id).toBe('NERDI');
   });
-  it('speed is clamped to a sane en-route range', () => {
+  it('IAS clearances are clamped to an en-route range', () => {
     const sim = fresh({}, []);
     const a = sim.ac.find(x => x.ctl === 'ass');
     sim.speed(a.id, 900);
-    expect(a.tgs).toBe(520);
+    expect(a.spd).toEqual({ mode: 'ias', v: 350 });
+    sim.speed(a.id, 120);
+    expect(a.spd).toEqual({ mode: 'ias', v: 200 });
   });
 });
 
@@ -462,6 +479,125 @@ describe('instructor: pseudo-pilot', () => {
     expect(a.sq).toBe(sq);
     const r = sim.clearLevel(a.id, 250); // answers again (unless it has meanwhile left the sector)
     expect(r.ok || /not on your frequency/.test(r.msg), r.msg).toBe(true);
+  });
+});
+
+describe('performance and wind', () => {
+  // One aircraft alone, flying north towards a far point; no other traffic, calm unless a wind is given,
+  // and a training sector far away so the sector routine never hands it on.
+  const alone = (type, { fl = 300, wind = [] } = {}) => {
+    const sim = fresh({}, []);
+    sim.ac = []; sim.target = 0; sim.wind = wind;
+    sim.sector = { id: 'NONE', name: 'NONE', polys: [[[5000, 5000], [5001, 5000], [5001, 5001]]] };
+    const a = sim.initKinematics(sim.makeAircraft({ cs: 'TST1', type, x: 0, y: 0, fl, cfl: fl, sfl: fl, route: [{ id: 'FAR', xy: [0, -2000] }], entry: 'X', exit: 'Y' }));
+    a.ctl = 'ass';
+    sim.ac.push(a);
+    return { sim, a };
+  };
+  const climbTime = (type, from, to, rate) => {
+    const { sim, a } = alone(type, { fl: from });
+    sim.clearLevel(a.id, to);
+    if (rate) expect(sim.clearRate(a.id, rate.fpm, rate.kind)).toEqual({ ok: true });
+    let t = 0;
+    while (a.fl < to && t < 3600) { sim.step(); t++; }
+    return { t, a };
+  };
+
+  it('an A320 and a B77W given the same climb clearance reach the level at different times, inside the data ranges', () => {
+    const times = {};
+    for (const type of ['A320', 'B77W']) {
+      const P = PERF.types[type].climb;
+      expect(P.machFromFt.opt, type).toBeLessThan(30000); // FL300 to FL380 is all in the constant-Mach band
+      const { t } = climbTime(type, 300, 380);
+      const r = P.fpm.mach, ft = 8000;
+      expect(t, type).toBeGreaterThanOrEqual(Math.floor(ft / r.max * 60));
+      expect(t, type).toBeLessThanOrEqual(Math.ceil(ft / r.min * 60));
+      expect(Math.abs(t - ft / r.opt * 60), type).toBeLessThan(3); // the typical WRAP rate
+      times[type] = t;
+    }
+    expect(Math.abs(times.A320 - times.B77W)).toBeGreaterThan(20);
+  });
+
+  it('a crosswind gives a track different from the heading, and a heading clearance drifts', () => {
+    const { sim, a } = alone('A320', { fl: 350, wind: [{ fl: 350, dir: 90, kt: 60 }] }); // from the east
+    sim.turn(a.id, 360);
+    run(sim, 60);
+    const x0 = a.x;
+    run(sim, 60);
+    expect(Math.abs(angDiff(a.hdg, 0))).toBeLessThan(0.01);
+    const drift = Math.asin(60 / Math.hypot(a.tas, 60)) / D2R; // track left of heading, pushed west
+    expect(angDiff(a.hdg, a.trk)).toBeCloseTo(-Math.atan(60 / a.tas) / D2R, 1);
+    expect(drift).toBeGreaterThan(5);
+    expect(a.x - x0).toBeCloseTo(-1, 1); // 60 kt west for one minute
+  });
+
+  it('own navigation corrects for the wind: the track points at the waypoint, the heading into the wind', () => {
+    const { sim, a } = alone('A320', { fl: 350, wind: [{ fl: 350, dir: 90, kt: 60 }] });
+    run(sim, 60);
+    expect(Math.abs(angDiff(a.trk, brg([a.x, a.y], a.route[0].xy)))).toBeLessThan(0.5);
+    expect(angDiff(a.trk, a.hdg)).toBeGreaterThan(5); // heading turned right, into the easterly wind
+  });
+
+  it('ground speed is TAS plus the head or tail wind', () => {
+    const { sim, a } = alone('A320', { fl: 350, wind: [{ fl: 350, dir: 360, kt: 80 }] }); // headwind for a northbound flight
+    run(sim, 30);
+    expect(a.gs).toBeCloseTo(a.tas - 80, 0);
+  });
+
+  it('each type cruises at its own WRAP Mach in ISA', () => {
+    for (const type of ['A320', 'B77W']) {
+      const { sim, a } = alone(type, { fl: 370 });
+      run(sim, 5);
+      expect(a.tas, type).toBeCloseTo(machToTas(PERF.types[type].cruise.mach.opt, 37000), 0);
+    }
+  });
+
+  it('Mach and IAS clearances set the airspeed, within what the type can fly', () => {
+    const { sim, a } = alone('B738', { fl: 350 });
+    expect(sim.mach(a.id, 0.74)).toEqual({ ok: true });
+    run(sim, 90);
+    expect(a.tas).toBeCloseTo(machToTas(0.74, 35000), 0);
+    expect(sim.mach(a.id, 0.86).msg).toBe('TST1: unable M.86');
+    sim.speed(a.id, 250);
+    run(sim, 90);
+    expect(a.tas).toBeCloseTo(casToTas(250, 35000), 0);
+    sim.resumeSpeed(a.id);
+    run(sim, 120);
+    expect(a.tas).toBeCloseTo(machToTas(PERF.types.B738.cruise.mach.opt, 35000), 0);
+  });
+
+  it('rate clearances: "or greater" and "or less" change the time to level, and end at the level', () => {
+    const base = climbTime('A320', 300, 380).t;
+    const fast = climbTime('A320', 300, 380, { fpm: 1300, kind: 'min' });
+    const slow = climbTime('A320', 300, 380, { fpm: 800, kind: 'max' });
+    expect(Math.abs(fast.t - 8000 / 1300 * 60)).toBeLessThan(3);
+    expect(Math.abs(slow.t - 8000 / 800 * 60)).toBeLessThan(3);
+    expect(fast.t).toBeLessThan(base);
+    expect(slow.t).toBeGreaterThan(base);
+    expect(fast.a.rate).toBeNull();
+  });
+
+  it('a rate the type cannot make, or a rate with no climb in progress, is refused', () => {
+    const { sim, a } = alone('A320', { fl: 300 });
+    expect(sim.clearRate(a.id, 2000, 'min').msg).toMatch(/not climbing or descending/);
+    sim.clearLevel(a.id, 380);
+    expect(sim.clearRate(a.id, 2000, 'min').msg).toBe('TST1: unable 2000 ft/min'); // A320 constant-Mach climb tops out near 1370
+  });
+
+  it('STCA predicts levels with the modelled banded rates', () => {
+    const { sim, a } = alone('A320', { fl: 270 });
+    sim.clearLevel(a.id, 360); // crosses from the constant-CAS band into the constant-Mach band near FL289
+    const profile = sim.levelProfile(a), actual = [];
+    for (let t = 1; t <= 180; t++) { sim.step(); if (t % 10 === 0) actual.push(a.fl); }
+    for (let i = 0; i < profile.length; i++) expect(actual[i], `t=${(i + 1) * 10}s`).toBeCloseTo(profile[i], 6);
+    expect(profile[0] - 270).toBeCloseTo(PERF.types.A320.climb.fpm.cas.opt / 6000 * 10, 6);  // constant-CAS rate first
+    expect(profile[17] - profile[16]).toBeCloseTo(PERF.types.A320.climb.fpm.mach.opt / 6000 * 10, 6); // then the Mach rate
+    // the scan uses these profiles for both aircraft of a pair
+    const { sim: s2 } = alone('A320', { fl: 300 });
+    s2.ac.push(s2.initKinematics(s2.makeAircraft({ cs: 'TST2', type: 'B77W', x: 0, y: -20, fl: 320, cfl: 280, sfl: 280, route: [{ id: 'S', xy: [0, 2000] }] })));
+    const spy = vi.spyOn(s2, 'levelProfile');
+    s2.stcaScan();
+    expect(spy).toHaveBeenCalledTimes(2);
   });
 });
 
