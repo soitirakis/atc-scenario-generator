@@ -133,6 +133,22 @@
           </div>
           <p class="note" id="aiNote" style="margin:8px 0 0">The same seed, sector and traffic level always produce the same traffic, so two trainees can fly an identical session.</p>
         </div>
+        <div class="sec not-trainee">
+          <h2>Library and files</h2>
+          <div class="form">
+            <div class="full">
+              <label for="libSel">Sample scenarios</label>
+              <select id="libSel"></select>
+            </div>
+          </div>
+          <div class="row-btns" style="margin-top:10px">
+            <button class="btn" id="libLoad">Load sample</button>
+            <button class="btn" id="scnExport">Export</button>
+            <button class="btn" id="scnImport">Import</button>
+            <input type="file" id="scnFile" accept=".json,application/json" aria-label="Scenario file to import" hidden>
+          </div>
+          <div class="note io-msg" id="scnIoMsg" role="status" hidden></div>
+        </div>
         <div class="sec">
           <h2>Current scenario <small id="scnSource"></small></h2>
           <div id="scnCard"></div>

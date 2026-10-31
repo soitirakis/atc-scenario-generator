@@ -2,9 +2,9 @@
 // validator used when Claude writes the scenario. Both produce the same shape:
 // { title, difficulty, sector, duration, seed, objective, conflicts,
 //   challenges[], criteria[], injects[{min, type, text}], wind[{fl, dir, kt}], source }
-import { TYPES, DIFF } from './sim.js';
+import { TYPES, DIFF, GRADING } from './sim.js';
 import { inSector } from './country.js';
-import { defaultWind } from './atmos.js';
+import { defaultWind, normaliseWind } from './atmos.js';
 
 const KEYWORDS = [
   [/weather|\bcb\b|storm|deviat|turbul/i, 'WEATHER_CELL'],
@@ -104,5 +104,70 @@ export function parseClaudeScenario(j, cfg) {
     challenges: strs(j.challenges, []),
     criteria: strs(j.criteria, ['No loss of separation (5 NM / 1000 ft)']),
     injects, wind: defaultWind(cfg.seed), source: 'claude'
+  };
+}
+
+/* ---------- scenario files: export, import, library ---------- */
+export const SCHEMA_VERSION = 1;
+export const DURATIONS = [20, 30, 45];
+
+/**
+ * The file written by Export: everything needed to replay the session exactly (same seed,
+ * sector, traffic level, conflicts and wind give the same traffic), plus each inject's
+ * objective for the reader. Import ignores those objectives: grading always uses GRADING.
+ */
+export function exportScenario(scn, country) {
+  return {
+    schemaVersion: SCHEMA_VERSION,
+    title: scn.title, country, sector: scn.sector, difficulty: scn.difficulty, duration: scn.duration,
+    seed: scn.seed, objective: scn.objective, conflicts: scn.conflicts,
+    challenges: scn.challenges || [], criteria: scn.criteria || [],
+    wind: (scn.wind || []).map(w => ({ fl: w.fl, dir: w.dir, kt: w.kt })),
+    injects: scn.injects.map(i => ({ min: i.min, type: i.type, text: i.text, objective: GRADING[i.type].text }))
+  };
+}
+
+/**
+ * Check a scenario file before loading it. Pure: `countries` maps a country code to its
+ * loaded data (loadCountry). Returns { ok: true, country, scenario } or { ok: false, errors }
+ * with every problem found, in plain words.
+ */
+export function validateScenarioFile(j, countries) {
+  if (!j || typeof j !== 'object' || Array.isArray(j)) return { ok: false, errors: ['This is not a scenario file: expected a JSON object.'] };
+  if (j.schemaVersion !== SCHEMA_VERSION) {
+    return { ok: false, errors: [j.schemaVersion === undefined
+      ? `This is not a scenario file: it has no schemaVersion. Files from this simulator have schemaVersion ${SCHEMA_VERSION}.`
+      : `Schema version ${JSON.stringify(j.schemaVersion)} is not supported. This simulator reads schemaVersion ${SCHEMA_VERSION}.`] };
+  }
+  const errors = [];
+  const C = countries[j.country];
+  if (!C) errors.push(`Unknown country ${JSON.stringify(j.country)}. Available: ${Object.keys(countries).join(', ')}.`);
+  else if (!C.sectors[j.sector]) errors.push(`Unknown sector ${JSON.stringify(j.sector)} for ${C.meta.name}. Available: ${Object.keys(C.sectors).join(', ')}.`);
+  if (!DIFF[j.difficulty]) errors.push(`Unknown traffic level ${JSON.stringify(j.difficulty)}. Use ${Object.keys(DIFF).join(', ')}.`);
+  const dur = j.duration;
+  if (!DURATIONS.includes(dur)) errors.push(`Session length must be ${DURATIONS.join(', ')} minutes, not ${JSON.stringify(dur)}.`);
+  if (!Number.isInteger(j.seed) || j.seed < 1) errors.push(`Seed must be a whole number of 1 or more, not ${JSON.stringify(j.seed)}.`);
+  if (!Number.isInteger(j.conflicts) || j.conflicts < 0 || j.conflicts > 5) errors.push(`Built-in conflicts must be 0 to 5, not ${JSON.stringify(j.conflicts)}.`);
+  let wind = [];
+  try { wind = normaliseWind(j.wind === undefined ? [] : j.wind); } catch (e) { errors.push(`${e.message}.`); }
+  if (!Array.isArray(j.injects)) errors.push('Injects must be a list.');
+  else j.injects.forEach((i, k) => {
+    const n = `Inject ${k + 1}`;
+    if (!i || !TYPES[i.type]) errors.push(`${n}: unknown type ${JSON.stringify(i && i.type)}. Known types: ${Object.keys(TYPES).join(', ')}.`);
+    if (!i || !Number.isInteger(i.min)) errors.push(`${n}: minute must be a whole number, not ${JSON.stringify(i && i.min)}.`);
+    else if (DURATIONS.includes(dur) && (i.min < 1 || i.min > dur - 1)) errors.push(`${n} at minute ${i.min} is outside the ${dur}-minute session. Use minute 1 to ${dur - 1}.`);
+  });
+  if (errors.length) return { ok: false, errors };
+  const strs = a => (Array.isArray(a) ? a.map(String) : []);
+  return {
+    ok: true, country: j.country,
+    scenario: {
+      title: String(j.title || 'Imported scenario').slice(0, 90),
+      difficulty: j.difficulty, sector: j.sector, duration: dur, seed: j.seed,
+      objective: String(j.objective || 'General radar handling.'), conflicts: j.conflicts,
+      challenges: strs(j.challenges), criteria: strs(j.criteria),
+      injects: j.injects.map(i => ({ min: i.min, type: i.type, text: String(i.text || INJECT_TEXT[i.type]).slice(0, 160) })).sort((a, b) => a.min - b.min),
+      wind, source: 'file'
+    }
   };
 }

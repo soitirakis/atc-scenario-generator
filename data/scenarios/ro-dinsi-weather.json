@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "title": "DINSI: weather deviations on the main flow",
+  "country": "RO",
+  "sector": "DIN",
+  "difficulty": "intermediate",
+  "duration": 30,
+  "seed": 2203,
+  "objective": "Keep DINSI separated while CB cells push aircraft off the main flow and deviation requests come in together.",
+  "conflicts": 2,
+  "challenges": [
+    "Two CB cells on the main flow",
+    "Deviation requests while a level bust is open",
+    "Two crossing conflicts"
+  ],
+  "criteria": [
+    "No loss of separation (5 NM / 1000 ft)",
+    "Every deviation request answered before the aircraft deviates on its own",
+    "Deviating aircraft separated from the traffic beside them",
+    "Every request answered within 60 s"
+  ],
+  "wind": [
+    {
+      "fl": 50,
+      "dir": 245,
+      "kt": 17
+    },
+    {
+      "fl": 180,
+      "dir": 265,
+      "kt": 21
+    },
+    {
+      "fl": 340,
+      "dir": 275,
+      "kt": 42
+    },
+    {
+      "fl": 420,
+      "dir": 285,
+      "kt": 34
+    }
+  ],
+  "injects": [
+    {
+      "min": 4,
+      "type": "WEATHER_CELL",
+      "text": "A CB builds ahead of the eastbound flow. Expect deviation requests left and right.",
+      "objective": "Every deviation request answered before the aircraft deviates on its own (10 min)"
+    },
+    {
+      "min": 10,
+      "type": "CLIMB_REQUEST",
+      "text": "A flight asks to climb above the weather tops.",
+      "objective": "Answered within 60 s"
+    },
+    {
+      "min": 16,
+      "type": "LEVEL_BUST",
+      "text": "An aircraft passes its cleared level while others deviate.",
+      "objective": "Level re-cleared within 60 s"
+    },
+    {
+      "min": 22,
+      "type": "WEATHER_CELL",
+      "text": "A second cell grows on the other flow. Re-plan around both.",
+      "objective": "Every deviation request answered before the aircraft deviates on its own (10 min)"
+    }
+  ]
+}

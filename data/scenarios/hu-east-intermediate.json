@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "title": "EAST: mixed events with medium traffic",
+  "country": "HU",
+  "sector": "EAST",
+  "difficulty": "intermediate",
+  "duration": 30,
+  "seed": 5501,
+  "objective": "Work Budapest EAST with medium traffic through weather, a radio failure and unplanned traffic.",
+  "conflicts": 2,
+  "challenges": [
+    "Weather on the flow to and from the Romanian border",
+    "A silent aircraft on its last clearance",
+    "Unplanned traffic near the end"
+  ],
+  "criteria": [
+    "No loss of separation (5 NM / 1000 ft)",
+    "Traffic kept 5 NM / 1000 ft from the 7600 aircraft",
+    "Every request and coordination answered within 60 s",
+    "Every flight transferred at its agreed exit level"
+  ],
+  "wind": [
+    {
+      "fl": 50,
+      "dir": 244,
+      "kt": 18
+    },
+    {
+      "fl": 180,
+      "dir": 264,
+      "kt": 31
+    },
+    {
+      "fl": 340,
+      "dir": 274,
+      "kt": 61
+    },
+    {
+      "fl": 420,
+      "dir": 284,
+      "kt": 49
+    }
+  ],
+  "injects": [
+    {
+      "min": 4,
+      "type": "CLIMB_REQUEST",
+      "text": "A flight asks for a higher cruising level.",
+      "objective": "Answered within 60 s"
+    },
+    {
+      "min": 9,
+      "type": "WEATHER_CELL",
+      "text": "A CB builds on the main flow. Expect deviation requests.",
+      "objective": "Every deviation request answered before the aircraft deviates on its own (10 min)"
+    },
+    {
+      "min": 15,
+      "type": "RADIO_FAILURE",
+      "text": "An aircraft stops answering and squawks 7600. It keeps its last clearance.",
+      "objective": "No aircraft within 5 NM / 1000 ft of the 7600 track while it is silent"
+    },
+    {
+      "min": 21,
+      "type": "COORD_REQUEST",
+      "text": "The next sector asks for another exit level.",
+      "objective": "Answered within 60 s, and the aircraft leaves at the agreed level"
+    },
+    {
+      "min": 26,
+      "type": "POPUP_TRAFFIC",
+      "text": "An aircraft enters without coordination.",
+      "objective": "No STCA involving it in its first 3 min"
+    }
+  ]
+}

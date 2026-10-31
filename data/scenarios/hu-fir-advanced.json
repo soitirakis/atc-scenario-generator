@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "title": "Budapest FIR combined: heavy traffic, every kind of event",
+  "country": "HU",
+  "sector": "FIR",
+  "difficulty": "advanced",
+  "duration": 45,
+  "seed": 6607,
+  "objective": "Work all of Budapest ACC as one sector with heavy traffic and overlapping events. Priorities first: emergencies and STCA before routine.",
+  "conflicts": 4,
+  "challenges": [
+    "All four sectors combined: long routes and many entry points",
+    "Overlapping weather, radio failure, TSA and emergency",
+    "Four crossing conflicts"
+  ],
+  "criteria": [
+    "No loss of separation (5 NM / 1000 ft)",
+    "Emergency acknowledged within 30 s, no STCA in its descent",
+    "No aircraft inside the TSA at FL195+ once it is active",
+    "Every request and coordination answered within 60 s"
+  ],
+  "wind": [
+    {
+      "fl": 50,
+      "dir": 236,
+      "kt": 17
+    },
+    {
+      "fl": 180,
+      "dir": 256,
+      "kt": 45
+    },
+    {
+      "fl": 340,
+      "dir": 266,
+      "kt": 89
+    },
+    {
+      "fl": 420,
+      "dir": 276,
+      "kt": 71
+    }
+  ],
+  "injects": [
+    {
+      "min": 4,
+      "type": "WEATHER_CELL",
+      "text": "A CB cell builds on a main flow.",
+      "objective": "Every deviation request answered before the aircraft deviates on its own (10 min)"
+    },
+    {
+      "min": 10,
+      "type": "COORD_REQUEST",
+      "text": "A neighbour asks for another exit level.",
+      "objective": "Answered within 60 s, and the aircraft leaves at the agreed level"
+    },
+    {
+      "min": 15,
+      "type": "RADIO_FAILURE",
+      "text": "An aircraft stops answering and squawks 7600.",
+      "objective": "No aircraft within 5 NM / 1000 ft of the 7600 track while it is silent"
+    },
+    {
+      "min": 21,
+      "type": "MILITARY_TSA",
+      "text": "A TSA becomes active in five minutes, FL195 and above.",
+      "objective": "No aircraft inside the active area at FL195+ (10 min after activation)"
+    },
+    {
+      "min": 27,
+      "type": "EMERGENCY_DESCENT",
+      "text": "Pressurisation failure. Emergency descent to FL100, squawk 7700.",
+      "objective": "Acknowledged within 30 s, and no STCA with it in the descent to FL100"
+    },
+    {
+      "min": 33,
+      "type": "LATE_TRANSFER",
+      "text": "An inbound flight arrives without transfer.",
+      "objective": "Assumed within 30 s of its first call"
+    },
+    {
+      "min": 39,
+      "type": "LEVEL_BUST",
+      "text": "An aircraft passes its cleared level.",
+      "objective": "Level re-cleared within 60 s"
+    }
+  ]
+}

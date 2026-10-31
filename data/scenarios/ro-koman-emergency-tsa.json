@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "title": "KOMAN: emergency descent under an active TSA",
+  "country": "RO",
+  "sector": "KOM",
+  "difficulty": "advanced",
+  "duration": 45,
+  "seed": 3307,
+  "objective": "Clear traffic out of an activating TSA, then handle an emergency descent through busy levels without losing separation.",
+  "conflicts": 4,
+  "challenges": [
+    "TSA activates FL195+ with traffic inside or close to it",
+    "Emergency descent through occupied levels",
+    "Unplanned traffic and a level bust late in the session"
+  ],
+  "criteria": [
+    "No aircraft inside the TSA at FL195+ once it is active",
+    "Emergency acknowledged within 30 s and kept clear of other traffic down to FL100",
+    "No loss of separation (5 NM / 1000 ft)",
+    "Emergencies and STCA handled before routine requests"
+  ],
+  "wind": [
+    {
+      "fl": 50,
+      "dir": 219,
+      "kt": 19
+    },
+    {
+      "fl": 180,
+      "dir": 239,
+      "kt": 28
+    },
+    {
+      "fl": 340,
+      "dir": 249,
+      "kt": 56
+    },
+    {
+      "fl": 420,
+      "dir": 259,
+      "kt": 45
+    }
+  ],
+  "injects": [
+    {
+      "min": 5,
+      "type": "MILITARY_TSA",
+      "text": "Military activity: a TSA becomes active in five minutes, FL195 and above.",
+      "objective": "No aircraft inside the active area at FL195+ (10 min after activation)"
+    },
+    {
+      "min": 12,
+      "type": "CLIMB_REQUEST",
+      "text": "A flight under the TSA asks for its cruising level.",
+      "objective": "Answered within 60 s"
+    },
+    {
+      "min": 18,
+      "type": "EMERGENCY_DESCENT",
+      "text": "Pressurisation failure. Emergency descent to FL100, squawk 7700, diverting.",
+      "objective": "Acknowledged within 30 s, and no STCA with it in the descent to FL100"
+    },
+    {
+      "min": 26,
+      "type": "POPUP_TRAFFIC",
+      "text": "An aircraft enters without coordination.",
+      "objective": "No STCA involving it in its first 3 min"
+    },
+    {
+      "min": 34,
+      "type": "LEVEL_BUST",
+      "text": "An aircraft passes its cleared level.",
+      "objective": "Level re-cleared within 60 s"
+    }
+  ]
+}
