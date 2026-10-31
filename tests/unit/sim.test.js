@@ -359,6 +359,20 @@ describe('sector routine injects', () => {
     expect(a.lateA).toBe(true);
   });
 
+  it('EMERGENCY_DESCENT releases the agreed exit level: leaving at FL100 is not a wrong exit level', () => {
+    const sim = fresh({}, at('EMERGENCY_DESCENT'));
+    run(sim, 61);
+    const a = sim.ac.find(x => x.emg);
+    expect(a.xfl).toBeNull();
+    sim.ac = [a]; sim.target = 0; // only the emergency, so other flights do not count
+    sim.ackEmergency(a.id);
+    for (let i = 0; i < 1200 && sim.get(a.id); i++) sim.step();
+    expect(sim.get(a.id)).toBeNull(); // it diverted out of the sector
+    expect(sim.stats.wrongXfl).toBe(0);
+    expect(sim.stats.lateXfer).toBe(1); // not transferring it still counts
+    expect(sim.logs.some(l => /agreed exit/.test(l.text))).toBe(false);
+  });
+
   it('the debrief counts late assumes, late transfers and wrong exit levels', () => {
     const d = fresh({}, []).debrief();
     for (const k of ['lateAssume', 'lateXfer', 'wrongXfl']) expect(d[k], k).toBe(0);

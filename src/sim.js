@@ -637,6 +637,7 @@ export class Sim {
       case 'EMERGENCY_DESCENT': {
         if (!tgt) break; inj.target = tgt.cs;
         tgt.emg = true; tgt.sq = '7700'; tgt.cfl = 100; tgt.sfl = 100; tgt.req = null; inj.g = { ac: tgt };
+        tgt.xfl = null; // a diverting emergency is no longer held to the agreed exit level
         let best = null, bd = 1e9;
         for (const ap of C.airportList) { const dd = dist([tgt.x, tgt.y], ap.xy); if (dd < bd) { bd = dd; best = ap; } }
         tgt.route = [{ id: best.id, xy: best.xy }]; tgt.ri = 0; tgt.mode = 'nav'; tgt.spd = { mode: 'ias', v: 320 };
