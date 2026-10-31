@@ -110,7 +110,7 @@ export function makeSnapshot(sim, { session = 0, running = false, speed = 1 } = 
     ac,
     stca: sim.stca.map(c => ({ a: c.a.id, b: c.b.id, level: c.level, tt: c.tt, dh: c.dh, dv: c.dv })),
     wx: sim.wx.map(c => ({ x: c.x, y: c.y, r: c.r, top: c.top })),
-    tsa: sim.tsa.map(z => ({ x: z.x, y: z.y, r: z.r, at: z.at, active: z.active, name: z.name })),
+    tsa: sim.tsa.map(z => ({ id: z.id, name: z.name, poly: z.poly.map(p => [p[0], p[1]]), lower: z.lower, upper: z.upper, at: z.at, active: z.active })),
     prio: sim.priorities().filter(p => !p.instr).map(p => ({ p: p.p, ac: p.ac ? p.ac.id : null, h: p.h, s: p.s, act: p.act || null })),
     logs: sim.logs.filter(l => l.who !== 'i').slice(0, 60).map(l => ({ t: l.t, text: l.text, cls: l.cls })),
     debrief: sim.ended ? traineeDebrief(sim.debrief()) : null

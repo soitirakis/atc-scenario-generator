@@ -1,6 +1,6 @@
 // Simulation engine. No DOM access: the UI reads state from a Sim instance and
 // calls its command methods. Time advances in fixed 1-second steps via step().
-import { D2R, dist, brg, angDiff, segInt, mulberry32, moveToward, fmtFL, fmtT } from './geo.js';
+import { D2R, dist, brg, angDiff, segInt, mulberry32, moveToward, fmtFL, fmtT, pip } from './geo.js';
 import { inSector } from './country.js';
 import { machToTas, casToTas, tasToMach, windAt, normaliseWind } from './atmos.js';
 import PERF from '../data/performance.json';
@@ -11,7 +11,7 @@ export const TYPES = {
   WEATHER_CELL: 'CB cell and deviations',
   RADIO_FAILURE: 'Radio failure (7600)',
   EMERGENCY_DESCENT: 'Emergency descent (7700)',
-  MILITARY_TSA: 'TSA activation',
+  MILITARY_TSA: 'Military area activation',
   POPUP_TRAFFIC: 'Unplanned traffic',
   COORD_REQUEST: 'Exit level coordination',
   LATE_TRANSFER: 'Late transfer from previous sector'
@@ -22,6 +22,16 @@ export const DIFF = {
   intermediate: { count: 13, conflicts: 2, label: 'Intermediate' },
   advanced: { count: 20, conflicts: 4, label: 'Advanced' }
 };
+
+/** "FL280-FL350" for an area's vertical limits. */
+export const areaBand = z => `FL${fmtFL(z.lower)}-FL${fmtFL(z.upper)}`;
+const AREA_MAX_NM2 = 4000;
+const polyArea = poly => Math.abs(poly.reduce((s, p, i) => { const q = poly[(i + 1) % poly.length]; return s + p[0] * q[1] - q[0] * p[1]; }, 0)) / 2;
+function distToSeg(p, a, b) {
+  const dx = b[0] - a[0], dy = b[1] - a[1], L2 = dx * dx + dy * dy;
+  const t = L2 ? Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / L2)) : 0;
+  return Math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy);
+}
 
 export const SEPARATION = { lateralNM: 5, verticalFt: 1000, lookaheadS: 180 };
 
@@ -34,7 +44,7 @@ export const GRADING = {
   RADIO_FAILURE: { lateralNM: 5, verticalFt: 1000, text: 'No aircraft within 5 NM / 1000 ft of the 7600 track while it is silent' },
   EMERGENCY_DESCENT: { ackS: 30, untilFL: 100, text: 'Acknowledged within 30 s, and no STCA with it in the descent to FL100' },
   WEATHER_CELL: { windowS: 600, text: 'Every deviation request answered before the aircraft deviates on its own (10 min)' },
-  MILITARY_TSA: { windowS: 600, minFL: 195, text: 'No aircraft inside the active area at FL195+ (10 min after activation)' },
+  MILITARY_TSA: { windowS: 600, text: 'None of your aircraft inside the active military area within its vertical limits (10 min after activation)' },
   POPUP_TRAFFIC: { windowS: 180, text: 'No STCA involving it in its first 3 min' },
   CLIMB_REQUEST: { answerS: 60, text: 'Answered within 60 s' },
   COORD_REQUEST: { answerS: 60, text: 'Answered within 60 s, and the aircraft leaves at the agreed level' },
@@ -458,9 +468,9 @@ export class Sim {
       }
       for (const z of this.tsa) {
         if (!z.active) continue;
-        const inZ = dist([a.x, a.y], [z.x, z.y]) < z.r && a.fl >= 195;
-        if (inZ && !a.inTsa) { this.stats.tsaInf++; this.log(`${a.cs} inside active TSA`, 'a'); }
-        a.inTsa = inZ;
+        const inZ = this.inArea(a, z) && this.ours(a);
+        if (inZ && !a.inTsa) { this.stats.tsaInf++; this.log(`${a.cs} inside active ${z.id}`, 'a'); }
+        a.inTsa = inZ ? z : null;
       }
       if (a.emg && a.fl <= 105) { a.done = 'emg'; this.log(`${a.cs} below FL110, transferred to approach / FIS`); }
       if (apt && dist([a.x, a.y], apt.xy) < apt.handoffNM) {
@@ -483,7 +493,7 @@ export class Sim {
       this.spawnTimer = 25 + Math.floor(this.rng() * 50);
     }
     for (const c of this.wx) { c.x += c.vx; c.y += c.vy; }
-    for (const z of this.tsa) if (!z.active && this.t >= z.at) { z.active = true; this.log('TSA now active FL195+', 'a'); this.mark(`${z.name} active`); }
+    for (const z of this.tsa) if (!z.active && this.t >= z.at) { z.active = true; this.log(`${z.id} now active ${areaBand(z)}`, 'a'); this.mark(`${z.id} active`); }
     if (this.t % RADAR_REFRESH_S === 0) {
       for (const a of this.ac) { a.plots.push([a.px, a.py]); if (a.plots.length > 6) a.plots.shift(); a.px = a.x; a.py = a.y; }
     }
@@ -644,14 +654,12 @@ export class Sim {
         this.log(`MAYDAY ${tgt.cs} emergency descent FL100, diverting ${best.id}`, 'a'); break;
       }
       case 'MILITARY_TSA': {
-        // centred on the sector point with the most traffic near it; geometry is a training construct
-        const cand = C.pointList.filter(p => inSector(p.xy, sec));
-        let best = cand[0], score = -1;
-        for (const p of cand) { const s = this.ac.filter(a => dist([a.x, a.y], p.xy) < 60).length; if (s > score) { score = s; best = p; } }
-        const c = best ? best.xy : (sec.c || [0, 0]);
-        const zone = { x: c[0], y: c[1], r: 22, at: this.t + 300, active: false, name: best ? 'TSA near ' + best.id : 'TSA' };
-        this.tsa.push(zone); inj.g = { zone };
-        this.log(`TSA activation notified: active in 5 min, FL195+${best ? ' around ' + best.id : ''}`, 'w'); break;
+        // a real ENR 5.2 area (data/<CODE>/areas.json): one over the sector, else the nearest within 30 NM
+        const area = this.pickArea();
+        if (!area) break;
+        const zone = { ...area, at: this.t + 300, active: false };
+        this.tsa.push(zone); inj.g = { zone }; inj.target = area.id;
+        this.log(`Military area ${area.id}${area.name ? ' (' + area.name + ')' : ''} active in 5 min, ${areaBand(area)}`, 'w'); break;
       }
       case 'POPUP_TRAFFIC': {
         const p = this.planFlight({ mustCross: sec });
@@ -693,10 +701,42 @@ export class Sim {
         t2.ctl = 'none'; t2.noXfer = true; t2.pendAt = t2.lastIn ? this.t : null; t2.assumedAt = undefined; inj.target = t2.cs; inj.g = { ac: t2 }; break;
       }
     }
-    if (!inj.target && inj.type !== 'MILITARY_TSA') this.log(`Inject ${TYPES[inj.type]}: no suitable aircraft in sector`, 'w', 'i');
+    if (!inj.target) this.log(`Inject ${TYPES[inj.type]}: ${inj.type === 'MILITARY_TSA' ? 'no military area over or near the sector' : 'no suitable aircraft in sector'}`, 'w', 'i');
     // graded only when the inject found something to act on
     if (inj.g) inj.result = { state: 'pending', t: null, reason: GRADING[inj.type].text, at: null };
     this.mark(`${TYPES[inj.type]}${inj.target ? ' · ' + inj.target : ''} fired${inj.g ? '' : ', no suitable aircraft'}`);
+  }
+
+  /* ---------------- military areas (ENR 5.2) ---------------- */
+  /** Aircraft the trainee is responsible for: assumed, or pending (about to be). */
+  ours(a) { return a.ctl === 'ass' || a.ctl === 'pend'; }
+  /** Inside the area laterally and within its vertical limits (inclusive). */
+  inArea(a, z) { return a.fl >= z.lower && a.fl <= z.upper && pip([a.x, a.y], z.poly); }
+  /** Within its vertical limits and inside or within nm of it laterally. */
+  nearArea(a, z, nm) {
+    if (a.fl < z.lower || a.fl > z.upper) return false;
+    if (pip([a.x, a.y], z.poly)) return true;
+    return z.poly.some((p, i) => distToSeg([a.x, a.y], p, z.poly[(i + 1) % z.poly.length]) < nm);
+  }
+  /**
+   * The area the MILITARY_TSA inject activates: one reaching cruise levels (band overlapping
+   * FL245-FL410) over the training sector, or else the nearest within 30 NM. Among those, a
+   * workable exercise: an area of at most AREA_MAX_NM2 where possible, about two of your aircraft
+   * affected, then the smallest. No rng, so seeds stay reproducible.
+   */
+  pickArea() {
+    const sec = this.sector, cruise = this.C.areas.filter(z => z.upper !== null && z.lower !== null && z.upper > 245 && z.lower < 410);
+    const gap = z => {
+      if (z.poly.some(p => inSector(p, sec)) || sec.polys.some(poly => poly.some(p => pip(p, z.poly)))) return 0;
+      let d = Infinity;
+      for (const poly of sec.polys) for (const p of poly) for (let i = 0; i < z.poly.length; i++) d = Math.min(d, distToSeg(p, z.poly[i], z.poly[(i + 1) % z.poly.length]));
+      return d;
+    };
+    const scored = cruise.map(z => ({ z, gap: gap(z), size: polyArea(z.poly), n: this.ac.filter(a => (this.ours(a) || a.inbound) && this.nearArea(a, z, 10)).length }))
+      .filter(c => c.gap <= 30)
+      .sort((p, q) => (p.gap > 0) - (q.gap > 0) || (p.gap > 0 && p.gap - q.gap) || (p.size > AREA_MAX_NM2) - (q.size > AREA_MAX_NM2)
+        || (p.n === 0) - (q.n === 0) || Math.abs(p.n - 2) - Math.abs(q.n - 2) || p.size - q.size || p.z.id.localeCompare(q.z.id));
+    return scored.length ? scored[0].z : null;
   }
 
   /* ---------------- per-inject grading ---------------- */
@@ -780,8 +820,8 @@ export class Sim {
         const z = g.zone;
         if (!z.active) return null;
         const since = this.t - z.at;
-        const b = this.ac.find(x => dist([x.x, x.y], [z.x, z.y]) < z.r && x.fl >= L.minFL);
-        if (b) return fail(since, `${b.cs} inside at FL${fmtFL(b.fl)}, ${since} s after activation`);
+        const b = this.ac.find(x => this.ours(x) && this.inArea(x, z));
+        if (b) return fail(since, `${b.cs} inside ${z.id} at FL${fmtFL(b.fl)}, ${since} s after activation`);
         if (since >= L.windowS) return met(since, `no aircraft inside for ${Math.round(L.windowS / 60)} min after activation`);
         return null;
       }
@@ -1032,15 +1072,15 @@ export class Sim {
       if (a.emg) items.push({ p: 1, ac: a, h: `${a.cs} emergency descent`, s: `Squawk 7700, descending FL${fmtFL(a.fl)} to FL100, diverting ${a.route[0] ? a.route[0].id : ''}${a.emgAck ? ' · acknowledged' : ''}`, act: a.emgAck ? null : 'ack' });
       if (a.rcf && a.sq === '7600') items.push({ p: 1, ac: a, h: `${a.cs} radio failure`, s: `Squawk 7600. Continues FL${fmtFL(a.cfl)} on own navigation. Separate others from it.` });
       if (a.bust) items.push({ p: 1, ac: a, h: `${a.cs} level bust`, s: `Cleared FL${fmtFL(a.cfl)}, selected FL${fmtFL(a.sfl)}, now FL${fmtFL(a.fl)}. Re-issue the level.` });
-      if (a.inTsa) items.push({ p: 1, ac: a, h: `${a.cs} inside active TSA`, s: `FL${fmtFL(a.fl)}. Turn or descend below FL195.` });
+      if (a.inTsa) items.push({ p: 1, ac: a, h: `${a.cs} inside active ${a.inTsa.id}`, s: `FL${fmtFL(a.fl)}. Turn out, or leave ${areaBand(a.inTsa)}.` });
     }
     for (const c of this.stca) {
       if (c.level === 'los') items.push({ p: 1, ac: c.a, h: `${c.a.cs} / ${c.b.cs} below minima`, s: `${c.dh.toFixed(1)} NM, ${Math.round(c.dv)} ft` });
       else if (c.a.lastIn || c.b.lastIn || c.a.inbound || c.b.inbound) items.push({ p: 2, ac: c.a, h: `${c.a.cs} / ${c.b.cs} STCA in ${fmtT(c.tt)}`, s: `Now ${c.dh.toFixed(0)} NM, ${Math.round(c.dv)} ft` });
     }
     for (const z of this.tsa) if (!z.active) {
-      const n = this.ac.filter(a => dist([a.x, a.y], [z.x, z.y]) < z.r + 15 && a.fl >= 195).length;
-      items.push({ p: 2, h: `${z.name} activates in ${fmtT(z.at - this.t)}`, s: `${n} aircraft at FL195+ inside or close to it` });
+      const n = this.ac.filter(a => this.ours(a) && this.nearArea(a, z, 15)).length;
+      items.push({ p: 2, h: `${z.id} activates in ${fmtT(z.at - this.t)}`, s: `${areaBand(z)}. ${n} of your aircraft inside or within 15 NM` });
     }
     for (const a of this.ac) {
       // sector routine: assume what comes in, transfer what goes out at the agreed level

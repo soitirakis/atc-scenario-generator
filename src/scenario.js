@@ -30,7 +30,7 @@ export const INJECT_TEXT = {
   WEATHER_CELL: 'A CB cell builds on a main flow. Aircraft ask for deviations.',
   RADIO_FAILURE: 'An aircraft in sector stops answering and squawks 7600.',
   EMERGENCY_DESCENT: 'Pressurisation failure: emergency descent to FL100, squawk 7700.',
-  MILITARY_TSA: 'A temporary segregated area activates in sector, FL195 and above. Clear traffic out of it.',
+  MILITARY_TSA: 'A military area from ENR 5.2 becomes active in 5 minutes. Keep your traffic out of it.',
   POPUP_TRAFFIC: 'An aircraft enters the sector without prior coordination.',
   COORD_REQUEST: 'The next sector asks for a different exit level for an aircraft about to leave. Accept or refuse.',
   LATE_TRANSFER: 'An inbound aircraft reaches the sector without having been transferred. Coordinate and assume it.'

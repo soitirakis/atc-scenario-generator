@@ -20,7 +20,7 @@ En-route radar training simulator that builds scenarios and injects for a chosen
   - weather cell with deviation requests
   - radio failure (7600)
   - emergency descent (7700)
-  - TSA activation
+  - military area activation: a real TRA layer from eAIP ENR 5.2 over the sector
   - uncoordinated traffic
   - level requests
   - exit level coordination requests from the next sector
@@ -81,7 +81,7 @@ The sync layer is `src/link.js`. It decides what a trainee may see (`makeSnapsho
 On the Scenario tab (solo or instructor window):
 - **Export** saves the current scenario as JSON (`schemaVersion: 1`). The file holds the country, sector, traffic level, length, seed, objective, built-in conflicts, wind and injects, so it replays the same traffic. Each inject also carries its grading objective, for the reader; Import ignores it.
 - **Import** checks the file first (`validateScenarioFile` in `src/scenario.js`) and lists every problem in plain words, for example a wrong schema version, an unknown country or sector, an unknown inject type, or an inject outside the session length. A valid file loads in both windows.
-- **Sample scenarios** in `data/scenarios/` use the same format: ARGES foundational, DINSI with weather, KOMAN with an emergency and a TSA, NERDI coordination, Hungary EAST, and the whole Budapest FIR combined. Their objectives, criteria and inject notes are training material written for this project, not published procedures.
+- **Sample scenarios** in `data/scenarios/` use the same format: ARGES foundational, DINSI with weather, KOMAN with an emergency and a military area, NERDI coordination, Hungary EAST, and the whole Budapest FIR combined. Their objectives, criteria and inject notes are training material written for this project, not published procedures.
 
 ## Tests
 
@@ -113,7 +113,7 @@ src/
   main.js             UI wiring
 scripts/
   airac-update.mjs    pull ENR 4.1 / 4.4 from the eAIP and diff against data/RO or data/HU
-  airac-lib.mjs       pure parsing helpers (unit tested), including Hungary's ENR 4.4.1 format
+  airac-lib.mjs       pure parsing helpers (unit tested), including Hungary's ENR 4.4.1 format and both ENR 5.2 formats
   openap-wrap.mjs     OpenAP WRAP -> data/performance.json (pinned commit)
   performance-lib.mjs WRAP table parser and unit conversion (unit tested)
   screenshots.mjs     regenerate docs/img/ (Playwright)
@@ -160,6 +160,7 @@ One value in OpenAP's own data is kept as published although it lies outside its
 | `navaids.json` | 16 VOR/DME | eAIP ENR 4.1 (AIRAC AMDT 11/26, page 3: 01/25) |
 | `points.json` | 131 significant points with FRA role | eAIP ENR 4.4 (AIRAC AMDT 11/26) |
 | `airports.json` | aerodrome reference points | eAIP AD 2 |
+| `areas.json` | 270 military areas (264 TRA, 6 TSA) with lateral and vertical limits | eAIP ENR 5.2 (edition 2026-10-29), parsed by `npm run airac`; three limits the AIP prints as `L200`/`L280` are kept as published and read as flight levels |
 | `traffic.json` | gates, flow weights, operators, main airports (LROP), agreed exit levels | modelling choice, not published data; exit levels are **modelled, not from a published Letter of Agreement** |
 | `data/performance.json` (shared) | per-type climb/descent rates by level band, climb/cruise/descent Mach and speeds | converted from [OpenAP](https://github.com/TUDelft-CNS-ATM/openap) WRAP kinematic data (TU Delft, GPL-3.0) at commit [`46753acb`](https://github.com/TUDelft-CNS-ATM/openap/tree/46753acb988c1e8c9d47ec5ae72d6fb75b9cf260/openap/data/wrap) by `scripts/openap-wrap.mjs` |
 
@@ -174,7 +175,7 @@ eAIP: https://aisro.ro/aip/2026-10-29/html/ro/aip_toc_enr.html
 | `I` | Intermediate point only |
 
 **What is not real:**
-- the TSA geometry, which is a training construct;
+- military area activity: the areas are published, but when one is active is the instructor's choice (the AIP says "by NOTAM"), and the simulator treats an active TRA as closed to your traffic, without transit by clearance;
 - the flow weights;
 - the border segments between published sector corners;
 - aircraft performance: WRAP values are statistical models fitted to ADS-B flight data, not manufacturer or BADA data. BADA was not used because it requires a EUROCONTROL licence.
@@ -190,10 +191,11 @@ The Ukrainian entry and exit points are kept in the data but carry no traffic (`
 | `navaids.json` | 9 DVOR/DME | eAIP ENR 4.1 (AIRAC AMDT 006/2026) |
 | `points.json` | 107 FRA significant points with role | eAIP ENR 4.4.1 (AIRAC AMDT 006/2026) |
 | `airports.json` | aerodrome reference points | eAIP AD 2.2 |
+| `areas.json` | 39 TRAs with lateral and vertical limits | eAIP ENR 5.2 (AIRAC AMDT 006/2026), parsed by `npm run airac`; "along border" segments follow `borders.json`, so they are **approximated** |
 | `traffic.json` | gates, flow weights, operators, main airport (LHBP), agreed exit levels | modelling choice, not published data; exit levels are **modelled, not from a published Letter of Agreement** |
 | `data/performance.json` (shared) | per-type climb/descent rates by level band, climb/cruise/descent Mach and speeds | converted from [OpenAP](https://github.com/TUDelft-CNS-ATM/openap) WRAP kinematic data (TU Delft, GPL-3.0) at commit [`46753acb`](https://github.com/TUDelft-CNS-ATM/openap/tree/46753acb988c1e8c9d47ec5ae72d6fb75b9cf260/openap/data/wrap) by `scripts/openap-wrap.mjs` |
 
-eAIP: https://ais-en.hungarocontrol.hu/aip/2026-09-03/ (AIRAC AMDT 006/2026, effective 2026-09-03). AMDT 007/2026 (effective 2026-11-26) does not change ENR 2.1, 4.1, 4.4.1 or the sector chart.
+eAIP: https://ais-en.hungarocontrol.hu/aip/2026-09-03/ (AIRAC AMDT 006/2026, effective 2026-09-03). AMDT 007/2026 (effective 2026-11-26) does not change ENR 2.1, 4.1, 4.4.1, 5.2 or the sector chart.
 
 **Sector polygons are not published data.** The EUROCONTROL NM RAD has no LH sector file, and the eAIP shows Budapest ACC sectors only as a chart. The four internal boundary lines were traced from that chart after fitting its Lambert conformal conic graticule (0.07 NM RMS on the grid ticks); treat them as accurate to about 0.5 NM. Each lateral sector is split into ten elementary layers (0–9, at FL305 to FL385); the simulator uses the lateral outline. Areas of ATS delegation to or from Wien, Bratislava and Košice are not modelled.
 
@@ -215,7 +217,7 @@ npm run airac -- --country HU --write            # apply, then run npm test and 
 
 | | Romania (`RO`) | Hungary (`HU`) |
 |---|---|---|
-| Source | ROMATSA eAIP, PDF: ENR 4.1, ENR 4.4 | HungaroControl eAIP, HTML: ENR 4.1, ENR 4.4.1 |
+| Source | ROMATSA eAIP, PDF: ENR 4.1, ENR 4.4, ENR 5.2 | HungaroControl eAIP, HTML: ENR 4.1, ENR 4.4.1, ENR 5.2 |
 | Editions | a new edition every AIRAC cycle | amended on some cycles only; without `--edition`, the script reads the eAIP index and uses the edition in force on `--date` (default today) |
 | New points added by `--write` | entry/exit points only (`E`, `X`, `EX`); the point set is curated | every point with an FRA role, as `data/HU` keeps them all |
 | `meta.json` on `--write` | `airac.edition` and the edition in the eAIP source links (the AMDT labels in `enr41`/`enr44` are per page; check them by hand) | `airac.edition`, the AMDT number in `airac.enr41`/`enr44`, and the edition in the source links |
@@ -224,6 +226,7 @@ Hungary example: on 29 OCT 2026 there is no new Hungarian edition. AMDT 006/2026
 
 What the script does and doesn't do, for both countries:
 - **Updates** coordinates and roles of existing points, and frequency/position of VORs.
+- **Rewrites** `areas.json` from ENR 5.2 on `--write`, after reporting areas that changed, were removed or are new.
 - **Adds** new points with the roles shown above.
 - **Reports** points that have been removed, or that lost their FRA role. It will not delete a point that `traffic.json` still uses (gates or main-airport connection points).
 - **Does not** touch sector polygons or borders. Update `sectors.json` by hand when EUROCONTROL NM publishes a new LR sector file. For Hungary, re-trace only if ENR 6-LHCC-SECTOR changes.

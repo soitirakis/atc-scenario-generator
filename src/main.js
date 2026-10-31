@@ -431,7 +431,7 @@ function gradeItems(d) {
     ['Requests answered', `${d.reqAnswered}/${d.reqs}`, d.reqMissed ? 'w' : ''],
     ['Avg. response', d.avgResponse === null ? '—' : d.avgResponse + ' s', d.avgResponse !== null && d.avgResponse > 60 ? 'w' : ''],
     ['Weather self-deviations', d.selfDev, d.selfDev ? 'w' : ''],
-    ['TSA infringements', d.tsaInf, d.tsaInf ? 'a' : ''],
+    ['Military area infringements', d.tsaInf, d.tsaInf ? 'a' : ''],
     ['Late assumes', d.lateAssume, d.lateAssume ? 'w' : ''],
     ['Late transfers', d.lateXfer, d.lateXfer ? 'w' : ''],
     ['Wrong exit levels', d.wrongXfl, d.wrongXfl ? 'a' : ''],
@@ -534,8 +534,8 @@ function bindInput() {
     }
   });
 
-  const defs = [['sectors', 'Sectors'], ['points', 'FRA E/X'], ['navaids', 'VOR'], ['airports', 'Aerodromes'], ['labels', 'All labels'], ['vec', 'Vector 2 min']];
-  $('layerChips').innerHTML = defs.map(d => `<button class="chip" data-l="${d[0]}" aria-pressed="true">${d[1]}</button>`).join('');
+  const defs = [['sectors', 'Sectors'], ['mil', 'Mil areas'], ['points', 'FRA E/X'], ['navaids', 'VOR'], ['airports', 'Aerodromes'], ['labels', 'All labels'], ['vec', 'Vector 2 min']];
+  $('layerChips').innerHTML = defs.map(d => `<button class="chip" data-l="${d[0]}" aria-pressed="${R.layers[d[0]] !== false}">${d[1]}</button>`).join('');
   $('layerChips').onclick = e => {
     const b = e.target.closest('button'); if (!b) return;
     const l = b.dataset.l, L = R.layers;

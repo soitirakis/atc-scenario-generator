@@ -37,6 +37,7 @@ En-route ATC radar training simulator. Vanilla JS (ES modules) built with Vite i
 - Anything not from an official source (border approximations, flows, TSA geometry) must be labelled as such in the file's `_note` and in the README.
 - Point roles: `E`, `X`, `EX`, `L` (entry/exit only up to FL175), `I`. The rule is implemented in `scripts/airac-lib.mjs` `classifyRole`; data must agree with it.
 - Do not delete points still referenced by `traffic.json`.
+- `areas.json` (ENR 5.2) is written only by `npm run airac -- --write`; do not hand-edit it. Limits stay as published; a misprint is kept and read through `upperRead`/`lowerRead` with a `note`. The MILITARY_TSA inject picks from these areas (`Sim.pickArea`).
 
 ## Style
 - Plain modern JS, 2-space indent, single quotes, no semicolon-free style changes.

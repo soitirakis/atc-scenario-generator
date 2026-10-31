@@ -4,7 +4,7 @@ import HU from '../../data/HU/index.js';
 import { loadCountry, inSector } from '../../src/country.js';
 import { Sim, DIFF, TYPES } from '../../src/sim.js';
 import { buildLocalScenario } from '../../src/scenario.js';
-import { D2R, angDiff, brg } from '../../src/geo.js';
+import { D2R, angDiff, brg, pip } from '../../src/geo.js';
 import { machToTas, casToTas } from '../../src/atmos.js';
 import PERF from '../../data/performance.json';
 
@@ -146,14 +146,18 @@ describe('injects', () => {
     expect(Math.abs(((req.thdg - before + 540) % 360) - 180)).toBe(25);
   });
 
-  it('MILITARY_TSA warns five minutes before it activates', () => {
+  it('MILITARY_TSA warns five minutes before a real military area over the sector activates', () => {
     const sim = fresh({}, at('MILITARY_TSA'));
     run(sim, 61);
     expect(sim.tsa).toHaveLength(1);
-    expect(sim.tsa[0].active).toBe(false);
+    const z = sim.tsa[0];
+    expect(z.active).toBe(false);
+    expect(z.id).toMatch(/^LRTRA/);
+    expect(sim.priorities().some(p => p.h === `${z.id} activates in 04:59`)).toBe(true);
+    // over the training sector: a vertex inside it, or the sector inside the area
+    expect(z.poly.some(p => inSector(p, sim.sector)) || sim.sector.polys.flat().some(p => pip(p, z.poly))).toBe(true);
     run(sim, 300);
-    expect(sim.tsa[0].active).toBe(true);
-    expect(inSector([sim.tsa[0].x, sim.tsa[0].y], sim.sector)).toBe(true);
+    expect(z.active).toBe(true);
   });
 
   it('POPUP_TRAFFIC appears at the sector boundary flagged as uncoordinated', () => {
