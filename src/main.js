@@ -11,6 +11,8 @@ import { Sim, TYPES, DIFF } from './sim.js';
 import { buildLocalScenario, buildClaudePrompt, parseClaudeScenario } from './scenario.js';
 import { Renderer } from './render.js';
 import { Link, SimView, makeSnapshot, CHANNEL_NAME } from './link.js';
+import { tasToMach, machToCas } from './atmos.js';
+import PERF from '../data/performance.json';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -215,10 +217,12 @@ function renderAcBox() {
       <label for="cFl">Level</label><select id="cFl">${lvls.map(f => `<option value="${f}" ${f === Math.round(a.cfl) ? 'selected' : ''}>FL${fmtFL(f)}</option>`).join('')}</select><button class="btn sm" id="bFl">Clear</button>
       <label for="cHdg">Heading</label><input type="number" id="cHdg" min="1" max="360" value="${Math.round(a.hdg) || 360}"><button class="btn sm" id="bHdg">Turn</button>
       <label for="cDct">Direct</label><input type="text" id="cDct" list="dctList" value="${esc(a.route[a.ri] ? a.route[a.ri].id : '')}" autocomplete="off"><button class="btn sm" id="bDct">Direct</button>
-      <label for="cSpd">Speed</label><input type="number" id="cSpd" step="10" value="${Math.round(a.tgs)}"><button class="btn sm" id="bSpd">Set</button>
+      <label for="cSpd">IAS kt</label><input type="number" id="cSpd" step="5" value="${Math.round(machToCas(tasToMach(a.tas, a.fl * 100), a.fl * 100) / 5) * 5}"><button class="btn sm" id="bSpd">Set</button>
+      <label for="cMach">Mach</label><input type="number" id="cMach" step="0.01" min="0.6" max="0.9" value="${tasToMach(a.tas, a.fl * 100).toFixed(2)}"><button class="btn sm" id="bMach">Set</button>
+      <label for="cRate">Rate ft/min</label><span class="rate-in"><input type="number" id="cRate" step="100" min="500" max="6000" value="2000"><select id="cRateKind" aria-label="Rate limit"><option value="min">or greater</option><option value="max">or less</option></select></span><button class="btn sm" id="bRate">Set</button>
     </div>
     <datalist id="dctList">${[...new Set(pts)].map(p => `<option value="${p}">`).join('')}</datalist>
-    <div class="row-btns"><button class="btn sm" id="bOwn">Resume own navigation</button></div>
+    <div class="row-btns"><button class="btn sm" id="bOwn">Resume own navigation</button><button class="btn sm" id="bNormSpd">Resume normal speed</button></div>
   </div>`;
   updateKv(a);
   const id = a.id;
@@ -226,12 +230,15 @@ function renderAcBox() {
   $('bHdg').onclick = () => result(sim.turn(id, +$('cHdg').value));
   $('bDct').onclick = () => result(sim.direct(id, $('cDct').value));
   $('bSpd').onclick = () => result(sim.speed(id, +$('cSpd').value));
+  $('bMach').onclick = () => result(sim.mach(id, +$('cMach').value));
+  $('bRate').onclick = () => result(sim.clearRate(id, +$('cRate').value, $('cRateKind').value));
+  $('bNormSpd').onclick = () => result(sim.resumeSpeed(id));
   $('bOwn').onclick = () => result(sim.resumeNav(id));
 }
 function updateKv(a) {
   const k = $('acKv'); if (!k) return;
   const w = a.route[a.ri];
-  k.innerHTML = `<div><span>FL</span>${fmtFL(a.fl)}</div><div><span>CFL</span>${fmtFL(a.cfl)}${a.bust ? ' <b style="color:var(--alert)">≠' + fmtFL(a.sfl) + '</b>' : ''}</div><div><span>GS</span>${Math.round(a.gs)}</div><div><span>HDG</span>${String(Math.round(a.hdg) || 360).padStart(3, '0')}</div><div><span>Next</span>${w ? w.id : '—'}</div><div><span>Dist</span>${w ? Math.round(dist([a.x, a.y], w.xy)) + ' NM' : '—'}</div><div><span>Mode</span>${a.mode === 'nav' ? 'OWN NAV' : 'HDG'}</div><div><span>SSR</span>${a.sq}</div><div><span>XFL</span>${a.xfl === null ? '—' : fmtFL(a.xfl) + (a.ctl === 'ass' && Math.round(a.cfl) !== a.xfl ? ' <b style="color:var(--warn)">≠CFL</b>' : '')}</div><div><span>Exit</span>${a.ctl === 'ass' && a.tExit !== null ? fmtT(a.tExit) : a.tEntry !== null ? 'in ' + fmtT(a.tEntry) : '—'}</div>`;
+  k.innerHTML = `<div><span>FL</span>${fmtFL(a.fl)}</div><div><span>CFL</span>${fmtFL(a.cfl)}${a.bust ? ' <b style="color:var(--alert)">≠' + fmtFL(a.sfl) + '</b>' : ''}</div><div><span>IAS</span>${Math.round(machToCas(tasToMach(a.tas, a.fl * 100), a.fl * 100))}${a.spd && a.spd.mode === 'ias' ? ' ✓' : ''}</div><div><span>Mach</span>${tasToMach(a.tas, a.fl * 100).toFixed(2).slice(1)}${a.spd && a.spd.mode === 'mach' ? ' ✓' : ''}</div><div><span>TAS</span>${Math.round(a.tas)}</div><div><span>GS</span>${Math.round(a.gs)}</div><div><span>HDG</span>${String(Math.round(a.hdg) || 360).padStart(3, '0')}</div><div><span>TRK</span>${String(Math.round(a.trk) || 360).padStart(3, '0')}</div><div><span>Rate</span>${a.rate ? a.rate.fpm + (a.rate.kind === 'min' ? '+' : '−') : '—'}</div><div><span>Next</span>${w ? w.id : '—'}</div><div><span>Dist</span>${w ? Math.round(dist([a.x, a.y], w.xy)) + ' NM' : '—'}</div><div><span>Mode</span>${a.mode === 'nav' ? 'OWN NAV' : 'HDG'}</div><div><span>SSR</span>${a.sq}</div><div><span>XFL</span>${a.xfl === null ? '—' : fmtFL(a.xfl) + (a.ctl === 'ass' && Math.round(a.cfl) !== a.xfl ? ' <b style="color:var(--warn)">≠CFL</b>' : '')}</div><div><span>Exit</span>${a.ctl === 'ass' && a.tExit !== null ? fmtT(a.tExit) : a.tEntry !== null ? 'in ' + fmtT(a.tEntry) : '—'}</div>`;
 }
 
 /* ---------- instructor ---------- */
@@ -304,8 +311,27 @@ function pseudoPilot(action) {
   ui.ppSig = '';
 }
 
+/** Wind table (solo and instructor): four rows of level, direction, speed. */
+function renderWind() {
+  const rows = [...sim.wind];
+  while (rows.length < 4) rows.push({ fl: '', dir: '', kt: '' });
+  $('windTable').innerHTML = '<span>Level FL</span><span>From °</span><span>Speed kt</span>' + rows.map((w, i) =>
+    `<input type="number" data-w="fl" data-i="${i}" aria-label="Wind level ${i + 1}" value="${w.fl}"><input type="number" data-w="dir" data-i="${i}" aria-label="Wind direction ${i + 1}" value="${w.dir}"><input type="number" data-w="kt" data-i="${i}" aria-label="Wind speed ${i + 1}" value="${w.kt}">`).join('');
+}
+function applyWind(calm) {
+  const rows = [];
+  if (!calm) for (let i = 0; i < 4; i++) {
+    const v = k => document.querySelector(`#windTable input[data-w="${k}"][data-i="${i}"]`).value;
+    if (v('fl') !== '' && v('kt') !== '') rows.push({ fl: +v('fl'), dir: +(v('dir') || 0), kt: +v('kt') });
+  }
+  const r = sim.setWind(rows);
+  result(r);
+  if (r.ok) { renderWind(); toast(calm ? 'Wind: calm' : 'Wind applied'); }
+}
+
 function renderScenarioCard() {
   const s = sim.scenario;
+  if (ROLE !== 'trainee') renderWind();
   if (ROLE === 'trainee') { // the briefing a controller gets: no title, challenges or injects
     $('scnSource').textContent = 'briefing';
     $('scnCard').innerHTML = `<div class="scn">
@@ -338,6 +364,7 @@ function renderDataTab() {
     ['Navaids', `${C.navaids.length} VOR/DME · ENR 4.1, ${m.airac.enr41}`],
     ['FRA points', `${C.pointList.length} of the ENR 4.4 list, with entry/exit roles · ${m.airac.enr44}`],
     ['Aerodromes', `${C.airportList.length} reference points`],
+    ['Performance', `OpenAP WRAP, ${Object.keys(PERF.types).length} aircraft types (GPL-3.0, commit ${PERF._source.commit.slice(0, 7)}). ISA atmosphere; wind per scenario.`],
     ['Next AIRAC', `${nextAirac(new Date()).toISOString().slice(0, 10)}. Re-check the eAIP for amendments on or after this date.`]
   ];
   $('dataList').innerHTML = rows.map(d => `<div><span>${esc(d[0])}</span><span>${esc(d[1])}</span></div>`).join('') +
@@ -478,6 +505,8 @@ function bindInput() {
   $('debRestart').onclick = () => { $('debrief').hidden = true; startSession(); };
   $('debNew').onclick = () => { $('debrief').hidden = true; $('seed').value = 1000 + Math.floor(Math.random() * 9000); applyScenario(buildLocalScenario(C, readCfg())); };
   $('debClose').onclick = () => { $('debrief').hidden = true; };
+  $('windApply').onclick = () => applyWind(false);
+  $('windCalm').onclick = () => applyWind(true);
   $('openTwo').onclick = () => { openTrainee(); location.href = roleUrl('instructor'); };
   document.addEventListener('keydown', e => {
     if (ROLE === 'trainee' || e.target.matches('input,textarea,select')) return;
