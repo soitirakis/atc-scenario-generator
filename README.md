@@ -76,6 +76,13 @@ A silent pilot keeps their squawk, so nothing shows on the trainee's radar until
 
 The sync layer is `src/link.js`. It decides what a trainee may see (`makeSnapshot`), and refuses any trainee command other than the controller actions (level, heading, direct, speed, own navigation, answer, assume, transfer, acknowledge emergency).
 
+## Scenario files and library
+
+On the Scenario tab (solo or instructor window):
+- **Export** saves the current scenario as JSON (`schemaVersion: 1`). The file holds the country, sector, traffic level, length, seed, objective, built-in conflicts, wind and injects, so it replays the same traffic. Each inject also carries its grading objective, for the reader; Import ignores it.
+- **Import** checks the file first (`validateScenarioFile` in `src/scenario.js`) and lists every problem in plain words, for example a wrong schema version, an unknown country or sector, an unknown inject type, or an inject outside the session length. A valid file loads in both windows.
+- **Sample scenarios** in `data/scenarios/` use the same format: ARGES foundational, DINSI with weather, KOMAN with an emergency and a TSA, NERDI coordination, Hungary EAST, and the whole Budapest FIR combined. Their objectives, criteria and inject notes are training material written for this project, not published procedures.
+
 ## Tests
 
 ```bash

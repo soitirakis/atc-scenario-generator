@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "title": "ARGES: sector routine and a level bust",
+  "country": "RO",
+  "sector": "ARG",
+  "difficulty": "foundational",
+  "duration": 30,
+  "seed": 1104,
+  "objective": "Run the ARGES routine with light traffic: assume, climb, transfer at the agreed level, and catch a level bust.",
+  "conflicts": 1,
+  "challenges": [
+    "One crossing conflict to solve before STCA",
+    "A level bust in the middle of routine calls",
+    "Departures asking for higher levels"
+  ],
+  "criteria": [
+    "No loss of separation (5 NM / 1000 ft)",
+    "Level bust seen and re-cleared within 60 s",
+    "Every request answered within 60 s",
+    "Every flight assumed before entry and transferred at its agreed exit level"
+  ],
+  "wind": [
+    {
+      "fl": 50,
+      "dir": 261,
+      "kt": 16
+    },
+    {
+      "fl": 180,
+      "dir": 281,
+      "kt": 43
+    },
+    {
+      "fl": 340,
+      "dir": 291,
+      "kt": 85
+    },
+    {
+      "fl": 420,
+      "dir": 301,
+      "kt": 68
+    }
+  ],
+  "injects": [
+    {
+      "min": 6,
+      "type": "CLIMB_REQUEST",
+      "text": "A departure asks for its requested cruising level. Check the crossing traffic first.",
+      "objective": "Answered within 60 s"
+    },
+    {
+      "min": 14,
+      "type": "LEVEL_BUST",
+      "text": "Mode S selected level disagrees with the clearance. Watch the CFL and the SFL.",
+      "objective": "Level re-cleared within 60 s"
+    },
+    {
+      "min": 22,
+      "type": "CLIMB_REQUEST",
+      "text": "A transit asks for a higher level for the ride. Check the exit level agreement.",
+      "objective": "Answered within 60 s"
+    }
+  ]
+}

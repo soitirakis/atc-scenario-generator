@@ -206,3 +206,7 @@ body:not([data-role="solo"]) .solo-only, body[data-role="trainee"] .not-trainee,
 .deb-tl { max-height: 180px; overflow-y: auto; font-size: 12.5px; line-height: 1.5; }
 .deb-tl b { font-family: var(--f-data); font-variant-numeric: tabular-nums; color: var(--muted); margin-right: 6px; }
 .deb-tl .a { color: var(--alert); } .deb-tl .w { color: var(--warn); } .deb-tl .ok { color: var(--ok); }
+
+/* scenario library and files */
+.io-msg { margin: 8px 0 0; }
+.io-msg.err { color: var(--alert); }

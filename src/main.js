@@ -8,7 +8,8 @@ import { COUNTRIES } from '../data/countries.js';
 import { loadCountry } from './country.js';
 import { fmtFL, fmtT, dist } from './geo.js';
 import { Sim, TYPES, DIFF } from './sim.js';
-import { buildLocalScenario, buildClaudePrompt, parseClaudeScenario } from './scenario.js';
+import { buildLocalScenario, buildClaudePrompt, parseClaudeScenario, exportScenario, validateScenarioFile } from './scenario.js';
+import { LIBRARY } from '../data/scenarios/index.js';
 import { Renderer } from './render.js';
 import { Link, SimView, makeSnapshot, CHANNEL_NAME } from './link.js';
 import { tasToMach, machToCas } from './atmos.js';
@@ -329,6 +330,41 @@ function applyWind(calm) {
   if (r.ok) { renderWind(); toast(calm ? 'Wind: calm' : 'Wind applied'); }
 }
 
+/* ---------- scenario files ---------- */
+function ioMessage(lines, error = false) {
+  const m = $('scnIoMsg');
+  m.hidden = !lines.length;
+  m.classList.toggle('err', error);
+  m.innerHTML = lines.map(l => `<div>${esc(l)}</div>`).join('');
+}
+/** Validate a scenario file, switch country if needed, and load it (the link sends it to the trainee window). */
+function loadScenarioFile(j, source) {
+  const countries = Object.fromEntries(COUNTRIES.filter(c => !c.planned).map(c => [c.code, countryData(c.code)]));
+  const r = validateScenarioFile(j, countries);
+  if (!r.ok) { ioMessage(['This scenario was not loaded:', ...r.errors], true); return false; }
+  if (r.country !== C.meta.code) setCountry(r.country);
+  r.scenario.source = source;
+  $('seed').value = r.scenario.seed; $('objective').value = r.scenario.objective;
+  ioMessage([]);
+  applyScenario(r.scenario);
+  toast(`Loaded: ${r.scenario.title}`);
+  return true;
+}
+function exportCurrent() {
+  const j = exportScenario(sim.scenario, C.meta.code);
+  const blob = new Blob([JSON.stringify(j, null, 2) + '\n'], { type: 'application/json' });
+  const url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = `scenario-${j.country}-${j.sector}-${j.seed}.json`.toLowerCase();
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  ioMessage([`Exported ${a.download}`]);
+}
+async function importFile(f) {
+  let j;
+  try { j = JSON.parse(await f.text()); } catch { ioMessage([`This scenario was not loaded:`, `${f.name} is not a JSON file.`], true); return; }
+  loadScenarioFile(j, 'file');
+}
+
 function renderScenarioCard() {
   const s = sim.scenario;
   if (ROLE !== 'trainee') renderWind();
@@ -339,7 +375,7 @@ function renderScenarioCard() {
       <p>${esc(s.objective)}</p></div>`;
     return;
   }
-  $('scnSource').textContent = s.source === 'claude' ? 'written by Claude' : 'built locally';
+  $('scnSource').textContent = { claude: 'written by Claude', library: 'from the library', file: 'imported from a file' }[s.source] || 'built locally';
   $('scnCard').innerHTML = `<div class="scn">
     <h3>${esc(s.title)}</h3>
     <div class="meta"><span class="tag">${esc(C.sectors[s.sector].name)}</span><span class="tag">${esc(DIFF[s.difficulty].label)}</span><span class="tag">${s.duration} min</span><span class="tag">seed ${s.seed}</span><span class="tag">${s.conflicts} built-in conflicts</span></div>
@@ -521,6 +557,11 @@ function bindInput() {
     for (const x of $('speedSeg').children) x.setAttribute('aria-pressed', x === b);
   };
   $('buildLocal').onclick = () => applyScenario(buildLocalScenario(C, readCfg()));
+  $('libSel').innerHTML = LIBRARY.map(l => `<option value="${l.id}">${esc(l.label)}</option>`).join('');
+  $('libLoad').onclick = () => loadScenarioFile(LIBRARY.find(l => l.id === $('libSel').value).file, 'library');
+  $('scnExport').onclick = exportCurrent;
+  $('scnImport').onclick = () => $('scnFile').click();
+  $('scnFile').onchange = () => { const f = $('scnFile').files[0]; $('scnFile').value = ''; if (f) importFile(f); };
   $('buildAI').onclick = () => buildWithClaude();
   $('newSeed').onclick = () => { $('seed').value = 1000 + Math.floor(Math.random() * 9000); };
   $('sector').onchange = () => applyScenario(buildLocalScenario(C, readCfg()));

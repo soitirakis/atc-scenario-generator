@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "title": "NERDI: coordination and transfer of control",
+  "country": "RO",
+  "sector": "NER",
+  "difficulty": "intermediate",
+  "duration": 30,
+  "seed": 4412,
+  "objective": "Handle exit level changes from the next sector and flights that arrive without transfer, without losing the sector picture.",
+  "conflicts": 2,
+  "challenges": [
+    "Next sector asks for a different exit level twice",
+    "Two flights reach the sector without transfer",
+    "Routine requests between coordinations"
+  ],
+  "criteria": [
+    "Every coordination answered within 60 s",
+    "Each flight leaves at the exit level agreed with the next sector",
+    "Flights without transfer assumed within 30 s of their first call",
+    "No loss of separation (5 NM / 1000 ft)"
+  ],
+  "wind": [
+    {
+      "fl": 50,
+      "dir": 216,
+      "kt": 24
+    },
+    {
+      "fl": 180,
+      "dir": 236,
+      "kt": 22
+    },
+    {
+      "fl": 340,
+      "dir": 246,
+      "kt": 44
+    },
+    {
+      "fl": 420,
+      "dir": 256,
+      "kt": 35
+    }
+  ],
+  "injects": [
+    {
+      "min": 4,
+      "type": "LATE_TRANSFER",
+      "text": "The previous sector forgets to transfer an inbound flight. It calls you anyway.",
+      "objective": "Assumed within 30 s of its first call"
+    },
+    {
+      "min": 9,
+      "type": "COORD_REQUEST",
+      "text": "The next sector asks for another exit level. Accept or refuse, then clear it.",
+      "objective": "Answered within 60 s, and the aircraft leaves at the agreed level"
+    },
+    {
+      "min": 15,
+      "type": "LATE_TRANSFER",
+      "text": "Another inbound flight arrives without transfer.",
+      "objective": "Assumed within 30 s of its first call"
+    },
+    {
+      "min": 20,
+      "type": "COORD_REQUEST",
+      "text": "The next sector asks to change an exit level again.",
+      "objective": "Answered within 60 s, and the aircraft leaves at the agreed level"
+    },
+    {
+      "min": 25,
+      "type": "CLIMB_REQUEST",
+      "text": "A transit asks for a higher level. Check the agreed exit level first.",
+      "objective": "Answered within 60 s"
+    }
+  ]
+}
