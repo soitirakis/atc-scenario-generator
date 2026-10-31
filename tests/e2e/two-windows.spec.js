@@ -104,6 +104,30 @@ test('the instructor holds, edits and fires injects while the session runs', asy
   expect(errors).toEqual([]);
 });
 
+test('a fired inject shows its result in the instructor list, live; the trainee sees no grading', async ({ page, context }) => {
+  const { instructor, trainee, errors } = await openBoth(page, context);
+  await instructor.locator('#pausedStart').click();
+  await instructor.locator('#playBtn').click(); // freeze, so the test drives the clock
+  await instructor.locator('#tab-instr').click();
+  const row = instructor.locator('#tlList .inj-row').nth(0);
+  await row.locator('button[data-tl="edit"]').click();
+  await instructor.locator('#tlType').selectOption('CLIMB_REQUEST');
+  await instructor.locator('#tlList button[data-tl="save"]').click();
+  await row.locator('button[data-tl="fire"]').click();
+  await expect(row.locator('.grade')).toHaveAttribute('data-grade', 'pending');
+  await expect(row.locator('.grade')).toContainText('Answered within 60 s');
+
+  await step(instructor, 61); // nobody answers the request
+  await expect(row.locator('.grade')).toHaveAttribute('data-grade', /^(met|fail)$/);
+  await expect(row.locator('.grade')).toContainText('Not met');
+  await expect(row.locator('.grade')).toContainText('not answered within 60 s');
+
+  await traineeSees(trainee, () => window.__sim.t).toBeGreaterThan(60);
+  await expect(trainee.locator('.grade')).toHaveCount(0);
+  await expect(trainee.locator('body')).not.toContainText('not answered within 60 s');
+  expect(errors).toEqual([]);
+});
+
 test('solo mode is unchanged: one window, inject list, no link', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('#roleTag')).toBeHidden();

@@ -24,6 +24,22 @@ export const DIFF = {
 };
 
 export const SEPARATION = { lateralNM: 5, verticalFt: 1000, lookaheadS: 180 };
+
+/**
+ * Objective and limits for each inject type, judged by gradeInjects() every step.
+ * Times in seconds; windows run from the moment the inject fires (MILITARY_TSA: from activation).
+ */
+export const GRADING = {
+  LEVEL_BUST: { reclearS: 60, text: 'Level re-cleared within 60 s' },
+  RADIO_FAILURE: { lateralNM: 5, verticalFt: 1000, text: 'No aircraft within 5 NM / 1000 ft of the 7600 track while it is silent' },
+  EMERGENCY_DESCENT: { ackS: 30, untilFL: 100, text: 'Acknowledged within 30 s, and no STCA with it in the descent to FL100' },
+  WEATHER_CELL: { windowS: 600, text: 'Every deviation request answered before the aircraft deviates on its own (10 min)' },
+  MILITARY_TSA: { windowS: 600, minFL: 195, text: 'No aircraft inside the active area at FL195+ (10 min after activation)' },
+  POPUP_TRAFFIC: { windowS: 180, text: 'No STCA involving it in its first 3 min' },
+  CLIMB_REQUEST: { answerS: 60, text: 'Answered within 60 s' },
+  COORD_REQUEST: { answerS: 60, text: 'Answered within 60 s, and the aircraft leaves at the agreed level' },
+  LATE_TRANSFER: { assumeS: 30, text: 'Assumed within 30 s of its first call' }
+};
 const LEVELS_ODD = [290, 310, 330, 350, 370, 390];
 const LEVELS_EVEN = [300, 320, 340, 360, 380, 400];
 const RADAR_REFRESH_S = 4;
@@ -43,7 +59,7 @@ export class Sim {
 
   reset() {
     this.t = 0; this.ac = []; this.nextId = 1; this.stca = []; this.los = new Map();
-    this.logs = []; this.wx = []; this.tsa = []; this.ended = false; this.csUsed = new Set();
+    this.logs = []; this.wx = []; this.tsa = []; this.ended = false; this.csUsed = new Set(); this.timeline = [];
     this.spawnTimer = 30; this.rng = Math.random; this.wind = [];
   }
 
@@ -341,7 +357,7 @@ export class Sim {
     this.target = DIFF[scenario.difficulty].count;
     this.wind = scenario.wind ? normaliseWind(scenario.wind) : [];
     this.stats = { losCount: 0, losSec: 0, minSep: null, reqs: 0, reqAnswered: 0, reqTimeSum: 0, reqMissed: 0, selfDev: 0, tsaInf: 0, cmds: 0, emgAckT: null, lateAssume: 0, lateXfer: 0, wrongXfl: 0 };
-    for (const inj of scenario.injects) { inj.status = 'pending'; inj.firedAt = null; inj.target = null; }
+    for (const inj of scenario.injects) { inj.status = 'pending'; inj.firedAt = null; inj.target = null; inj.result = null; inj.g = null; }
 
     const nC = scenario.conflicts;
     for (let i = 0; i < nC; i++) this.placeConflict(4 + i * Math.max(3, (scenario.duration - 8) / Math.max(1, nC)));
@@ -412,7 +428,7 @@ export class Sim {
       else if (!inside && a.lastIn) this.left(a);
       a.lastIn = inside;
       if (inside && !a.lateA && a.pendAt !== null && (a.ctl === 'pend' || (a.noXfer && a.ctl === 'none')) && this.t - a.pendAt > ROUTINE.assumeGraceS) {
-        a.lateA = true; this.stats.lateAssume++;
+        a.lateA = true; this.stats.lateAssume++; this.mark(`Late assume ${a.cs}`, 'w');
         this.log(`${a.cs} in ${sec.name} and not assumed`, 'w');
       }
 
@@ -431,11 +447,12 @@ export class Sim {
         if (ahead && dc < cell.r + 45 && !a.wxAsked && !a.req && !a.rcf && this.onFreq(a)) {
           a.wxAsked = cell; const side = rel > 0 ? -25 : 25;
           this.raiseRequest(a, 'wx', side, `requests ${Math.abs(side)}° ${side < 0 ? 'left' : 'right'} for weather`);
+          a.req.cell = cell;
         }
         if (ahead && dc < cell.r + 10 && a.mode === 'nav') {
           const side = rel > 0 ? -30 : 30;
           a.mode = 'hdg'; a.thdg = (a.hdg + side + 360) % 360; a.wxCleared = cell;
-          if (a.req && a.req.kind === 'wx') { this.stats.reqMissed++; a.req = null; }
+          if (a.req && a.req.kind === 'wx') { if (a.req.cell) a.req.cell.selfDevs.push({ cs: a.cs, t: this.t }); this.stats.reqMissed++; a.req = null; }
           if (this.onFreq(a)) { this.stats.selfDev++; this.log(`${a.cs} deviating for weather without clearance`, 'a'); }
         }
       }
@@ -453,7 +470,7 @@ export class Sim {
       }
       if (a.ri >= a.route.length) a.done = a.done || 'exit';
       if (Math.abs(a.x) > 420 || Math.abs(a.y) > 300) a.done = 'exit';
-      if (a.req && this.t - a.req.t > REQUEST_TIMEOUT_S) { this.stats.reqMissed++; this.log(`${a.cs} ${a.req.text} — no answer`, 'w'); a.req = null; }
+      if (a.req && this.t - a.req.t > REQUEST_TIMEOUT_S) { if (a.req.cell) a.req.cell.missed.push({ cs: a.cs, t: this.t }); this.stats.reqMissed++; this.log(`${a.cs} ${a.req.text} — no answer`, 'w'); a.req = null; }
     }
     // leaving the simulation still assumed (reached the exit gate or the APP hand-off) is a late transfer too
     for (const a of this.ac) if (a.done && a.done !== 'emg' && a.ctl === 'ass') this.lateTransfer(a, a.done === 'arr' ? `reached the ${(C.mainAirports[a.exit] || {}).approach || 'APP'} hand-off` : 'reached its exit');
@@ -466,11 +483,12 @@ export class Sim {
       this.spawnTimer = 25 + Math.floor(this.rng() * 50);
     }
     for (const c of this.wx) { c.x += c.vx; c.y += c.vy; }
-    for (const z of this.tsa) if (!z.active && this.t >= z.at) { z.active = true; this.log('TSA now active FL195+', 'a'); }
+    for (const z of this.tsa) if (!z.active && this.t >= z.at) { z.active = true; this.log('TSA now active FL195+', 'a'); this.mark(`${z.name} active`); }
     if (this.t % RADAR_REFRESH_S === 0) {
       for (const a of this.ac) { a.plots.push([a.px, a.py]); if (a.plots.length > 6) a.plots.shift(); a.px = a.x; a.py = a.y; }
     }
     this.stcaScan();
+    this.gradeInjects();
     for (const inj of this.scenario.injects) if (inj.status === 'pending' && this.t >= inj.min * 60) this.fireInject(inj);
     if (this.t % 5 === 0) this.computeInbound();
     if (this.t >= this.scenario.duration * 60) this.ended = true;
@@ -488,7 +506,7 @@ export class Sim {
       const key = a.id < b.id ? `${a.id}-${b.id}` : `${b.id}-${a.id}`;
       if (dh < lateralNM && dv < verticalFt) {
         now.add(key);
-        if (!this.los.has(key)) { this.los.set(key, this.t); this.stats.losCount++; this.log(`LOSS OF SEPARATION ${a.cs} / ${b.cs} ${dh.toFixed(1)} NM ${Math.round(dv)} ft`, 'a'); }
+        if (!this.los.has(key)) { this.los.set(key, this.t); this.stats.losCount++; this.log(`LOSS OF SEPARATION ${a.cs} / ${b.cs} ${dh.toFixed(1)} NM ${Math.round(dv)} ft`, 'a'); this.mark(`Loss of separation ${a.cs} / ${b.cs}`, 'a'); }
         this.stats.losSec++;
         if (this.stats.minSep === null || dh < this.stats.minSep) this.stats.minSep = dh;
         res.push({ a, b, dh, dv, level: 'los', tt: 0, key });
@@ -563,10 +581,12 @@ export class Sim {
   checkXfl(a) {
     if (a.xfl !== null && Math.round(a.cfl) !== a.xfl) {
       this.stats.wrongXfl++;
+      this.mark(`Wrong exit level ${a.cs}: FL${fmtFL(a.cfl)}, agreed FL${fmtFL(a.xfl)}`, 'w');
       this.log(`${a.cs} transferred at FL${fmtFL(a.cfl)}, agreed exit FL${fmtFL(a.xfl)}`, 'w');
     }
   }
   lateTransfer(a, what) {
+    a.leftAt = this.t; a.leftCfl = Math.round(a.cfl); this.mark(`Late transfer ${a.cs}`, 'w');
     this.stats.lateXfer++;
     this.log(`${a.cs} ${what} without transfer`, 'w');
     this.checkXfl(a);
@@ -592,11 +612,11 @@ export class Sim {
       case 'CLIMB_REQUEST': {
         if (!tgt) break; inj.target = tgt.cs;
         const nl = Math.min(410, tgt.cfl + 20);
-        this.raiseRequest(tgt, 'climb', nl, `requests climb FL${fmtFL(nl)} (ride report)`); break;
+        this.raiseRequest(tgt, 'climb', nl, `requests climb FL${fmtFL(nl)} (ride report)`); inj.g = { ac: tgt, req: tgt.req }; break;
       }
       case 'LEVEL_BUST': {
         const t2 = pool.find(a => Math.abs(a.fl - a.cfl) < 0.1) || tgt; if (!t2) break; inj.target = t2.cs;
-        t2.bust = true; t2.sfl = t2.cfl + (this.rng() < 0.5 ? 10 : -10); t2.vr = 1200;
+        t2.bust = true; t2.sfl = t2.cfl + (this.rng() < 0.5 ? 10 : -10); t2.vr = 1200; t2.bustFixedAt = undefined; inj.g = { ac: t2 };
         this.log(`${t2.cs} leaving FL${fmtFL(t2.cfl)} without clearance — selected FL${fmtFL(t2.sfl)}`, 'a'); break;
       }
       case 'WEATHER_CELL': {
@@ -605,17 +625,18 @@ export class Sim {
         const x = t2.x + Math.sin(t2.hdg * D2R) * ahead, y = t2.y - Math.cos(t2.hdg * D2R) * ahead;
         const drift = this.rng() * 360 * D2R;
         const cell = { x, y, r, vx: Math.sin(drift) * 15 / 3600, vy: -Math.cos(drift) * 15 / 3600, top: 380 + Math.floor(this.rng() * 6) * 10 };
-        this.wx.push(cell);
+        cell.answers = []; cell.missed = []; cell.selfDevs = [];
+        this.wx.push(cell); inj.g = { cell };
         this.log(`CB cell building ahead of ${t2.cs}, tops FL${cell.top}`, 'w'); break;
       }
       case 'RADIO_FAILURE': {
         if (!tgt) break; inj.target = tgt.cs;
-        tgt.rcf = this.t + 240 + Math.floor(this.rng() * 240); tgt.sq = '7600'; tgt.req = null;
+        tgt.rcf = this.t + 240 + Math.floor(this.rng() * 240); tgt.sq = '7600'; tgt.req = null; inj.g = { ac: tgt };
         this.log(`${tgt.cs} squawking 7600 — no reply on frequency`, 'a'); break;
       }
       case 'EMERGENCY_DESCENT': {
         if (!tgt) break; inj.target = tgt.cs;
-        tgt.emg = true; tgt.sq = '7700'; tgt.cfl = 100; tgt.sfl = 100; tgt.req = null;
+        tgt.emg = true; tgt.sq = '7700'; tgt.cfl = 100; tgt.sfl = 100; tgt.req = null; inj.g = { ac: tgt };
         let best = null, bd = 1e9;
         for (const ap of C.airportList) { const dd = dist([tgt.x, tgt.y], ap.xy); if (dd < bd) { bd = dd; best = ap; } }
         tgt.route = [{ id: best.id, xy: best.xy }]; tgt.ri = 0; tgt.mode = 'nav'; tgt.spd = { mode: 'ias', v: 320 };
@@ -627,7 +648,8 @@ export class Sim {
         let best = cand[0], score = -1;
         for (const p of cand) { const s = this.ac.filter(a => dist([a.x, a.y], p.xy) < 60).length; if (s > score) { score = s; best = p; } }
         const c = best ? best.xy : (sec.c || [0, 0]);
-        this.tsa.push({ x: c[0], y: c[1], r: 22, at: this.t + 300, active: false, name: best ? 'TSA near ' + best.id : 'TSA' });
+        const zone = { x: c[0], y: c[1], r: 22, at: this.t + 300, active: false, name: best ? 'TSA near ' + best.id : 'TSA' };
+        this.tsa.push(zone); inj.g = { zone };
         this.log(`TSA activation notified: active in 5 min, FL195+${best ? ' around ' + best.id : ''}`, 'w'); break;
       }
       case 'POPUP_TRAFFIC': {
@@ -639,7 +661,7 @@ export class Sim {
           if (inSector([nx, ny], sec)) break;
           ac.x = nx; ac.y = ny; ac.hdg = brg([ac.x, ac.y], ac.route[0].xy);
         }
-        ac.px = ac.x; ac.py = ac.y; ac.popupUntil = this.t + 90; inj.target = ac.cs;
+        ac.px = ac.x; ac.py = ac.y; ac.popupUntil = this.t + 90; inj.target = ac.cs; inj.g = { ac };
         this.log(`${ac.cs} calling, not coordinated, FL${fmtFL(ac.fl)}`, 'w'); break;
       }
       case 'COORD_REQUEST': {
@@ -650,7 +672,7 @@ export class Sim {
         if (!t2) break; inj.target = t2.cs;
         let nx = t2.xfl + (this.rng() < 0.5 ? 20 : -20);
         if (nx > 410 || nx < 250) nx = t2.xfl * 2 - nx;
-        this.raiseRequest(t2, 'coord', nx, `next sector requests exit FL${fmtFL(nx)} instead of FL${fmtFL(t2.xfl)}`); break;
+        this.raiseRequest(t2, 'coord', nx, `next sector requests exit FL${fmtFL(nx)} instead of FL${fmtFL(t2.xfl)}`); inj.g = { ac: t2, req: t2.req }; break;
       }
       case 'LATE_TRANSFER': {
         // an inbound flight the previous sector does not transfer: it reaches the sector unannounced
@@ -667,10 +689,119 @@ export class Sim {
           }
           t2.px = t2.x; t2.py = t2.y;
         }
-        t2.ctl = 'none'; t2.noXfer = true; t2.pendAt = t2.lastIn ? this.t : null; inj.target = t2.cs; break;
+        t2.ctl = 'none'; t2.noXfer = true; t2.pendAt = t2.lastIn ? this.t : null; t2.assumedAt = undefined; inj.target = t2.cs; inj.g = { ac: t2 }; break;
       }
     }
     if (!inj.target && inj.type !== 'MILITARY_TSA') this.log(`Inject ${TYPES[inj.type]}: no suitable aircraft in sector`, 'w', 'i');
+    // graded only when the inject found something to act on
+    if (inj.g) inj.result = { state: 'pending', t: null, reason: GRADING[inj.type].text, at: null };
+    this.mark(`${TYPES[inj.type]}${inj.target ? ' · ' + inj.target : ''} fired${inj.g ? '' : ', no suitable aircraft'}`);
+  }
+
+  /* ---------------- per-inject grading ---------------- */
+  /** Key event for the debrief timeline. */
+  mark(text, cls = '') { this.timeline.push({ t: this.t, text, cls }); }
+
+  gradeInjects() {
+    for (const inj of this.scenario.injects) {
+      if (!inj.result || inj.result.state !== 'pending') continue;
+      const v = this.judge(inj);
+      if (!v) continue;
+      inj.result = { state: v.met ? 'met' : 'not met', t: v.t, reason: v.reason, at: this.t };
+      this.mark(`${TYPES[inj.type]}${inj.target ? ' · ' + inj.target : ''}: ${inj.result.state} (${v.reason})`, v.met ? 'ok' : 'w');
+    }
+  }
+
+  /** null while the objective is still open; otherwise { met, t (measured seconds or null), reason }. */
+  judge(inj) {
+    const L = GRADING[inj.type], g = inj.g, t0 = inj.firedAt, el = this.t - t0;
+    const a = g.ac, gone = a ? !this.get(a.id) : false;
+    const met = (t, reason) => ({ met: true, t, reason }), fail = (t, reason) => ({ met: false, t, reason });
+    const stcaWith = x => this.stca.find(c => c.a === x || c.b === x);
+    const other = (c, x) => (c.a === x ? c.b : c.a).cs;
+    const clock = t => fmtT(t);
+    const answered = (req, limit) => {
+      if (req.answeredAt !== undefined) {
+        const s = req.answeredAt - req.t;
+        return s <= limit ? { ok: true, s } : fail(s, `answered after ${s} s, limit ${limit} s`);
+      }
+      if (this.t - req.t > limit) return fail(null, `not answered within ${limit} s`);
+      return null;
+    };
+    switch (inj.type) {
+      case 'LEVEL_BUST': {
+        if (a.bustFixedAt !== undefined) { const s = a.bustFixedAt - t0; return s <= L.reclearS ? met(s, `re-cleared after ${s} s`) : fail(s, `re-cleared after ${s} s, limit ${L.reclearS} s`); }
+        if (el > L.reclearS || gone) return fail(null, `not re-cleared within ${L.reclearS} s`);
+        return null;
+      }
+      case 'CLIMB_REQUEST': {
+        const r = answered(g.req, L.answerS);
+        if (r && r.ok) return met(r.s, `answered after ${r.s} s`);
+        if (r) return r;
+        return gone ? fail(null, 'left frequency before an answer') : null;
+      }
+      case 'COORD_REQUEST': {
+        const r = answered(g.req, L.answerS);
+        if (r && !r.ok) return r;
+        if (!r) return gone ? fail(null, 'left before an answer') : null;
+        const leftAt = a.leftCfl ?? (gone ? Math.round(a.cfl) : null);
+        if (leftAt === null) return null; // answered in time; waiting for it to leave
+        return leftAt === a.xfl ? met(r.s, `answered after ${r.s} s, left at the agreed FL${fmtFL(a.xfl)}`) : fail(r.s, `left at FL${fmtFL(leftAt)}, agreed FL${fmtFL(a.xfl)}`);
+      }
+      case 'RADIO_FAILURE': {
+        if (a.rcf > 0 && !gone) {
+          const b = this.ac.find(x => x !== a && dist([x.x, x.y], [a.x, a.y]) < L.lateralNM && Math.abs(x.fl - a.fl) * 100 < L.verticalFt);
+          if (b) return fail(el, `${b.cs} within ${dist([b.x, b.y], [a.x, a.y]).toFixed(1)} NM / ${Math.round(Math.abs(b.fl - a.fl) * 100)} ft at ${clock(this.t)}`);
+          return null;
+        }
+        return met(el, `no traffic within ${L.lateralNM} NM / ${L.verticalFt} ft during ${el} s of silence`);
+      }
+      case 'EMERGENCY_DESCENT': {
+        const ack = a.emgAckAt === undefined ? null : a.emgAckAt - t0;
+        if (ack !== null && ack > L.ackS) return fail(ack, `acknowledged after ${ack} s, limit ${L.ackS} s`);
+        if (ack === null && (el > L.ackS || gone)) return fail(null, `not acknowledged within ${L.ackS} s`);
+        const c = gone ? null : stcaWith(a);
+        if (c) return fail(ack, `STCA with ${other(c, a)} at FL${fmtFL(a.fl)}, ${clock(this.t)}`);
+        if (ack !== null && (gone || a.fl <= L.untilFL + 0.5)) return met(ack, `acknowledged after ${ack} s, no STCA ${gone ? `until it left at FL${fmtFL(a.fl)}` : 'in the descent'}`);
+        return null;
+      }
+      case 'WEATHER_CELL': {
+        const cell = g.cell, dev = cell.selfDevs[0], miss = cell.missed[0];
+        if (dev) return fail(dev.t - t0, `${dev.cs} deviated with its request unanswered, ${clock(dev.t)}`);
+        if (miss) return fail(miss.t - t0, `${miss.cs} deviation request not answered, ${clock(miss.t)}`);
+        if (el >= L.windowS) {
+          const n = cell.answers.length, slow = n ? Math.max(...cell.answers) : null;
+          return met(slow, n ? `${n} deviation request${n > 1 ? 's' : ''} answered, slowest ${slow} s` : 'no deviation requests to answer');
+        }
+        return null;
+      }
+      case 'MILITARY_TSA': {
+        const z = g.zone;
+        if (!z.active) return null;
+        const since = this.t - z.at;
+        const b = this.ac.find(x => dist([x.x, x.y], [z.x, z.y]) < z.r && x.fl >= L.minFL);
+        if (b) return fail(since, `${b.cs} inside at FL${fmtFL(b.fl)}, ${since} s after activation`);
+        if (since >= L.windowS) return met(since, `no aircraft inside for ${Math.round(L.windowS / 60)} min after activation`);
+        return null;
+      }
+      case 'POPUP_TRAFFIC': {
+        const c = gone ? null : stcaWith(a);
+        if (c) return fail(el, `STCA with ${other(c, a)} after ${el} s`);
+        if (el >= L.windowS || gone) return met(el, `no STCA in its first ${Math.round(L.windowS / 60)} min`);
+        return null;
+      }
+      case 'LATE_TRANSFER': {
+        const first = a.pendAt; // set when it enters and calls
+        if (a.assumedAt !== undefined) {
+          const s = first === null ? 0 : Math.max(0, a.assumedAt - first);
+          return s <= L.assumeS ? met(s, first === null || a.assumedAt < first ? 'assumed before it entered' : `assumed after ${s} s`) : fail(s, `assumed after ${s} s, limit ${L.assumeS} s`);
+        }
+        if (first !== null && this.t - first > L.assumeS) return fail(null, `not assumed within ${L.assumeS} s of its first call`);
+        if (gone) return fail(null, 'left before it was assumed');
+        return null;
+      }
+    }
+    return null;
   }
 
   /** Instructor: fire a pending (or held) inject immediately. */
@@ -791,7 +922,7 @@ export class Sim {
     if (!a) return { ok: false, msg: 'Aircraft no longer on frequency' };
     if (a.ctl === 'ass') return { ok: false, msg: `${a.cs} is already assumed` };
     if (a.ctl !== 'pend' && !a.noXfer) return { ok: false, msg: `${a.cs} has not been transferred to you` };
-    a.ctl = 'ass'; a.noXfer = false;
+    a.ctl = 'ass'; a.noXfer = false; a.assumedAt = this.t;
     this.log(`${a.cs} assumed${a.lastIn ? '' : `, entering ${this.sector.name} in ${fmtT(a.tEntry || 0)}`}`);
     return { ok: true };
   }
@@ -801,6 +932,7 @@ export class Sim {
     if (!a) return { ok: false, msg: 'Aircraft no longer on frequency' };
     if (a.ctl !== 'ass') return { ok: false, msg: `${a.cs} is not assumed` };
     this.checkXfl(a);
+    a.leftAt = this.t; a.leftCfl = Math.round(a.cfl);
     a.ctl = 'xfer'; this.stats.cmds++;
     this.log(`${a.cs} transferred${a.xfl !== null ? ` at FL${fmtFL(a.cfl)}` : ''}`);
     return { ok: true };
@@ -811,7 +943,7 @@ export class Sim {
   }
   clearLevel(id, fl) {
     const a = this.get(id); const dir = a && fl > a.fl ? 'climb' : 'descend';
-    return this._cmd(id, `${dir} FL${fmtFL(fl)}`, a => { a.cfl = fl; a.sfl = fl; a.bust = false; a.vr = null; this._closeReq(a, ['climb', 'descend']); });
+    return this._cmd(id, `${dir} FL${fmtFL(fl)}`, a => { if (a.bust) a.bustFixedAt = this.t; a.cfl = fl; a.sfl = fl; a.bust = false; a.vr = null; this._closeReq(a, ['climb', 'descend']); });
   }
   turn(id, hdg) {
     const v = ((Math.round(hdg) % 360) + 360) % 360;
@@ -867,12 +999,14 @@ export class Sim {
     if (!coord && !this.onFreq(a)) return { ok: false, msg: `${a.cs} is not on your frequency` };
     if (!coord && a.rcf) return { ok: false, msg: `${a.cs}: no reply` };
     this.stats.reqAnswered++; this.stats.reqTimeSum += this.t - r.t;
+    r.answeredAt = this.t; r.approved = approve;
+    if (r.cell) r.cell.answers.push(this.t - r.t);
     if (!coord) this.stats.cmds++;
     if (coord) {
       if (approve) { a.xfl = r.value; this.log(`${a.cs} exit level FL${fmtFL(r.value)} agreed with the next sector`); }
       else this.log(`${a.cs} exit level change refused, FL${fmtFL(a.xfl)} stands`);
     } else if (approve) {
-      if (r.kind === 'climb' || r.kind === 'descend') { a.cfl = r.value; a.sfl = r.value; a.bust = false; }
+      if (r.kind === 'climb' || r.kind === 'descend') { if (a.bust) a.bustFixedAt = this.t; a.cfl = r.value; a.sfl = r.value; a.bust = false; }
       if (r.kind === 'wx') { a.mode = 'hdg'; a.thdg = (a.hdg + r.value + 360) % 360; a.wxCleared = a.wxAsked; }
       if (r.kind === 'direct') { const p = this.C.points[r.value] || this.C.airports[r.value]; if (p) this._directTo(a, r.value, p.xy); }
       this.log(`${a.cs} ${r.kind === 'wx' ? 'deviation approved' : r.kind === 'direct' ? 'direct ' + r.value : (r.kind === 'climb' ? 'climb' : 'descend') + ' FL' + fmtFL(r.value)}`);
@@ -884,6 +1018,7 @@ export class Sim {
     const a = this.get(id);
     if (!a || !a.emg) return { ok: false, msg: 'No emergency' };
     a.emgAck = true;
+    if (a.emgAckAt === undefined) { a.emgAckAt = this.t; this.mark(`Emergency acknowledged ${a.cs}`); }
     if (this.stats.emgAckT === null) this.stats.emgAckT = this.t;
     this.log(`${a.cs} emergency acknowledged, descent approved`);
     return { ok: true };
@@ -931,7 +1066,9 @@ export class Sim {
       ...st,
       avgResponse: st.reqAnswered ? Math.round(st.reqTimeSum / st.reqAnswered) : null,
       injectsFired: this.scenario.injects.filter(i => i.status === 'fired').length,
-      injectsTotal: this.scenario.injects.length
+      injectsTotal: this.scenario.injects.length,
+      injects: this.scenario.injects.map(i => ({ min: i.min, type: i.type, label: TYPES[i.type], target: i.target, status: i.status, firedAt: i.firedAt, objective: GRADING[i.type].text, result: i.result ? { ...i.result } : null })),
+      timeline: this.timeline.map(e => ({ ...e }))
     };
   }
 }

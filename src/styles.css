@@ -190,3 +190,19 @@ body:not([data-role="solo"]) .solo-only, body[data-role="trainee"] .not-trainee,
   .stats { grid-template-columns: repeat(2, 1fr); }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* per-inject grading */
+.grade { display: block; margin-top: 3px; font-size: 12px; line-height: 1.3; color: var(--muted); }
+.grade b { font-family: var(--f-data); font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; margin-right: 4px; }
+.grade.pending b { color: var(--warn); }
+.grade.met b { color: var(--ok); }
+.grade.fail b { color: var(--alert); }
+#debInjects h4, #debTimeline h4 { margin: 14px 0 6px; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+.deb-scroll { overflow-x: auto; }
+.deb-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.deb-table th, .deb-table td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.deb-table td:first-child, .deb-table td:nth-child(4) { font-family: var(--f-data); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.deb-table .grade { margin: 0; }
+.deb-tl { max-height: 180px; overflow-y: auto; font-size: 12.5px; line-height: 1.5; }
+.deb-tl b { font-family: var(--f-data); font-variant-numeric: tabular-nums; color: var(--muted); margin-right: 6px; }
+.deb-tl .a { color: var(--alert); } .deb-tl .w { color: var(--warn); } .deb-tl .ok { color: var(--ok); }
