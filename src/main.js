@@ -177,6 +177,9 @@ function updatePanel(force) {
   const pr = sim.priorities();
   $('prio').innerHTML = pr.length ? pr.slice(0, 10).map(it => `<div class="pi p${it.p}" data-ac="${it.ac ? it.ac.id : ''}"><span class="lvl">P${it.p}</span><div class="t"><b>${esc(it.h)}</b><span>${esc(it.s)}</span></div><div class="acts">${actButtons(it)}</div></div>`).join('') : '<div class="empty">No open items. Keep scanning the sector.</div>';
 
+  const md = sim.nets.mtcd;
+  $('mtcdCount').textContent = md.length ? `${md.length} predicted, 20 min` : '20 min look-ahead';
+  $('mtcd').innerHTML = md.length ? md.slice(0, 8).map(c => `<div class="mt" data-ac="${c.a}"><b>${fmtT(c.t)}</b><span>${esc(c.acs)} / ${esc(c.bcs)}</span><span>min ${c.minNM.toFixed(1)} NM at ${fmtT(c.tMin)}${c.dvFt ? `, ${c.dvFt} ft` : ''}</span></div>`).join('') : '<div class="empty">No conflicts predicted in the next 20 minutes.</div>';
   renderAcBox();
   if (ROLE === 'solo') {
     $('injCount').textContent = `${scn.injects.filter(i => i.status === 'fired').length}/${scn.injects.length} fired`;
@@ -526,7 +529,7 @@ function bindInput() {
     if (pp) { pseudoPilot(pp.dataset.pp); return; }
     const f = e.target.closest('button[data-fire]');
     if (f) { sim.fireNow(+f.dataset.fire); updatePanel(true); return; }
-    const pi = e.target.closest('.pi');
+    const pi = e.target.closest('.pi, .mt');
     if (pi && pi.dataset.ac) {
       R.sel = +pi.dataset.ac; ui.acBoxFor = -1;
       const a = sim.get(R.sel); if (a) R.centreOn(a);

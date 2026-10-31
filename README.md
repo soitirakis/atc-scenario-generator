@@ -14,7 +14,7 @@ En-route radar training simulator that builds scenarios and injects for a chosen
 - **Simulated traffic** flying Free Route directs between real entry and exit points, scaled by difficulty, with crossing conflicts deliberately built into the training sector.
 - **Per-type aircraft performance** from OpenAP WRAP: climb and descent rates by level band, climb/cruise/descent CAS and Mach. TAS comes from IAS or Mach in the ISA atmosphere, and ground speed and track come from a per-scenario wind field, so a heading clearance drifts with the wind.
 - **Speed and rate clearances**: IAS, Mach, resume normal speed, and "climb/descend at N ft/min or greater / or less".
-- **STCA** at 5 NM / 1000 ft with a 3-minute look-ahead.
+- **STCA** at 5 NM / 1000 ft with a 3-minute look-ahead, plus **APW**, **CLAM**, **RAM** and an **MTCD** list (see below).
 - **Injects that execute** in the simulation, shown in a priorities panel:
   - level bust
   - weather cell with deviation requests
@@ -76,6 +76,20 @@ A silent pilot keeps their squawk, so nothing shows on the trainee's radar until
 
 The sync layer is `src/link.js`. It decides what a trainee may see (`makeSnapshot`), and refuses any trainee command other than the controller actions (level, heading, direct, speed, own navigation, answer, assume, transfer, acknowledge emergency).
 
+## Safety nets and monitoring aids
+
+Each is a DOM-free module in `src/nets/` with its own unit tests. The simulator gives them predicted trajectories built with the same models as everything else (route or heading for position, `flAfter` for level). EUROCONTROL groups them differently, and the UI uses its names:
+
+| | Type (EUROCONTROL) | What it does here | Settings |
+|---|---|---|---|
+| **STCA** | ground-based safety net | predicted or actual loss of 5 NM / 1000 ft within 3 minutes | `SEPARATION` in `sim.js` |
+| **APW** | ground-based safety net | one of your aircraft inside an active military area (VIOLATION), or predicted to enter it within 2 minutes along its path and levels (PREDICTED) | `APW` in `nets/apw.js` |
+| **CLAM** | monitoring aid | Mode S selected level differs from the cleared level (SFL), or the aircraft is more than 300 ft past or away from it (DEV). Level busts are detected here, from what the radar sees | `CLAM` in `nets/clam.js` |
+| **RAM** | monitoring aid | more than 3 NM off the cleared route leg while not on a heading from ATC, for example a pilot deviating on their own | `RAM` in `nets/ram.js` |
+| **MTCD** | planning tool | flights' planned paths compared 20 minutes ahead, every 10 s; predicted conflicts are listed on the Live tab (time to loss, closest point), not alerted. A pair is listed when one flight is yours or the conflict is in your sector | `MTCD` in `nets/mtcd.js` |
+
+APW, CLAM and RAM alerts appear in the priorities list, for your traffic (assumed or pending). They are simplified training versions: no alert inhibition, no adaptation per area or flight phase.
+
 ## Scenario files and library
 
 On the Scenario tab (solo or instructor window):
@@ -87,7 +101,7 @@ On the Scenario tab (solo or instructor window):
 
 ```bash
 npm test             # unit tests (Vitest): geometry, data integrity, simulation, scenarios, AIRAC parser
-npm run test:coverage  # unit tests with coverage; fails below 85% on src/sim.js or src/scenario.js
+npm run test:coverage  # unit tests with coverage; fails below 85% on src/sim.js, src/scenario.js or any src/nets module
 npm run test:e2e     # end-to-end (Playwright) against the built file, desktop and phone viewports
 ```
 
@@ -107,12 +121,13 @@ src/
   atmos.js            ISA atmosphere, CAS/TAS/Mach, wind field
   country.js          raw country module -> projected data
   sim.js              simulation engine (no DOM): traffic, physics, STCA, injects, clearances
+  nets/               APW, CLAM, RAM, MTCD: pure modules, each with its settings (no DOM)
   scenario.js         local scenario builder, Claude prompt and validator
   render.js           canvas radar display
   link.js             instructor/trainee windows: BroadcastChannel protocol, trainee snapshot, read-only view
   main.js             UI wiring
 scripts/
-  airac-update.mjs    pull ENR 4.1 / 4.4 from the eAIP and diff against data/RO or data/HU
+  airac-update.mjs    pull ENR 4.1 / 4.4 / 5.2 from the eAIP and diff against data/RO or data/HU
   airac-lib.mjs       pure parsing helpers (unit tested), including Hungary's ENR 4.4.1 format and both ENR 5.2 formats
   openap-wrap.mjs     OpenAP WRAP -> data/performance.json (pinned commit)
   performance-lib.mjs WRAP table parser and unit conversion (unit tested)

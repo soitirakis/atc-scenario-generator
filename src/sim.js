@@ -4,6 +4,10 @@ import { D2R, dist, brg, angDiff, segInt, mulberry32, moveToward, fmtFL, fmtT, p
 import { inSector } from './country.js';
 import { machToTas, casToTas, tasToMach, windAt, normaliseWind } from './atmos.js';
 import PERF from '../data/performance.json';
+import { clam } from './nets/clam.js';
+import { apw, APW } from './nets/apw.js';
+import { ram } from './nets/ram.js';
+import { mtcd, MTCD } from './nets/mtcd.js';
 
 export const TYPES = {
   CLIMB_REQUEST: 'Level request',
@@ -70,6 +74,7 @@ export class Sim {
   reset() {
     this.t = 0; this.ac = []; this.nextId = 1; this.stca = []; this.los = new Map();
     this.logs = []; this.wx = []; this.tsa = []; this.ended = false; this.csUsed = new Set(); this.timeline = [];
+    this.nets = { clam: new Map(), apw: new Map(), ram: new Map(), mtcd: [] };
     this.spawnTimer = 30; this.rng = Math.random; this.wind = [];
   }
 
@@ -228,6 +233,7 @@ export class Sim {
   }
   /** Start airspeed, heading (with wind correction to the first waypoint) and ground velocity. */
   initKinematics(a) {
+    a.legFrom = a.legFrom || [a.x, a.y]; // start of the cleared leg, for route adherence
     a.tas = this.tasFor(a);
     if (a.route[a.ri]) a.hdg = this.headingFor(brg([a.x, a.y], a.route[a.ri].xy), a.tas, a.fl);
     this.groundVel(a);
@@ -248,7 +254,7 @@ export class Sim {
     const ac = Object.assign({
       id: this.nextId++, x: 0, y: 0, hdg: 0, trk: 0, gs: 450, tas: 450, spd: null, rate: null, fl: 350, cfl: 350, sfl: 350, vr: null,
       route: [], ri: 0, mode: 'nav', thdg: 0, sq: this.squawk(), plots: [], px: 0, py: 0,
-      rcf: 0, emg: false, emgAck: false, bust: false, req: null, wxCleared: null, wxAsked: null,
+      rcf: 0, emg: false, emgAck: false, bust: false, req: null, wxCleared: null, wxAsked: null, atcHdg: false, legFrom: null,
       popupUntil: 0, born: this.t, cat: 'transit', lastIn: false, inbound: false, inTsa: false,
       ctl: 'none', xfl: null, pendAt: null, noXfer: false, everIn: false, wasOurs: false, lateA: false, tEntry: null, tExit: null
     }, o);
@@ -341,7 +347,9 @@ export class Sim {
       const ha = brg(a.start, a.route[0].xy), hb = brg(b.start, b.route[0].xy);
       const cross = Math.abs(angDiff(ha, hb));
       if (cross < 25 || cross > 165) continue;
-      const P = [ia[0], ia[1]], L = a.fl, jitter = 1 + (this.rng() - 0.5) * 0.06, climbing = this.rng() < 0.5;
+      // climbing: B climbs 1000 ft/min from 3000 ft below A and passes A's level after 3 minutes, so it
+      // only meets A at the crossing when that is 3-4 minutes ahead; later conflicts are level
+      const P = [ia[0], ia[1]], L = a.fl, jitter = 1 + (this.rng() - 0.5) * 0.06, climbing = this.rng() < 0.5 && minutesAhead <= 4;
       const bFL = climbing ? L - 30 : L, bCFL = climbing ? L + 10 : L;
       const da = this.gsAlong(a.type, ha, L) / 60 * minutesAhead, db = this.gsAlong(b.type, hb, (bFL + bCFL) / 2) / 60 * minutesAhead * jitter;
       const pa = [P[0] - Math.sin(ha * D2R) * da, P[1] + Math.cos(ha * D2R) * da];
@@ -411,14 +419,14 @@ export class Sim {
       let tgtH = a.hdg;
       if (a.mode === 'nav') { // own navigation flies the track to the waypoint, correcting for wind
         const w = a.route[a.ri];
-        if (w) { tgtH = this.headingFor(brg([a.x, a.y], w.xy), a.tas, a.fl); if (dist([a.x, a.y], w.xy) < 2.5) a.ri++; }
+        if (w) { tgtH = this.headingFor(brg([a.x, a.y], w.xy), a.tas, a.fl); if (dist([a.x, a.y], w.xy) < 2.5) { a.ri++; a.legFrom = w.xy; } }
       } else tgtH = a.thdg; // a heading clearance holds the heading; the wind makes the track drift
       // automatically resume own navigation once clear of a weather cell
       if (a.wxCleared && a.mode === 'hdg') {
         const cell = a.wxCleared, w = a.route[a.ri];
         if (w && dist([a.x, a.y], [cell.x, cell.y]) > cell.r + 12) {
           const toW = brg([a.x, a.y], w.xy), toC = brg([a.x, a.y], [cell.x, cell.y]);
-          if (Math.abs(angDiff(toW, toC)) > 70) { a.mode = 'nav'; a.wxCleared = null; this.log(`${a.cs} clear of weather, resuming own navigation`); }
+          if (Math.abs(angDiff(toW, toC)) > 70) { a.mode = 'nav'; a.wxCleared = null; a.atcHdg = false; a.legFrom = [a.x, a.y]; this.log(`${a.cs} clear of weather, resuming own navigation`); }
         }
       }
       a.hdg = (a.hdg + Math.max(-3, Math.min(3, angDiff(a.hdg, tgtH))) + 360) % 360; // rate-one turn
@@ -498,6 +506,7 @@ export class Sim {
       for (const a of this.ac) { a.plots.push([a.px, a.py]); if (a.plots.length > 6) a.plots.shift(); a.px = a.x; a.py = a.y; }
     }
     this.stcaScan();
+    this.netsScan();
     this.gradeInjects();
     for (const inj of this.scenario.injects) if (inj.status === 'pending' && this.t >= inj.min * 60) this.fireInject(inj);
     if (this.t % 5 === 0) this.computeInbound();
@@ -650,7 +659,7 @@ export class Sim {
         tgt.xfl = null; // a diverting emergency is no longer held to the agreed exit level
         let best = null, bd = 1e9;
         for (const ap of C.airportList) { const dd = dist([tgt.x, tgt.y], ap.xy); if (dd < bd) { bd = dd; best = ap; } }
-        tgt.route = [{ id: best.id, xy: best.xy }]; tgt.ri = 0; tgt.mode = 'nav'; tgt.spd = { mode: 'ias', v: 320 };
+        tgt.route = [{ id: best.id, xy: best.xy }]; tgt.ri = 0; tgt.mode = 'nav'; tgt.atcHdg = false; tgt.legFrom = [tgt.x, tgt.y]; tgt.spd = { mode: 'ias', v: 320 };
         this.log(`MAYDAY ${tgt.cs} emergency descent FL100, diverting ${best.id}`, 'a'); break;
       }
       case 'MILITARY_TSA': {
@@ -705,6 +714,40 @@ export class Sim {
     // graded only when the inject found something to act on
     if (inj.g) inj.result = { state: 'pending', t: null, reason: GRADING[inj.type].text, at: null };
     this.mark(`${TYPES[inj.type]}${inj.target ? ' · ' + inj.target : ''} fired${inj.g ? '' : ', no suitable aircraft'}`);
+  }
+
+  /* ---------------- safety nets and monitoring aids (src/nets) ---------------- */
+  /**
+   * Predicted points every stepS seconds up to maxS: position along the flight's own path
+   * (lookAhead: route legs in own navigation, heading when vectored) and level from flAfter,
+   * the same models STCA uses. Stops where the flight leaves en-route control.
+   */
+  trajectory(a, maxS, stepS) {
+    const out = [];
+    let fl = a.fl;
+    this.lookAhead(a, maxS, stepS, (s, xy) => { fl = this.flAfter(a, stepS, fl); out.push({ t: s, xy, fl }); return false; });
+    return out;
+  }
+  /**
+   * CLAM, RAM and APW every second for your traffic. MTCD every 10 s over all flights (it works from
+   * planned trajectories, like flight plans): a pair is listed when one of them is yours or the
+   * conflict is inside the training sector.
+   */
+  netsScan() {
+    const N = this.nets, active = this.tsa.filter(z => z.active);
+    N.clam.clear(); N.ram.clear(); N.apw.clear();
+    for (const a of this.ac) {
+      if (!this.ours(a)) continue;
+      const c = clam(a); if (c) N.clam.set(a.id, c);
+      const w = a.route[a.ri];
+      const r = ram({ xy: [a.x, a.y], legFrom: a.legFrom, legTo: w && w.xy, atcHeading: a.mode === 'hdg' && a.atcHdg });
+      if (r) N.ram.set(a.id, r);
+      if (active.length) { const p = apw({ xy: [a.x, a.y], fl: a.fl }, this.trajectory(a, APW.lookaheadS, APW.stepS), active); if (p) N.apw.set(a.id, p); }
+    }
+    if (this.t % 10 === 0) {
+      const flights = this.ac.filter(a => a.fl >= 100).map(ac => ({ ac, traj: this.trajectory(ac, MTCD.lookaheadS, MTCD.stepS) }));
+      N.mtcd = mtcd(flights).filter(c => this.ours(c.a) || this.ours(c.b) || inSector(c.xy, this.sector)).map(c => ({ a: c.a.id, b: c.b.id, acs: c.a.cs, bcs: c.b.cs, t: c.t, tMin: c.tMin, minNM: c.minNM, dvFt: c.dvFt }));
+    }
   }
 
   /* ---------------- military areas (ENR 5.2) ---------------- */
@@ -989,7 +1032,7 @@ export class Sim {
   turn(id, hdg) {
     const v = ((Math.round(hdg) % 360) + 360) % 360;
     return this._cmd(id, `turn heading ${String(v || 360).padStart(3, '0')}`, a => {
-      a.mode = 'hdg'; a.thdg = v;
+      a.mode = 'hdg'; a.thdg = v; a.atcHdg = true;
       if (this._closeReq(a, ['wx'])) a.wxCleared = a.wxAsked;
     });
   }
@@ -1002,7 +1045,7 @@ export class Sim {
   _directTo(a, key, xy) {
     const last = a.route[a.route.length - 1];
     a.route = key === last.id ? [last] : [{ id: key, xy }, last];
-    a.ri = 0; a.mode = 'nav'; a.wxCleared = null;
+    a.ri = 0; a.mode = 'nav'; a.wxCleared = null; a.atcHdg = false; a.legFrom = [a.x, a.y];
   }
   speed(id, kt) {
     const v = Math.max(200, Math.min(350, Math.round(kt / 5) * 5));
@@ -1032,7 +1075,7 @@ export class Sim {
     if (kind === 'min' && r > band.max) return { ok: false, msg: `${a.cs}: unable ${r} ft/min` };
     return this._cmd(id, `${up ? 'climb' : 'descend'} at ${r} ft/min or ${kind === 'min' ? 'greater' : 'less'}`, a => { a.rate = { fpm: r, kind }; a.vr = null; });
   }
-  resumeNav(id) { return this._cmd(id, 'resume own navigation', a => { a.mode = 'nav'; a.wxCleared = null; }); }
+  resumeNav(id) { return this._cmd(id, 'resume own navigation', a => { a.mode = 'nav'; a.wxCleared = null; a.atcHdg = false; a.legFrom = [a.x, a.y]; }); }
   answer(id, approve) {
     const a = this.get(id);
     if (!a || !a.req) return { ok: false, msg: 'No open request' };
@@ -1048,7 +1091,7 @@ export class Sim {
       else this.log(`${a.cs} exit level change refused, FL${fmtFL(a.xfl)} stands`);
     } else if (approve) {
       if (r.kind === 'climb' || r.kind === 'descend') { if (a.bust) a.bustFixedAt = this.t; a.cfl = r.value; a.sfl = r.value; a.bust = false; }
-      if (r.kind === 'wx') { a.mode = 'hdg'; a.thdg = (a.hdg + r.value + 360) % 360; a.wxCleared = a.wxAsked; }
+      if (r.kind === 'wx') { a.mode = 'hdg'; a.thdg = (a.hdg + r.value + 360) % 360; a.wxCleared = a.wxAsked; a.atcHdg = true; }
       if (r.kind === 'direct') { const p = this.C.points[r.value] || this.C.airports[r.value]; if (p) this._directTo(a, r.value, p.xy); }
       this.log(`${a.cs} ${r.kind === 'wx' ? 'deviation approved' : r.kind === 'direct' ? 'direct ' + r.value : (r.kind === 'climb' ? 'climb' : 'descend') + ' FL' + fmtFL(r.value)}`);
     } else this.log(`${a.cs} unable, ${r.text.replace('requests ', '')}`);
@@ -1071,8 +1114,10 @@ export class Sim {
     for (const a of this.ac) {
       if (a.emg) items.push({ p: 1, ac: a, h: `${a.cs} emergency descent`, s: `Squawk 7700, descending FL${fmtFL(a.fl)} to FL100, diverting ${a.route[0] ? a.route[0].id : ''}${a.emgAck ? ' · acknowledged' : ''}`, act: a.emgAck ? null : 'ack' });
       if (a.rcf && a.sq === '7600') items.push({ p: 1, ac: a, h: `${a.cs} radio failure`, s: `Squawk 7600. Continues FL${fmtFL(a.cfl)} on own navigation. Separate others from it.` });
-      if (a.bust) items.push({ p: 1, ac: a, h: `${a.cs} level bust`, s: `Cleared FL${fmtFL(a.cfl)}, selected FL${fmtFL(a.sfl)}, now FL${fmtFL(a.fl)}. Re-issue the level.` });
-      if (a.inTsa) items.push({ p: 1, ac: a, h: `${a.cs} inside active ${a.inTsa.id}`, s: `FL${fmtFL(a.fl)}. Turn out, or leave ${areaBand(a.inTsa)}.` });
+      const cl = this.nets.clam.get(a.id), rm = this.nets.ram.get(a.id), ap = this.nets.apw.get(a.id);
+      if (cl) items.push({ p: cl.kind === 'DEV' ? 1 : 2, ac: a, h: `${a.cs} CLAM ${cl.kind === 'DEV' ? 'level deviation' : 'selected level'}`, s: `Cleared FL${fmtFL(a.cfl)}, selected FL${fmtFL(a.sfl)}, now FL${fmtFL(a.fl)}. Re-issue the level.` });
+      if (ap) items.push({ p: 1, ac: a, h: ap.level === 'VIOLATION' ? `${a.cs} APW inside ${ap.area.id}` : `${a.cs} APW ${ap.area.id} in ${fmtT(ap.tt)}`, s: `FL${fmtFL(a.fl)}, area ${areaBand(ap.area)}. Turn out, or leave its levels.` });
+      if (rm) items.push({ p: 2, ac: a, h: `${a.cs} RAM off route ${rm.xtk.toFixed(1)} NM`, s: `Not on an ATC heading.${a.route[a.ri] ? ` Next point ${a.route[a.ri].id}.` : ''} Clear it direct or give a heading.` });
     }
     for (const c of this.stca) {
       if (c.level === 'los') items.push({ p: 1, ac: c.a, h: `${c.a.cs} / ${c.b.cs} below minima`, s: `${c.dh.toFixed(1)} NM, ${Math.round(c.dv)} ft` });

@@ -109,6 +109,7 @@ export function makeSnapshot(sim, { session = 0, running = false, speed = 1 } = 
     brief: { duration: scn.duration, difficulty: scn.difficulty, objective: scn.objective, seed: scn.seed },
     ac,
     stca: sim.stca.map(c => ({ a: c.a.id, b: c.b.id, level: c.level, tt: c.tt, dh: c.dh, dv: c.dv })),
+    mtcd: sim.nets.mtcd.map(c => ({ ...c })),
     wx: sim.wx.map(c => ({ x: c.x, y: c.y, r: c.r, top: c.top })),
     tsa: sim.tsa.map(z => ({ id: z.id, name: z.name, poly: z.poly.map(p => [p[0], p[1]]), lower: z.lower, upper: z.upper, at: z.at, active: z.active })),
     prio: sim.priorities().filter(p => !p.instr).map(p => ({ p: p.p, ac: p.ac ? p.ac.id : null, h: p.h, s: p.s, act: p.act || null })),
@@ -131,7 +132,7 @@ export class SimView {
   constructor(link, countryFor) {
     this.link = link; this.countryFor = countryFor;
     this.C = null; this.sector = null; this.snap = null;
-    this.t = 0; this.ended = false; this.ac = []; this.stca = []; this.wx = []; this.tsa = []; this.logs = [];
+    this.t = 0; this.ended = false; this.ac = []; this.stca = []; this.wx = []; this.tsa = []; this.logs = []; this.nets = { mtcd: [] };
     this.scenario = { duration: 30, injects: [], criteria: [] };
     this.byId = new Map(); this.prio = [];
     for (const name of TRAINEE_COMMANDS) this[name] = (...args) => this.link.call(name, args);
@@ -143,7 +144,7 @@ export class SimView {
     this.t = snap.t; this.ended = snap.ended;
     this.ac = snap.ac; this.byId = new Map(snap.ac.map(a => [a.id, a]));
     this.stca = snap.stca.map(c => ({ ...c, a: this.byId.get(c.a), b: this.byId.get(c.b) })).filter(c => c.a && c.b);
-    this.wx = snap.wx; this.tsa = snap.tsa; this.logs = snap.logs;
+    this.wx = snap.wx; this.tsa = snap.tsa; this.logs = snap.logs; this.nets = { mtcd: snap.mtcd || [] };
     this.prio = snap.prio.map(p => ({ ...p, ac: p.ac === null ? null : this.byId.get(p.ac) })).filter(p => p.ac !== undefined);
     this.scenario = { ...snap.brief, sector: snap.sector, injects: [], criteria: [] };
     return this;

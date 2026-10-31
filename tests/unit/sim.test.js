@@ -64,6 +64,19 @@ describe('session loading', () => {
 });
 
 describe('built-in conflicts', () => {
+  it('every built-in pair really loses separation if nobody acts, including the later ones', () => {
+    for (const seed of [1, 2, 3, 4127]) {
+      const sim = fresh({ difficulty: 'advanced', seed }, []);
+      const conf = sim.ac.filter(a => a.conflict), pairs = [];
+      for (let i = 0; i < conf.length; i += 2) pairs.push({ a: conf[i], b: conf[i + 1], lost: false });
+      for (let t = 0; t < 22 * 60; t++) {
+        sim.step();
+        for (const p of pairs) if (sim.get(p.a.id) && sim.get(p.b.id) && Math.hypot(p.a.x - p.b.x, p.a.y - p.b.y) < 5 && Math.abs(p.a.fl - p.b.fl) < 10) p.lost = true;
+      }
+      // conflicts are set 4, 9.5, 15 and 20.5 minutes ahead; the first three fall inside 22 minutes
+      expect(pairs.slice(0, 3).map(p => p.lost), `seed ${seed}`).toEqual([true, true, true]);
+    }
+  });
   it('are detected by STCA before they become a loss of separation', () => {
     const sim = fresh({ difficulty: 'foundational' }, []);
     const pair = sim.ac.filter(a => a.conflict).map(a => a.id);
@@ -99,7 +112,7 @@ describe('injects', () => {
     const a = sim.ac.find(x => x.bust);
     expect(a).toBeTruthy();
     expect(a.sfl).not.toBe(a.cfl);
-    expect(sim.priorities().some(p => p.h.includes('level bust'))).toBe(true);
+    expect(sim.priorities().some(p => p.ac === a && /CLAM/.test(p.h))).toBe(true);
     sim.clearLevel(a.id, a.cfl);
     expect(a.bust).toBe(false);
     expect(a.sfl).toBe(a.cfl);

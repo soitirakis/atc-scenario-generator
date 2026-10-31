@@ -128,6 +128,20 @@ test('a fired inject shows its result in the instructor list, live; the trainee 
   expect(errors).toEqual([]);
 });
 
+test('MTCD lists predicted conflicts in both windows', async ({ page, context }) => {
+  const { instructor, trainee, errors } = await openBoth(page, context);
+  await instructor.locator('#pausedStart').click();
+  await instructor.locator('#playBtn').click(); // freeze
+  await step(instructor, 10); // MTCD runs every 10 s
+  const n = await instructor.evaluate(() => window.__sim.nets.mtcd.length);
+  expect(n).toBeGreaterThan(0); // the built-in conflicts
+  await expect(instructor.locator('#mtcd .mt')).toHaveCount(Math.min(n, 8));
+  await expect(trainee.locator('#mtcd .mt')).toHaveCount(Math.min(n, 8));
+  await trainee.locator('#mtcd .mt').first().click(); // selects one of the pair
+  await expect(trainee.locator('#acBox')).not.toContainText('Click an aircraft');
+  expect(errors).toEqual([]);
+});
+
 test('solo mode is unchanged: one window, inject list, no link', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('#roleTag')).toBeHidden();

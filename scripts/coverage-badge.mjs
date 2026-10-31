@@ -10,7 +10,7 @@ const [src = 'coverage/coverage-summary.json', out = 'dist/coverage.json'] = pro
 const total = JSON.parse(fs.readFileSync(src, 'utf8')).total;
 const pct = total.lines.pct, branches = total.branches.pct;
 const color = pct >= 95 ? 'brightgreen' : pct >= 85 ? 'green' : pct >= 70 ? 'yellow' : 'red';
-const badge = { schemaVersion: 1, label: 'coverage (sim, scenario)', message: `${Math.floor(pct)}% lines · ${Math.floor(branches)}% branches`, color };
+const badge = { schemaVersion: 1, label: 'coverage (sim, scenario, nets)', message: `${Math.floor(pct)}% lines · ${Math.floor(branches)}% branches`, color };
 fs.mkdirSync(path.dirname(out), { recursive: true });
 fs.writeFileSync(out, JSON.stringify(badge) + '\n');
 console.log(`${out}: ${badge.message}`);
