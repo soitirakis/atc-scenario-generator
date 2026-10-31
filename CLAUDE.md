@@ -19,6 +19,7 @@ En-route ATC radar training simulator. Vanilla JS (ES modules) built with Vite i
 - Geometry is in a flat NM plane: x east, y **south** (screen-like). Bearings: 0 = north = negative y. Use helpers in `geo.js`.
 - Sector routine: each aircraft has a control state `ctl` (`none`, `pend`, `ass`, `xfer`) and an agreed exit level `xfl`. Only `pend`/`ass` aircraft take clearances (`_cmd` refuses the rest); `assume` and `transfer` change the state and count late assumes, late transfers and wrong exit levels in `stats`. Entry, exit and hand-off times come from `lookAhead`, which follows the route; a boundary crossing only counts if the flight stays on the other side for `ROUTINE.crossS`.
 - New inject types: add to `TYPES` in `sim.js`, implement in `fireInject`, add text in `scenario.js` `INJECT_TEXT`, and add a unit test. The Claude prompt lists `TYPES` automatically.
+- Every inject type is graded: give it an objective and limits in `GRADING`, set `inj.g` in `fireInject` to what it acts on, judge it in `judge()`, and add a pass and a fail case in `tests/unit/grading.test.js`. Grading only reads state; it never calls `this.rng`.
 
 ## Two windows
 - `src/link.js` is DOM-free like `sim.js`; the instructor window owns the Sim, the trainee window only has a `SimView` built from snapshots.

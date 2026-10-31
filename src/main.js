@@ -179,7 +179,7 @@ function updatePanel(force) {
   renderAcBox();
   if (ROLE === 'solo') {
     $('injCount').textContent = `${scn.injects.filter(i => i.status === 'fired').length}/${scn.injects.length} fired`;
-    $('injList').innerHTML = scn.injects.map((i, k) => `<div class="inj-row ${i.status}"><span class="tm">${String(i.min).padStart(2, '0')}:00</span><div class="tx"><b>${esc(TYPES[i.type])}${i.target ? ' · ' + esc(i.target) : ''}</b>${esc(i.text)}</div>${i.status === 'pending' ? `<button class="btn sm" data-fire="${k}">Fire now</button>` : `<span class="tag on">fired ${fmtT(i.firedAt)}</span>`}</div>`).join('');
+    $('injList').innerHTML = scn.injects.map((i, k) => `<div class="inj-row ${i.status}"><span class="tm">${String(i.min).padStart(2, '0')}:00</span><div class="tx"><b>${esc(TYPES[i.type])}${i.target ? ' · ' + esc(i.target) : ''}</b>${esc(i.text)}${gradeLine(i)}</div>${i.status === 'pending' ? `<button class="btn sm" data-fire="${k}">Fire now</button>` : `<span class="tag on">fired ${fmtT(i.firedAt)}</span>`}</div>`).join('');
   }
   if (ROLE === 'instructor') renderInstructor();
   $('log').innerHTML = sim.logs.slice(0, 40).map(l => `<div class="${l.cls}"><b>${fmtT(l.t)}</b> ${esc(l.text)}</div>`).join('') || '<div>Nothing yet.</div>';
@@ -262,7 +262,7 @@ function renderTimeline(force) {
     const acts = i.status === 'fired' ? `<span class="tag on">fired ${fmtT(i.firedAt)}</span>`
       : [['fire', 'Fire'], i.status === 'held' ? ['release', 'Release'] : ['hold', 'Hold'], ['earlier', '−1′'], ['later', '+1′'], ['edit', 'Edit']]
         .map(([a, label]) => `<button class="btn sm" data-tl="${a}" data-i="${k}">${label}</button>`).join('');
-    return `<div class="inj-row ${i.status}"><span class="tm">${mm}:00</span><div class="tx"><b>${esc(TYPES[i.type])}${i.target ? ' · ' + esc(i.target) : ''}${i.status === 'held' ? ' · held' : ''}</b>${esc(i.text)}</div><div class="tl-acts">${acts}</div></div>`;
+    return `<div class="inj-row ${i.status}"><span class="tm">${mm}:00</span><div class="tx"><b>${esc(TYPES[i.type])}${i.target ? ' · ' + esc(i.target) : ''}${i.status === 'held' ? ' · held' : ''}</b>${esc(i.text)}${gradeLine(i)}</div><div class="tl-acts">${acts}</div></div>`;
   }).join('');
 }
 function timeline(action, k) {
@@ -404,11 +404,34 @@ function gradeItems(d) {
   if (d.injectsTotal !== undefined) items.push(['Injects fired', `${d.injectsFired}/${d.injectsTotal}`, '']);
   return items;
 }
+/** One line under a fired inject: its objective result (instructor and solo only). */
+function gradeLine(i) {
+  const r = i.result;
+  if (!r) return i.status === 'fired' ? '<span class="grade none" data-grade="none">Not graded: no suitable aircraft</span>' : '';
+  const cls = r.state === 'not met' ? 'fail' : r.state;
+  return `<span class="grade ${cls}" data-grade="${cls}"><b>${r.state === 'pending' ? 'Pending' : r.state === 'met' ? 'Met' : 'Not met'}${r.t === null ? '' : ' · ' + r.t + ' s'}</b> ${esc(r.reason)}</span>`;
+}
+function debriefInjects(d) {
+  if (!d.injects || !d.injects.length) return '';
+  const rows = d.injects.map(i => {
+    const r = i.result, st = r ? r.state : i.status === 'fired' ? 'not graded' : 'not fired';
+    const cls = st === 'met' ? 'met' : st === 'not met' ? 'fail' : st === 'pending' ? 'pending' : 'none';
+    return `<tr><td>${i.firedAt === null ? String(i.min).padStart(2, '0') + ':00' : fmtT(i.firedAt)}</td><td>${esc(i.label)}${i.target ? ' · ' + esc(i.target) : ''}</td><td><span class="grade ${cls}"><b>${esc(st)}</b></span></td><td>${r && r.t !== null ? r.t + ' s' : '—'}</td><td>${esc(r ? r.reason : i.objective)}</td></tr>`;
+  }).join('');
+  const met = d.injects.filter(i => i.result && i.result.state === 'met').length, graded = d.injects.filter(i => i.result).length;
+  return `<h4>Injects: ${met}/${graded} objectives met</h4><div class="deb-scroll"><table class="deb-table"><thead><tr><th>Time</th><th>Inject</th><th>Result</th><th>Measured</th><th>Reason</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function debriefTimeline(d) {
+  if (!d.timeline || !d.timeline.length) return '';
+  return `<h4>Timeline</h4><div class="deb-tl">${d.timeline.map(e => `<div class="${e.cls}"><b>${fmtT(e.t)}</b> ${esc(e.text)}</div>`).join('')}</div>`;
+}
 const statHtml = i => `<div class="stat"><div class="k">${esc(i[0])}</div><div class="v" style="color:${i[2] === 'a' ? 'var(--alert)' : i[2] === 'w' ? 'var(--warn)' : 'var(--text)'}">${esc(String(i[1]))}</div></div>`;
 function showDebrief() {
   const d = sim.debrief(), scn = sim.scenario;
   if (!d) return;
   $('debStats').innerHTML = gradeItems(d).map(statHtml).join('');
+  $('debInjects').innerHTML = debriefInjects(d);
+  $('debTimeline').innerHTML = debriefTimeline(d);
   $('debNotes').textContent = ROLE === 'trainee' ? `Seed ${scn.seed}. Your instructor has the full scenario and the injects.` : `Scenario "${scn.title}", seed ${scn.seed}. Success criteria: ${scn.criteria.join('; ')}.`;
   $('debrief').hidden = false;
 }

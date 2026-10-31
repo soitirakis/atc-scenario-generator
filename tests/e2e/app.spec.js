@@ -255,4 +255,9 @@ test('session ends with a debrief', async ({ page }) => {
   const stat = k => page.locator('#debStats .stat', { hasText: k }).locator('.v');
   for (const k of ['Late assumes', 'Late transfers']) expect(+(await stat(k).textContent()), k).toBeGreaterThan(0);
   await expect(stat('Wrong exit levels')).toHaveText(/^\d+$/);
+  // per-inject results under the totals, then the timeline
+  const n = await page.evaluate(() => window.__sim.scenario.injects.length);
+  await expect(page.locator('#debInjects tbody tr')).toHaveCount(n);
+  await expect(page.locator('#debInjects')).toContainText(/objectives met/);
+  expect(await page.locator('#debTimeline .deb-tl > div').count()).toBeGreaterThan(n);
 });
