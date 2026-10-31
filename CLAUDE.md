@@ -43,3 +43,5 @@ En-route ATC radar training simulator. Vanilla JS (ES modules) built with Vite i
 
 ## Before committing
 `npm test && npm run test:e2e` must pass.
+
+main is protected: never push to main. Work on a branch and open a pull request; the `test` CI check must pass before merging.
