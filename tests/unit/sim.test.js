@@ -18,6 +18,8 @@ const fresh = (o, injects) => {
   return sim;
 };
 const run = (sim, s) => { for (let i = 0; i < s; i++) sim.step(); };
+/** Wait until the frequency is free (a clearance while it is busy gets "say again"). */
+const free = sim => { for (let i = 0; i < 30 && sim.freqBusy(); i++) sim.step(); };
 
 describe('session loading', () => {
   it('loads the traffic count for each difficulty', () => {
@@ -216,19 +218,23 @@ describe('clearances', () => {
     const a = sim.ac.find(x => x.ctl === 'ass');
     sim.speed(a.id, 900);
     expect(a.spd).toEqual({ mode: 'ias', v: 350 });
+    free(sim);
     sim.speed(a.id, 120);
     expect(a.spd).toEqual({ mode: 'ias', v: 200 });
   });
 });
 
 describe('sector routine: assume and transfer', () => {
-  // a trainee who assumes on transfer, re-clears to the agreed exit level and transfers before the boundary
+  // a trainee who assumes on transfer, re-clears to the agreed exit level (one at a time, when the
+  // frequency is free, most urgent exit first) and then transfers before the boundary
   const disciplined = sim => {
-    for (const a of sim.ac) {
+    for (const a of [...sim.ac].sort((p, q) => (p.tExit ?? Infinity) - (q.tExit ?? Infinity))) {
       if (a.ctl === 'pend' || a.noXfer) sim.assume(a.id);
       if (a.ctl !== 'ass' || a.tExit === null) continue;
-      if (a.xfl !== null && Math.round(a.cfl) !== a.xfl && a.tExit <= 400) sim.clearLevel(a.id, a.xfl);
-      if (a.tExit <= 45) sim.transfer(a.id);
+      const needsLevel = a.xfl !== null && Math.round(a.cfl) !== a.xfl;
+      if (needsLevel && a.tExit <= 400 && !sim.freqBusy()) sim.clearLevel(a.id, a.xfl);
+      // re-clear first, then transfer (unless the boundary is seconds away)
+      if (a.tExit <= 45 && (Math.round(a.cfl) === a.xfl || a.xfl === null || a.tExit <= 5)) sim.transfer(a.id);
     }
   };
 
@@ -287,6 +293,7 @@ describe('sector routine: assume and transfer', () => {
     expect(sim.transfer(a.id).ok).toBe(true);
     expect(a.ctl).toBe('xfer');
     expect(sim.stats.wrongXfl).toBe(0);
+    free(sim);
     sim.clearLevel(b.id, b.xfl + 20);
     expect(sim.transfer(b.id).ok).toBe(true);
     expect(sim.stats.wrongXfl).toBe(1);
@@ -458,9 +465,10 @@ describe('instructor: pseudo-pilot', () => {
     expect(b.req.text).toBe('requests 20° left for weather');
     const pt = C.pointList.find(p => p.id !== c.route[c.ri].id).id;
     sim.pilotRequest(c.id, 'direct', pt.toLowerCase());
+    expect(sim.stats.reqs).toBe(3);
+    free(sim);
     sim.answer(c.id, true);
     expect(c.route[0].id).toBe(pt);
-    expect(sim.stats.reqs).toBe(3);
   });
 
   it('rejects malformed requests', () => {
@@ -527,8 +535,9 @@ describe('performance and wind', () => {
   };
   const climbTime = (type, from, to, rate) => {
     const { sim, a } = alone(type, { fl: from });
-    sim.clearLevel(a.id, to);
-    if (rate) expect(sim.clearRate(a.id, rate.fpm, rate.kind)).toEqual({ ok: true });
+    // level and rate in one transmission, as a controller says them
+    const actions = [{ cmd: 'clearLevel', args: [to] }, ...(rate ? [{ cmd: 'clearRate', args: [rate.fpm, rate.kind] }] : [])];
+    expect(sim.transmit(a.id, actions)).toEqual({ ok: true });
     let t = 0;
     while (a.fl < to && t < 3600) { sim.step(); t++; }
     return { t, a };
@@ -639,8 +648,9 @@ describe('robustness', () => {
       sim.ac = [];
       expect(() => sim.fireNow(0), type).not.toThrow();
       expect(sim.scenario.injects[0].status, type).toBe('fired');
-      // only the TSA and the two injects that bring their own traffic need no aircraft in the sector
-      if (!['MILITARY_TSA', 'POPUP_TRAFFIC', 'LATE_TRANSFER'].includes(type)) expect(sim.logs[0].text, type).toMatch(/no suitable aircraft in sector/);
+      // the TSA, the two injects that bring their own traffic, and the readback error (armed for the
+      // next clearance) need no aircraft in the sector
+      if (!['MILITARY_TSA', 'POPUP_TRAFFIC', 'LATE_TRANSFER', 'READBACK_ERROR'].includes(type)) expect(sim.logs[0].text, type).toMatch(/no suitable aircraft in sector/);
       expect(() => run(sim, 30), type).not.toThrow();
     }
   });

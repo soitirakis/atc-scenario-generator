@@ -10,6 +10,7 @@ import { fmtFL, fmtT, dist } from './geo.js';
 import { Sim, TYPES, DIFF } from './sim.js';
 import { buildLocalScenario, buildClaudePrompt, parseClaudeScenario, exportScenario, validateScenarioFile } from './scenario.js';
 import { LIBRARY } from '../data/scenarios/index.js';
+import { parseCommand, completeCallsign } from './cmdline.js';
 import { Renderer } from './render.js';
 import { Link, SimView, makeSnapshot, CHANNEL_NAME } from './link.js';
 import { tasToMach, machToCas } from './atmos.js';
@@ -177,6 +178,9 @@ function updatePanel(force) {
   const pr = sim.priorities();
   $('prio').innerHTML = pr.length ? pr.slice(0, 10).map(it => `<div class="pi p${it.p}" data-ac="${it.ac ? it.ac.id : ''}"><span class="lvl">P${it.p}</span><div class="t"><b>${esc(it.h)}</b><span>${esc(it.s)}</span></div><div class="acts">${actButtons(it)}</div></div>`).join('') : '<div class="empty">No open items. Keep scanning the sector.</div>';
 
+  const busy = sim.freqBusy();
+  $('freqState').textContent = busy ? `frequency busy · ${sim.freq.cs}` : 'frequency free';
+  $('freqState').classList.toggle('busy', busy);
   const md = sim.nets.mtcd;
   $('mtcdCount').textContent = md.length ? `${md.length} predicted, 20 min` : '20 min look-ahead';
   $('mtcd').innerHTML = md.length ? md.slice(0, 8).map(c => `<div class="mt" data-ac="${c.a}"><b>${fmtT(c.t)}</b><span>${esc(c.acs)} / ${esc(c.bcs)}</span><span>min ${c.minNM.toFixed(1)} NM at ${fmtT(c.tMin)}${c.dvFt ? `, ${c.dvFt} ft` : ''}</span></div>`).join('') : '<div class="empty">No conflicts predicted in the next 20 minutes.</div>';
@@ -509,7 +513,44 @@ function toolClick(ac, xy) {
   setTool(null);
 }
 
+/* ---------- command line ---------- */
+const CMD_HELP = 'Tab completes the callsign. 370 level · H120 heading · D NERDI direct · M78 / S250 speed · R2000+ rate';
+function cmdHint(text, cls = '') { const h = $('cmdHint'); h.textContent = text; h.className = 'note cmd-hint ' + cls; }
+function sendCommand() {
+  const text = $('cmdLine').value.trim();
+  if (!text) return;
+  const p = parseCommand(text, sim.ac.map(a => a.cs)); // checked here for an immediate answer; the Sim parses it again
+  if (!p.ok) { cmdHint(p.error, 'err'); return; }
+  Promise.resolve(sim.command(text)).then(r => {
+    if (r && r.ok) { $('cmdLine').value = ''; cmdHint(CMD_HELP); } else cmdHint((r && r.msg) || 'Not sent', 'err');
+    updatePanel(true); publish();
+  });
+}
+function bindCommandLine() {
+  const input = $('cmdLine');
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); sendCommand(); return; }
+    if (e.key === 'Escape') { input.value = ''; cmdHint(CMD_HELP); return; }
+    if (e.key !== 'Tab' || /\s/.test(input.value.trim())) return; // Tab completes the first word only
+    const m = completeCallsign(input.value, sim.ac.map(a => a.cs));
+    if (!m.length) return;
+    e.preventDefault();
+    let common = m[0];
+    for (const cs of m) while (!cs.startsWith(common)) common = common.slice(0, -1);
+    input.value = m.length === 1 ? m[0] + ' ' : common;
+    cmdHint(m.length === 1 ? CMD_HELP : m.join('  '));
+  });
+  input.addEventListener('input', () => {
+    const v = input.value.trim();
+    if (!v || /\s/.test(v)) { if (!v) cmdHint(CMD_HELP); return; }
+    const m = completeCallsign(v, sim.ac.map(a => a.cs));
+    cmdHint(m.length ? m.slice(0, 8).join('  ') : `No callsign starting ${v.toUpperCase()}`, m.length ? '' : 'err');
+  });
+  $('cmdSend').onclick = sendCommand;
+}
+
 function bindInput() {
+  bindCommandLine();
   const cv = $('scope');
   let drag = null;
   cv.addEventListener('pointerdown', e => {

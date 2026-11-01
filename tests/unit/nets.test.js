@@ -25,6 +25,11 @@ describe('CLAM (cleared level adherence)', () => {
     expect(clam({ fl: 353.5, cfl: 350, sfl: 360 })).toMatchObject({ kind: 'DEV', devFt: 350 });
     expect(clam({ fl: 346, cfl: 350, sfl: 340 })).toMatchObject({ kind: 'DEV', devFt: -400 });
   });
+  it('still climbing towards a selected level short of the cleared level: SFL, not DEV', () => {
+    // cleared FL370, selected FL360 (a wrong readback), climbing through FL350: nothing has been passed yet
+    expect(clam({ fl: 350, cfl: 370, sfl: 360 }).kind).toBe('SFL');
+    expect(clam({ fl: 360, cfl: 370, sfl: 360 }).kind).toBe('DEV'); // levelled 1000 ft short
+  });
   it('DEV: moving away from the cleared level', () => {
     expect(clam({ fl: 345, cfl: 350, sfl: 330 })).toMatchObject({ kind: 'DEV' });
   });

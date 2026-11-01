@@ -192,6 +192,12 @@ Branch coverage is the binding metric: it reached the threshold only after addin
 
 *Fix and guard.* The climbing variant is used only when the conflict is 4 minutes ahead or less; later conflicts are level. The random draw still happens, so every seed keeps its traffic. The guard is `every built-in pair really loses separation if nobody acts, including the later ones` in `tests/unit/sim.test.js`: four seeds at advanced traffic, nobody acting, and every built-in pair inside 22 minutes must come within 5 NM / 1000 ft. It fails on the old generator (seed 1's third conflict never happens).
 
+**CLAM flagged a climbing aircraft as a level deviation.** CLAM raised DEV whenever the aircraft was more than 300 ft from the cleared level on the selected level's side, without checking that it had actually crossed the cleared level. An aircraft cleared to FL370 but with FL360 selected, still climbing through FL350, was reported as a deviation instead of a selected-level mismatch.
+
+*How it was found.* The fail case of the readback-error inject: the pilot reads back FL360 instead of FL370, sets it, and the test expected CLAM to show SFL. It showed DEV.
+
+*Fix and guard.* DEV now needs the aircraft to be between the cleared and the selected level (it crossed the cleared level towards the selected one), or moving away from the cleared level. Guarded by `still climbing towards a selected level short of the cleared level: SFL, not DEV` in `tests/unit/nets.test.js`, which fails on the old rule.
+
 ## Not covered
 
 - **Generate with Claude:** this path needs the claude.ai artifact runtime, so CI tests the prompt and the validator, not a live model call.

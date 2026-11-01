@@ -9,6 +9,8 @@ import { defaultWind, normaliseWind } from './atmos.js';
 const KEYWORDS = [
   [/weather|\bcb\b|storm|deviat|turbul/i, 'WEATHER_CELL'],
   [/emergenc|7700|pressur|medical|mayday/i, 'EMERGENCY_DESCENT'],
+  [/read.?back|hear.?back/i, 'READBACK_ERROR'],
+  [/similar|call.?sign confusion|same call.?sign/i, 'SIMILAR_CALLSIGN'],
   [/radio|comm|7600|rcf|frequency/i, 'RADIO_FAILURE'],
   [/milit|tsa|\btra\b|fua|segregat/i, 'MILITARY_TSA'],
   [/coordinat|exit level|\bxfl\b|\bloa\b/i, 'COORD_REQUEST'],
@@ -33,14 +35,17 @@ export const INJECT_TEXT = {
   MILITARY_TSA: 'A military area from ENR 5.2 becomes active in 5 minutes. Keep your traffic out of it.',
   POPUP_TRAFFIC: 'An aircraft enters the sector without prior coordination.',
   COORD_REQUEST: 'The next sector asks for a different exit level for an aircraft about to leave. Accept or refuse.',
-  LATE_TRANSFER: 'An inbound aircraft reaches the sector without having been transferred. Coordinate and assume it.'
+  LATE_TRANSFER: 'An inbound aircraft reaches the sector without having been transferred. Coordinate and assume it.',
+  READBACK_ERROR: 'The next level or heading clearance is read back wrong. Catch it and correct it before the aircraft acts on it.',
+  SIMILAR_CALLSIGN: 'A flight with a similar callsign comes on frequency, and one of the two takes the other\'s clearance.'
 };
 
 const FOCUS = {
   WEATHER_CELL: 'weather deviations', LEVEL_BUST: 'vertical discipline', RADIO_FAILURE: 'communication failure',
   EMERGENCY_DESCENT: 'emergency handling', MILITARY_TSA: 'civil-military coordination',
   CLIMB_REQUEST: 'request handling under load', POPUP_TRAFFIC: 'unplanned traffic',
-  COORD_REQUEST: 'exit level coordination', LATE_TRANSFER: 'transfer of control'
+  COORD_REQUEST: 'exit level coordination', LATE_TRANSFER: 'transfer of control',
+  READBACK_ERROR: 'hearback', SIMILAR_CALLSIGN: 'callsign confusion'
 };
 
 export function buildLocalScenario(C, cfg) {

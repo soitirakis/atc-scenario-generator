@@ -78,6 +78,7 @@ test('the pseudo-pilot makes a request the trainee approves, and refuses a clear
   await expect(instructor.locator('#ppFor')).toHaveText(`speaking as ${b.cs}`);
   await instructor.locator('#ppBox button[data-pp="next-refuse"]').click();
   const cfl = await instructor.evaluate(id => window.__sim.get(id).cfl, b.id);
+  await instructor.evaluate(() => { const s = window.__sim; while (s.freqBusy()) s.step(); }); // the approval's readback
   const r = await trainee.evaluate(id => window.__sim.clearLevel(id, 250), b.id);
   expect(r).toEqual({ ok: false, msg: `${b.cs}: unable ${cfl > 250 ? 'descend' : 'climb'} FL250` });
   expect(await instructor.evaluate(id => window.__sim.get(id).cfl, b.id)).toBe(cfl);
@@ -152,6 +153,21 @@ test('the trainee probes a level; it runs in the instructor Sim and the result c
   await trainee.locator('#cFl').selectOption(String(a.cfl));
   await trainee.locator('#bProbe').click();
   await expect(trainee.locator('#probeOut')).toContainText(b.cs); // the built-in conflict partner
+  expect(errors).toEqual([]);
+});
+
+test('the trainee gives a clearance on the command line; it runs in the instructor Sim', async ({ page, context }) => {
+  const { instructor, trainee, errors } = await openBoth(page, context);
+  await instructor.locator('#pausedStart').click();
+  await instructor.locator('#playBtn').click();
+  const a = await instructor.evaluate(() => { const x = window.__sim.ac.find(q => q.ctl === 'ass' && !q.rcf); return { id: x.id, cs: x.cs, cfl: Math.round(x.cfl) }; });
+  await traineeSees(trainee, id => !!window.__sim.get(id), a.id).toBe(true);
+  await trainee.locator('#cmdLine').fill(`${a.cs} ${a.cfl + 20}`);
+  await trainee.locator('#cmdLine').press('Enter');
+  await expect.poll(() => instructor.evaluate(id => window.__sim.get(id).cfl, a.id)).toBe(a.cfl + 20);
+  await expect(trainee.locator('#freqState')).toHaveText(`frequency busy · ${a.cs}`);
+  await step(instructor, 10);
+  await expect(trainee.locator('#log .p').first()).toContainText(`FL${a.cfl + 20}, ${a.cs}`); // the readback reaches the trainee
   expect(errors).toEqual([]);
 });
 
