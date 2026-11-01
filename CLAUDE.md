@@ -13,7 +13,7 @@ En-route ATC radar training simulator. Vanilla JS (ES modules) built with Vite i
 - `npm run airac` — AIRAC diff for Romania; `-- --country HU` for Hungary (needs network to aisro.ro / ais-en.hungarocontrol.hu)
 
 ## Architecture rules
-- `src/sim.js` must stay DOM-free. All simulation state lives on the `Sim` instance; the UI only reads it and calls command methods (`clearLevel`, `turn`, `direct`, `speed`, `answer`, `ackEmergency`, `fireNow`), which return `{ ok, msg }`.
+- `src/sim.js` must stay DOM-free. All simulation state lives on the `Sim` instance; the UI only reads it and calls command methods, which return `{ ok, msg }`. The controller's commands are the ones in `TRAINEE_COMMANDS` (`src/link.js`), the only ones a trainee window may run; instructor commands (injects, the inject timeline, pseudo-pilot, wind) are the other public `Sim` methods the UI calls.
 - Time advances only through `Sim.step()` (1 simulated second). Never use `Math.random()` inside the sim; use `this.rng` so seeds stay reproducible. The reproducibility test in `tests/unit/sim.test.js` guards this.
 - `src/render.js` never mutates simulation state.
 - Safety nets and monitoring aids (STCA aside) live in `src/nets/` as pure modules: they take plain state or trajectories (`Sim.trajectory`) and return alerts, with their settings exported as a config object and their own unit tests. `Sim.netsScan` runs them; priorities read `sim.nets`. Level busts are detected by CLAM, not by the inject's `a.bust` flag.

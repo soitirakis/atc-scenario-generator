@@ -1,8 +1,8 @@
 {
   "name": "atc-scenario-generator",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "license": "GPL-3.0-only",
-  "description": "En-route ATC radar training simulator with scenario and inject generation, built on real eAIP data. Romania (LRBB) first.",
+  "description": "En-route ATC radar training simulator with scenario and inject generation, built on real eAIP data for Romania (Bucharest ACC, LRBB) and Hungary (Budapest ACC, LHCC).",
   "type": "module",
   "private": true,
   "scripts": {
@@ -11,6 +11,7 @@
     "preview": "vite preview --port 4173 --strictPort",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:counts": "node scripts/test-counts.mjs",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "screenshots": "node scripts/screenshots.mjs",

@@ -4,19 +4,34 @@ This document describes what each test layer covers, and why it is there.
 
 ## Layers at a glance
 
-| Layer | Tool | Where | Size | Runs |
-|---|---|---|---|---|
-| Data integrity | Vitest | `tests/unit/country.test.js`, `country-hu.test.js` | 31 tests | `npm test`, CI |
-| Determinism and simulation behaviour | Vitest | `tests/unit/sim.test.js` | 58 tests | `npm test`, CI |
-| Aircraft performance, ISA and wind | Vitest | `tests/unit/performance.test.js`, `sim.test.js` | 12 + 9 tests | `npm test`, CI |
-| Two-window link | Vitest | `tests/unit/link.test.js` | 14 tests | `npm test`, CI |
-| Scenario builder and Claude reply validator | Vitest | `tests/unit/scenario.test.js` | 10 tests | `npm test`, CI |
-| AIP parsers against fixtures | Vitest | `tests/unit/airac.test.js`, `tests/fixtures/` | 19 tests | `npm test`, CI |
-| Geometry | Vitest | `tests/unit/geo.test.js` | 12 tests | `npm test`, CI |
-| End to end, two viewports | Playwright | `tests/e2e/app.spec.js`, `two-windows.spec.js` | 18 tests × 2 viewports | `npm run test:e2e`, CI |
-| Coverage gate | Vitest (V8) | `vite.config.js` | 85% per file on `src/sim.js`, `src/scenario.js`, `src/nets/*.js`, `src/tools/*.js` | `npm run test:coverage`, CI |
+<!-- test-counts:start -->
+| File | What it covers | Tests |
+|---|---|---|
+| `tests/unit/airac.test.js` | ENR 4.1 and 4.4 parsers against fixtures, the FRA role rule, AIRAC diffs and edition dates | 19 |
+| `tests/unit/areas.test.js` | ENR 5.2 parsers (Romania PDF, Hungary HTML), strict vertical limits and the known AIP misprints, loading the areas | 23 |
+| `tests/unit/civmil.test.js` | military data (training constructs), OAT tracks and non-RVSM minima, the COMLOSS chain, short-notice extensions | 14 |
+| `tests/unit/cmdline.test.js` | command line shorthand, malformed input, callsign completion | 17 |
+| `tests/unit/country-hu.test.js` | Hungary data integrity: sectors, borders, points, roles, traffic | 17 |
+| `tests/unit/country.test.js` | Romania data integrity and the country loader | 14 |
+| `tests/unit/geo.test.js` | projection, AIP coordinate parsing, plane geometry, the seeded RNG | 12 |
+| `tests/unit/grading.test.js` | per-inject objectives: a pass and a fail case for every inject type, the debrief data | 39 |
+| `tests/unit/link.test.js` | two-window protocol, what the trainee snapshot contains, trainee commands | 14 |
+| `tests/unit/nets.test.js` | APW, CLAM, RAM and MTCD on plain data and in the simulator | 21 |
+| `tests/unit/performance.test.js` | OpenAP WRAP conversion, ISA airspeeds, wind | 12 |
+| `tests/unit/radio.test.js` | readbacks, the busy frequency, one transmission per command line, similar callsigns | 8 |
+| `tests/unit/scenario-file.test.js` | scenario export and import validation, the sample library | 30 |
+| `tests/unit/scenario.test.js` | local scenario builder and the Claude reply validator | 10 |
+| `tests/unit/sim.test.js` | determinism, traffic and built-in conflicts, injects, clearances, the sector routine, pseudo-pilot, performance and wind in the simulator, robustness | 61 |
+| `tests/unit/tools.test.js` | range-bearing line, SEP, level probe | 14 |
+| `tests/e2e/app.spec.js` | the single window: loading, clearances, injects, data blocks, tools, command line, COMLOSS, no requests to other hosts | 17 × 2 viewports |
+| `tests/e2e/two-windows.spec.js` | instructor and trainee windows: sync, what the trainee sees, commands through the link, grading | 9 × 2 viewports |
+| `tests/e2e/scenario-files.spec.js` | export, reload and import round trip, the library in both windows, invalid files | 3 × 2 viewports |
+| **Total** | 16 unit files, 3 end-to-end files | 325 unit, 29 end-to-end × 2 viewports |
+<!-- test-counts:end -->
 
-The 156 unit tests run in Node in under ten seconds and need no browser or network. End-to-end tests run against the production build. CI (`.github/workflows/ci.yml`) runs the unit tests with coverage, then the end-to-end tests, on every push and pull request. A push to `main` deploys to GitHub Pages only if both pass.
+The counts come from the test runners: `node scripts/test-counts.mjs` rewrites them, and CI fails if they differ (`--check`). The coverage gate (`npm run test:coverage`, `vite.config.js`) requires 85% per file on `src/sim.js`, `src/scenario.js`, `src/cmdline.js`, `src/nets/*.js` and `src/tools/*.js`.
+
+The unit tests run in Node in a few seconds and need no browser or network. The end-to-end tests run against the production build, on a desktop and a phone viewport. CI (`.github/workflows/ci.yml`) runs the unit tests with coverage, checks these counts, then runs the end-to-end tests, on every push and pull request. A push to `main` deploys to GitHub Pages only if all of that passes.
 
 ## Data integrity
 

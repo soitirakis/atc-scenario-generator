@@ -17,6 +17,8 @@ jobs:
       - run: npm ci
       - name: "Unit tests with coverage (85% minimum per file: sim, scenario, cmdline, nets, tools)"
         run: npm run test:coverage
+      - name: Test counts in docs/TEST-STRATEGY.md match the suites
+        run: npm run test:counts -- --check
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
       - name: End-to-end tests (desktop + phone)

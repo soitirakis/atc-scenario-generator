@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { open, fontsReady } from './load.js';
 import fs from 'node:fs';
 
 const step = (page, s) => page.evaluate(s => { for (let i = 0; i < s; i++) window.__sim.step(); }, s);
@@ -7,7 +8,7 @@ const traffic = page => page.evaluate(() => window.__sim.ac.map(a => [a.cs, a.x.
 test('export, reload, import: the same callsigns and positions after 120 simulated seconds', async ({ page }, info) => {
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
-  await page.goto('/?role=instructor');
+  await open(page, '/?role=instructor');
   await page.locator('#tab-scenario').click();
   await page.locator('#seed').fill('7781');
   await page.locator('#buildLocal').click();
@@ -27,6 +28,7 @@ test('export, reload, import: the same callsigns and positions after 120 simulat
   expect(before.length).toBeGreaterThan(5);
 
   await page.reload();
+  await fontsReady(page);
   await page.locator('#tab-scenario').click();
   await page.locator('#seed').fill('1');
   await page.locator('#buildLocal').click(); // a different session, so the import has to replace it
@@ -40,9 +42,9 @@ test('export, reload, import: the same callsigns and positions after 120 simulat
 });
 
 test('a library scenario loaded in the instructor window reaches the trainee window', async ({ page, context }) => {
-  await page.goto('/?role=instructor');
+  await open(page, '/?role=instructor');
   const trainee = await context.newPage();
-  await trainee.goto('/?role=trainee');
+  await open(trainee, '/?role=trainee');
   await expect(page.locator('#roleTag')).toHaveText('INSTRUCTOR · linked');
   await expect(trainee.locator('#libSel')).toBeHidden(); // the trainee cannot load or export scenarios
 
@@ -57,7 +59,7 @@ test('a library scenario loaded in the instructor window reaches the trainee win
 });
 
 test('an invalid file is not loaded and the reasons are shown in plain words', async ({ page }, info) => {
-  await page.goto('/');
+  await open(page, '/');
   await page.locator('#tab-scenario').click();
   const before = await page.evaluate(() => window.__sim.ac.map(a => a.cs));
   const bad = info.outputPath('bad.json');

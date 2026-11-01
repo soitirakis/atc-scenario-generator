@@ -1,11 +1,12 @@
 import { test, expect } from '@playwright/test';
+import { open } from './load.js';
 import { bestWorstOverlap } from './best-layout.js';
 
 test.beforeEach(async ({ page }) => {
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   page.__errors = errors;
-  await page.goto('/');
+  await open(page, '/');
   await expect(page.locator('#pausedTag')).toBeVisible();
 });
 test.afterEach(async ({ page }) => {
@@ -369,4 +370,23 @@ test('COMLOSS: Notify MIL from the priorities, the QRA pair scrambles, its coord
   await page.evaluate(id => { window.__radar.sel = id; }, qra.id);
   await expect(page.locator('#acBox')).toContainText('Operational air traffic under military control');
   await expect(page.locator('#acBox #cFl')).toHaveCount(0);
+});
+
+test('loads nothing from other hosts; the fonts are the bundled ones', async ({ context, baseURL }) => {
+  const page = await context.newPage(), own = new URL(baseURL).host, external = [];
+  page.on('request', r => {
+    const u = new URL(r.url());
+    if (!['data:', 'blob:'].includes(u.protocol) && u.host !== own) external.push(r.url());
+  });
+  await open(page, '/');
+  // use the page: run the session, every tab, an export
+  await page.locator('#pausedStart').click();
+  await page.waitForTimeout(1500);
+  for (const tab of ['scenario', 'data', 'live']) await page.locator(`#tab-${tab}`).click();
+  await page.locator('#tab-scenario').click();
+  await Promise.all([page.waitForEvent('download'), page.locator('#scnExport').click()]);
+  expect(external, 'requests to other hosts').toEqual([]);
+  const fonts = await page.evaluate(() => [...document.fonts].filter(f => f.status === 'loaded').map(f => `${f.family.replace(/"/g, '')} ${f.weight}`));
+  for (const f of ['Barlow Semi Condensed 600', 'IBM Plex Mono 400']) expect(fonts, f).toContain(f);
+  await page.close();
 });
