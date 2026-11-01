@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import RO from '../../data/RO/index.js';
 import HU from '../../data/HU/index.js';
-import { parseLrEnr52, parseLhEnr52, limitToFL, diffAreas } from '../../scripts/airac-lib.mjs';
+import { parseLrEnr52, parseLhEnr52, limitToFL, diffAreas, checkLimit, KNOWN_LIMIT_TYPOS } from '../../scripts/airac-lib.mjs';
 import { loadCountry, loadArea, limitFL, inSector } from '../../src/country.js';
 import { dist, centroid } from '../../src/geo.js';
 
@@ -31,6 +31,28 @@ describe('ENR 5.2 parser: Romania (PDF text)', () => {
   });
   it('a circle keeps its centre and radius; limits issued by NOTAM are null', () => {
     expect(by('LRTSA59')).toEqual({ id: 'LRTSA59', name: 'BUZĂU', type: 'TSA', circle: { centre: '450738N 0264745E', radiusNM: 6 }, upper: null, lower: null, activation: 'by NOTAM' });
+  });
+});
+
+describe('ENR 5.2 parser: unrecognised limits fail', () => {
+  const ro = fixture('lr-enr-5-2-excerpt.txt'), hu = fixture('lh-enr-5-2-excerpt.txt');
+  it('Romania: a limit in a new format stops the parse, naming the area', () => {
+    expect(() => parseLrEnr52(ro.replace('FL350\nFL280', 'FL350\n2500 M AMSL'))).toThrow(/unrecognised lower limit "2500 M AMSL" for LRTRA100U/);
+    expect(() => parseLrEnr52(ro.replace('4500 FT AMSL', '4500FT'))).toThrow(/unrecognised upper limit "4500FT" for LRTRA1G/);
+  });
+  it('Hungary: an area whose limits are in a new format is not dropped silently', () => {
+    expect(() => parseLhEnr52(hu.replace('FL 285 / FL 245', 'FL 285 / 7500 M'))).toThrow(/could not read LHTRA31A/);
+  });
+  it('the three known AIP misprints are allowed, by area and side only', () => {
+    expect(Object.keys(KNOWN_LIMIT_TYPOS)).toEqual(['LRTRA27L upper L200', 'LRTRA41 lower L280', 'LRTRA113B lower L280']);
+    expect(checkLimit('LRTRA41', 'lower', 'L280')).toEqual({ value: 'L280', read: 'FL280' });
+    expect(() => checkLimit('LRTRA41', 'upper', 'L280')).toThrow(/unrecognised/);
+    expect(() => checkLimit('LRTRA42L', 'lower', 'L280')).toThrow(/unrecognised/);
+    expect(() => parseLrEnr52(ro.replace('FL350\nFL280', 'FL350\nL280'))).toThrow(/LRTRA100U/);
+  });
+  it('an area that prints no vertical limits is read as such, with a note', () => {
+    const text = ro.replace('Vertical limits are issued\nby NOTAM\n', '');
+    expect(parseLrEnr52(text).find(a => a.id === 'LRTSA59')).toMatchObject({ upper: null, lower: null, note: 'No vertical limits published.' });
   });
 });
 

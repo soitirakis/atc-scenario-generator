@@ -790,9 +790,9 @@
         "464448N 0240222E"
       ],
       "upper": "L200",
-      "lower": "FL75",
       "upperRead": "FL200",
       "note": "AIP prints \"L200\"; read as FL200.",
+      "lower": "FL75",
       "activation": "by NOTAM"
     },
     {
@@ -4479,6 +4479,7 @@
       },
       "upper": null,
       "lower": null,
+      "note": "No vertical limits published.",
       "activation": "by NOTAM"
     },
     {
@@ -4491,6 +4492,7 @@
       },
       "upper": null,
       "lower": null,
+      "note": "No vertical limits published.",
       "activation": "by NOTAM"
     },
     {
@@ -4503,6 +4505,7 @@
       },
       "upper": null,
       "lower": null,
+      "note": "No vertical limits published.",
       "activation": "by NOTAM"
     },
     {
@@ -4515,6 +4518,7 @@
       },
       "upper": null,
       "lower": null,
+      "note": "No vertical limits published.",
       "activation": "by NOTAM"
     },
     {
@@ -4527,6 +4531,7 @@
       },
       "upper": null,
       "lower": null,
+      "note": "No vertical limits published.",
       "activation": "by NOTAM"
     }
   ]
