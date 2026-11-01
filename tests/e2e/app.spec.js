@@ -277,7 +277,9 @@ test('RBL and SEP tools on the radar, and the level probe on the selected aircra
   const box = await page.locator('#scope').boundingBox();
   // two assumed tracks on screen, well apart
   const pts = await page.evaluate(() => {
-    const R = window.__radar, s = window.__sim, on = a => { const x = R.sx([a.x, a.y]), y = R.sy([a.x, a.y]); return x > 40 && y > 40 && x < R.V.w - 40 && y < R.V.h - 40; };
+    // on screen and clickable: the radar itself is under the point, not a chip or the legend
+    const R = window.__radar, s = window.__sim, cv = document.querySelector('#scope').getBoundingClientRect();
+    const on = a => { const x = R.sx([a.x, a.y]), y = R.sy([a.x, a.y]); return x > 40 && y > 40 && x < R.V.w - 40 && y < R.V.h - 40 && document.elementFromPoint(cv.left + x, cv.top + y).id === 'scope'; };
     const mine = s.ac.filter(a => a.ctl === 'ass' && on(a));
     const a = mine[0], b = mine.find(m => Math.hypot(m.x - a.x, m.y - a.y) > 30);
     return [a, b].map(m => ({ id: m.id, x: R.sx([m.x, m.y]), y: R.sy([m.x, m.y]) }));
