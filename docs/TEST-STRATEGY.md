@@ -180,9 +180,17 @@ The label limit is relative where it has to be. Each minute, the test computes t
 
 **What.** `npm run test:coverage` runs the unit suite with V8 coverage on `src/sim.js`, `src/scenario.js` and the safety net and tool modules in `src/nets/` and `src/tools/`, and fails if statements, branches, functions or lines fall below 85% in any of them. CI writes the result to `coverage.json` on the Pages site, which feeds the README badge.
 
-**Why these two files.** They hold the logic that decides what a trainee experiences and is scored on, and they have no DOM, so unit tests can reach almost every branch. `src/render.js` and `src/main.js` are covered by the end-to-end tests instead. `src/geo.js` and `src/country.js` are covered indirectly by every test that loads a country.
+**Why these files.** They hold the logic that decides what a trainee experiences and is scored on, and they have no DOM, so unit tests can reach almost every branch. `src/render.js` and `src/main.js` are covered by the end-to-end tests instead. `src/geo.js` and `src/country.js` are covered indirectly by every test that loads a country.
 
 Branch coverage is the binding metric: it reached the threshold only after adding tests for the validator's fallbacks and for injects in an empty sector, which are real behaviours, not padding.
+
+## Defects found by the tool itself
+
+**Built-in conflicts that never happened.** Each scenario builds crossing conflicts into the traffic (`placeConflict` in `src/sim.js`). In the "climbing" variant, aircraft B starts 3000 ft below A and climbs at 1000 ft/min to 1000 ft above A, so it passes A's level after 3 minutes and levels off after 4. That only meets A at the crossing when the crossing is about 3 minutes ahead. Later conflicts are placed 9.5, 15 and 20.5 minutes ahead, and there B had been level 1000 ft above A for minutes when they crossed: separated, not a conflict. Scenarios that promised N built-in conflicts sometimes delivered fewer.
+
+*How it was found.* While adding MTCD, its unit test checked that MTCD lists a built-in conflict beyond STCA's 3-minute look-ahead. MTCD listed none. Tracing the pair showed it passing 0.4 NM apart at FL350 and FL360, exactly 1000 ft: MTCD was right and the generator was wrong. The STCA test had not caught it because it only looks at the first conflict, which is close enough to work.
+
+*Fix and guard.* The climbing variant is used only when the conflict is 4 minutes ahead or less; later conflicts are level. The random draw still happens, so every seed keeps its traffic. The guard is `every built-in pair really loses separation if nobody acts, including the later ones` in `tests/unit/sim.test.js`: four seeds at advanced traffic, nobody acting, and every built-in pair inside 22 minutes must come within 5 NM / 1000 ft. It fails on the old generator (seed 1's third conflict never happens).
 
 ## Not covered
 
