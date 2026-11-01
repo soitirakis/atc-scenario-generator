@@ -10,7 +10,8 @@
   "conflicts": 4,
   "challenges": [
     "All four sectors combined: long routes and many entry points",
-    "Overlapping weather, radio failure, TSA and emergency",
+    "Overlapping weather, radio failure, military area and emergency",
+    "The published Hungarian military areas are large (up to about 4,500 NM2), so the military area activation affects more of your traffic than in Romania",
     "Four crossing conflicts"
   ],
   "criteria": [
@@ -63,8 +64,8 @@
     {
       "min": 21,
       "type": "MILITARY_TSA",
-      "text": "A TSA becomes active in five minutes, FL195 and above.",
-      "objective": "No aircraft inside the active area at FL195+ (10 min after activation)"
+      "text": "Military activity: an ENR 5.2 area becomes active in five minutes. Keep your traffic out of it.",
+      "objective": "None of your aircraft inside the active military area within its vertical limits (10 min after activation)"
     },
     {
       "min": 27,

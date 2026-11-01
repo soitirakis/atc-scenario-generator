@@ -128,6 +128,33 @@ test('a fired inject shows its result in the instructor list, live; the trainee 
   expect(errors).toEqual([]);
 });
 
+test('MTCD lists predicted conflicts in both windows', async ({ page, context }) => {
+  const { instructor, trainee, errors } = await openBoth(page, context);
+  await instructor.locator('#pausedStart').click();
+  await instructor.locator('#playBtn').click(); // freeze
+  await step(instructor, 10); // MTCD runs every 10 s
+  const n = await instructor.evaluate(() => window.__sim.nets.mtcd.length);
+  expect(n).toBeGreaterThan(0); // the built-in conflicts
+  await expect(instructor.locator('#mtcd .mt')).toHaveCount(Math.min(n, 8));
+  await expect(trainee.locator('#mtcd .mt')).toHaveCount(Math.min(n, 8));
+  await trainee.locator('#mtcd .mt').first().click(); // selects one of the pair
+  await expect(trainee.locator('#acBox')).not.toContainText('Click an aircraft');
+  expect(errors).toEqual([]);
+});
+
+test('the trainee probes a level; it runs in the instructor Sim and the result comes back', async ({ page, context }) => {
+  const { instructor, trainee, errors } = await openBoth(page, context);
+  await instructor.locator('#pausedStart').click();
+  const [a, b] = await instructor.evaluate(() => window.__sim.ac.filter(x => x.conflict).slice(0, 2).map(x => ({ id: x.id, cs: x.cs, cfl: Math.round(x.cfl) })));
+  await traineeSees(trainee, id => !!window.__sim.get(id), a.id).toBe(true);
+  await trainee.evaluate(id => { window.__radar.sel = id; }, a.id);
+  await expect(trainee.locator('#bProbe')).toBeVisible();
+  await trainee.locator('#cFl').selectOption(String(a.cfl));
+  await trainee.locator('#bProbe').click();
+  await expect(trainee.locator('#probeOut')).toContainText(b.cs); // the built-in conflict partner
+  expect(errors).toEqual([]);
+});
+
 test('solo mode is unchanged: one window, inject list, no link', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('#roleTag')).toBeHidden();

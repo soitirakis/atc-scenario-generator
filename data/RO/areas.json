@@ -1,0 +1,4538 @@
+{
+  "_note": "Military areas from eAIP ENR 5.2, written by scripts/airac-update.mjs. Lateral limits and vertical limits as published (AIP notation). lateral: vertices without the closing one; circle: centre and radius. A limit of null means the AIP issues it by NOTAM. Where the AIP prints a limit as \"L280\", upperRead/lowerRead give the flight level it is read as, and note says so. \"along border\" segments follow data/<CODE>/borders.json, which is approximated.",
+  "_source": {
+    "doc": "ENR 5.2 Military exercise and training areas",
+    "edition": "2026-10-29",
+    "url": "https://aisro.ro/aip/2026-10-29/DOCS/AIP/ENR/ENR5/LR_ENR_5_2_en.pdf"
+  },
+  "areas": [
+    {
+      "id": "LRTRA1G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "460413N 0213021E",
+        "455833N 0215237E",
+        "454952N 0213733E",
+        "455414N 0212025E"
+      ],
+      "upper": "4500 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA2",
+      "name": "IAŞI",
+      "type": "TRA",
+      "circle": {
+        "centre": "471000N 0273500E",
+        "radiusNM": 6
+      },
+      "upper": null,
+      "lower": null,
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA2G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "454604N 0210750E",
+        "454319N 0211849E",
+        "452257N 0212807E",
+        "453200N 0211000E"
+      ],
+      "upper": "3500 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA2L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "454604N 0210750E",
+        "454319N 0211849E",
+        "452257N 0212807E",
+        "453200N 0211000E"
+      ],
+      "upper": "FL200",
+      "lower": "3500 FT AMSL",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA3G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "454319N 0211849E",
+        "453954N 0213226E",
+        "451500N 0214400E",
+        "452257N 0212807E"
+      ],
+      "upper": "5500 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA3L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "454319N 0211849E",
+        "453954N 0213226E",
+        "451500N 0214400E",
+        "452257N 0212807E"
+      ],
+      "upper": "FL200",
+      "lower": "5500 FT AMSL",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA4",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "443350N 0260512E",
+        "443409N 0262442E",
+        "443021N 0255635E",
+        "443123N 0254558E"
+      ],
+      "upper": "1017 FT MSL",
+      "lower": "GND",
+      "activation": "by ATC"
+    },
+    {
+      "id": "LRTRA4G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "454615N 0213541E",
+        "454459N 0213923E",
+        "452737N 0220252E",
+        "451500N 0214400E",
+        "453954N 0213226E"
+      ],
+      "upper": "5500 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA4L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "454615N 0213541E",
+        "454459N 0213923E",
+        "452737N 0220252E",
+        "451500N 0214400E",
+        "453954N 0213226E"
+      ],
+      "upper": "FL200",
+      "lower": "5500 FT AMSL",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA5G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "452737N 0220252E",
+        "451735N 0221614E",
+        "445423N 0215258E",
+        "451500N 0214400E"
+      ],
+      "upper": "FL80",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA5L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "452737N 0220252E",
+        "451735N 0221614E",
+        "445423N 0215258E",
+        "451500N 0214400E"
+      ],
+      "upper": "FL200",
+      "lower": "FL80",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA6G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "451735N 0221614E",
+        "450626N 0223103E",
+        "445856N 0222603E",
+        "445423N 0215258E"
+      ],
+      "upper": "FL80",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA6L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "451735N 0221614E",
+        "450626N 0223103E",
+        "445856N 0222603E",
+        "445423N 0215258E"
+      ],
+      "upper": "FL200",
+      "lower": "FL80",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA7G",
+      "name": null,
+      "type": "TRA",
+      "circle": {
+        "centre": "453358N 0215947E",
+        "radiusNM": 3
+      },
+      "upper": "4000 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA7L",
+      "name": null,
+      "type": "TRA",
+      "circle": {
+        "centre": "453358N 0215947E",
+        "radiusNM": 3
+      },
+      "upper": "FL200",
+      "lower": "4000 FT AMSL",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA8G",
+      "name": null,
+      "type": "TRA",
+      "circle": {
+        "centre": "452221N 0222826E",
+        "radiusNM": 3
+      },
+      "upper": "FL90",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA8L",
+      "name": null,
+      "type": "TRA",
+      "circle": {
+        "centre": "452221N 0222826E",
+        "radiusNM": 3
+      },
+      "upper": "FL200",
+      "lower": "FL90",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA9G",
+      "name": null,
+      "type": "TRA",
+      "circle": {
+        "centre": "451805N 0223329E",
+        "radiusNM": 3
+      },
+      "upper": "FL105",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA9L",
+      "name": null,
+      "type": "TRA",
+      "circle": {
+        "centre": "451805N 0223329E",
+        "radiusNM": 3
+      },
+      "upper": "FL200",
+      "lower": "FL105",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA10G",
+      "name": null,
+      "type": "TRA",
+      "circle": {
+        "centre": "461503N 0215714E",
+        "radiusNM": 3
+      },
+      "upper": "5000 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA11G",
+      "name": null,
+      "type": "TRA",
+      "circle": {
+        "centre": "462019N 0224946E",
+        "radiusNM": 3
+      },
+      "upper": "FL80",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA11L",
+      "name": null,
+      "type": "TRA",
+      "circle": {
+        "centre": "462019N 0224946E",
+        "radiusNM": 3
+      },
+      "upper": "FL200",
+      "lower": "FL80",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA12G",
+      "name": null,
+      "type": "TRA",
+      "circle": {
+        "centre": "454311N 0212234E",
+        "radiusNM": 3
+      },
+      "upper": "3500 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA12L",
+      "name": null,
+      "type": "TRA",
+      "circle": {
+        "centre": "454311N 0212234E",
+        "radiusNM": 3
+      },
+      "upper": "FL200",
+      "lower": "3500 FT AMSL",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA13G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "455618N 0210615E",
+        "454615N 0213541E",
+        "454459N 0213923E",
+        "452737N 0220252E",
+        "451500N 0214400E",
+        "452257N 0212807E",
+        "453200N 0211000E",
+        "454604N 0210750E"
+      ],
+      "upper": "5500 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA13L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "455618N 0210615E",
+        "454615N 0213541E",
+        "454459N 0213923E",
+        "452737N 0220252E",
+        "451500N 0214400E",
+        "452257N 0212807E",
+        "453200N 0211000E",
+        "454604N 0210750E"
+      ],
+      "upper": "FL200",
+      "lower": "5500 FT AMSL",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA13M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "455618N 0210615E",
+        "454615N 0213541E",
+        "454459N 0213923E",
+        "452737N 0220252E",
+        "451500N 0214400E",
+        "452257N 0212807E",
+        "453200N 0211000E",
+        "454604N 0210750E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA13T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "455618N 0210615E",
+        "454615N 0213541E",
+        "454459N 0213923E",
+        "452737N 0220252E",
+        "451500N 0214400E",
+        "452257N 0212807E",
+        "453200N 0211000E",
+        "454604N 0210750E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA13U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "455618N 0210615E",
+        "454615N 0213541E",
+        "454459N 0213923E",
+        "452737N 0220252E",
+        "451500N 0214400E",
+        "452257N 0212807E",
+        "453200N 0211000E",
+        "454604N 0210750E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA14G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "452737N 0220252E",
+        "451735N 0221614E",
+        "450626N 0223103E",
+        "445856N 0222603E",
+        "445423N 0215258E",
+        "451500N 0214400E"
+      ],
+      "upper": "FL80",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA14L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "452737N 0220252E",
+        "451735N 0221614E",
+        "450626N 0223103E",
+        "445856N 0222603E",
+        "445423N 0215258E",
+        "451500N 0214400E"
+      ],
+      "upper": "FL200",
+      "lower": "FL80",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA14M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "452737N 0220252E",
+        "451735N 0221614E",
+        "450626N 0223103E",
+        "445856N 0222603E",
+        "445423N 0215258E",
+        "451500N 0214400E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA14T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "452737N 0220252E",
+        "451735N 0221614E",
+        "450626N 0223103E",
+        "445856N 0222603E",
+        "445423N 0215258E",
+        "451500N 0214400E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA14U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "452737N 0220252E",
+        "451735N 0221614E",
+        "450626N 0223103E",
+        "445856N 0222603E",
+        "445423N 0215258E",
+        "451500N 0214400E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA20G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "464448N 0240222E",
+        "463207N 0241247E",
+        "462804N 0240855E",
+        "461925N 0241227E",
+        "461711N 0241552E",
+        "460938N 0241640E",
+        "460949N 0241043E",
+        "461023N 0235313E",
+        "461621N 0235022E",
+        "462333N 0234653E",
+        "464122N 0233817E",
+        "464303N 0235014E"
+      ],
+      "upper": "3000 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA21C",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "464551N 0240951E",
+        "464200N 0241300E",
+        "463458N 0241320E",
+        "463150N 0241431E",
+        "462938N 0241521E",
+        "462152N 0241817E",
+        "461518N 0242308E",
+        "460923N 0242408E",
+        "460938N 0241640E",
+        "460949N 0241043E",
+        "461023N 0235313E",
+        "461621N 0235022E",
+        "462333N 0234653E",
+        "464122N 0233817E",
+        "464303N 0235014E",
+        "464448N 0240222E"
+      ],
+      "upper": "FL75",
+      "lower": "3000 FT AMSL",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA21L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "464551N 0240951E",
+        "464200N 0241300E",
+        "463458N 0241320E",
+        "463150N 0241431E",
+        "462938N 0241521E",
+        "462152N 0241817E",
+        "461518N 0242308E",
+        "460923N 0242408E",
+        "460938N 0241640E",
+        "460949N 0241043E",
+        "461023N 0235313E",
+        "461621N 0235022E",
+        "462333N 0234653E",
+        "464122N 0233817E",
+        "464303N 0235014E",
+        "464448N 0240222E"
+      ],
+      "upper": "FL200",
+      "lower": "FL75",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA21M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "464551N 0240951E",
+        "464200N 0241300E",
+        "463458N 0241320E",
+        "463150N 0241431E",
+        "462938N 0241521E",
+        "462152N 0241817E",
+        "461518N 0242308E",
+        "460923N 0242408E",
+        "460938N 0241640E",
+        "460949N 0241043E",
+        "461023N 0235313E",
+        "461621N 0235022E",
+        "462333N 0234653E",
+        "464122N 0233817E",
+        "464303N 0235014E",
+        "464448N 0240222E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA21T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "464551N 0240951E",
+        "464200N 0241300E",
+        "463458N 0241320E",
+        "463150N 0241431E",
+        "462938N 0241521E",
+        "462152N 0241817E",
+        "461518N 0242308E",
+        "460923N 0242408E",
+        "460938N 0241640E",
+        "460949N 0241043E",
+        "461023N 0235313E",
+        "461621N 0235022E",
+        "462333N 0234653E",
+        "464122N 0233817E",
+        "464303N 0235014E",
+        "464448N 0240222E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA21U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "464551N 0240951E",
+        "464200N 0241300E",
+        "463458N 0241320E",
+        "463150N 0241431E",
+        "462938N 0241521E",
+        "462152N 0241817E",
+        "461518N 0242308E",
+        "460923N 0242408E",
+        "460938N 0241640E",
+        "460949N 0241043E",
+        "461023N 0235313E",
+        "461621N 0235022E",
+        "462333N 0234653E",
+        "464122N 0233817E",
+        "464303N 0235014E",
+        "464448N 0240222E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA22G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "462108N 0230437E",
+        "461843N 0232743E",
+        "455934N 0233112E",
+        "460015N 0231146E"
+      ],
+      "upper": "FL80",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA22L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "462108N 0230437E",
+        "461843N 0232743E",
+        "455934N 0233112E",
+        "460015N 0231146E"
+      ],
+      "upper": "FL200",
+      "lower": "FL80",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA23G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "463740N 0232209E",
+        "461843N 0232743E",
+        "462108N 0230437E",
+        "463244N 0230039E"
+      ],
+      "upper": "FL90",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA23L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "463740N 0232209E",
+        "461843N 0232743E",
+        "462108N 0230437E",
+        "463244N 0230039E"
+      ],
+      "upper": "FL200",
+      "lower": "FL90",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA24G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "461843N 0232743E",
+        "461621N 0235022E",
+        "461023N 0235313E",
+        "455954N 0234435E",
+        "455934N 0233112E"
+      ],
+      "upper": "FL75",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA24L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "461843N 0232743E",
+        "461621N 0235022E",
+        "461023N 0235313E",
+        "455954N 0234435E",
+        "455934N 0233112E"
+      ],
+      "upper": "FL200",
+      "lower": "FL75",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA25G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "464122N 0233817E",
+        "462333N 0234653E",
+        "461621N 0235022E",
+        "461843N 0232743E",
+        "463740N 0232209E"
+      ],
+      "upper": "FL75",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA25L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "464122N 0233817E",
+        "462333N 0234653E",
+        "461621N 0235022E",
+        "461843N 0232743E",
+        "463740N 0232209E"
+      ],
+      "upper": "FL200",
+      "lower": "FL75",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA26L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "462718N 0240324E",
+        "460949N 0241043E",
+        "461023N 0235313E",
+        "461621N 0235022E",
+        "462333N 0234653E",
+        "462636N 0240020E"
+      ],
+      "upper": "FL200",
+      "lower": "FL75",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA27L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "464551N 0240951E",
+        "464200N 0241300E",
+        "463458N 0241320E",
+        "463150N 0241431E",
+        "462938N 0241521E",
+        "462718N 0240324E",
+        "462636N 0240020E",
+        "464303N 0235014E",
+        "464448N 0240222E"
+      ],
+      "upper": "L200",
+      "upperRead": "FL200",
+      "note": "AIP prints \"L200\"; read as FL200.",
+      "lower": "FL75",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA28G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "470054N 0244720E",
+        "464542N 0245231E",
+        "463306N 0245647E",
+        "463253N 0244947E",
+        "463246N 0244704E",
+        "463348N 0243815E",
+        "463218N 0243032E",
+        "463202N 0242110E",
+        "463150N 0241431E",
+        "463458N 0241320E",
+        "464200N 0241300E",
+        "464551N 0240951E",
+        "470043N 0235741E"
+      ],
+      "upper": "FL70",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA28L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "470054N 0244720E",
+        "464542N 0245231E",
+        "463306N 0245647E",
+        "463253N 0244947E",
+        "463246N 0244704E",
+        "463348N 0243815E",
+        "463218N 0243032E",
+        "463202N 0242110E",
+        "463150N 0241431E",
+        "463458N 0241320E",
+        "464200N 0241300E",
+        "464551N 0240951E",
+        "470043N 0235741E"
+      ],
+      "upper": "FL200",
+      "lower": "FL70",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA28M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "470054N 0244720E",
+        "464542N 0245231E",
+        "463306N 0245647E",
+        "463253N 0244947E",
+        "463246N 0244704E",
+        "463348N 0243815E",
+        "463218N 0243032E",
+        "463202N 0242110E",
+        "463150N 0241431E",
+        "463458N 0241320E",
+        "464200N 0241300E",
+        "464551N 0240951E",
+        "470043N 0235741E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA28T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "470054N 0244720E",
+        "464542N 0245231E",
+        "463306N 0245647E",
+        "463253N 0244947E",
+        "463246N 0244704E",
+        "463348N 0243815E",
+        "463218N 0243032E",
+        "463202N 0242110E",
+        "463150N 0241431E",
+        "463458N 0241320E",
+        "464200N 0241300E",
+        "464551N 0240951E",
+        "470043N 0235741E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA28U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "470054N 0244720E",
+        "464542N 0245231E",
+        "463306N 0245647E",
+        "463253N 0244947E",
+        "463246N 0244704E",
+        "463348N 0243815E",
+        "463218N 0243032E",
+        "463202N 0242110E",
+        "463150N 0241431E",
+        "463458N 0241320E",
+        "464200N 0241300E",
+        "464551N 0240951E",
+        "470043N 0235741E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA29G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "473353N 0234552E",
+        "472722N 0243912E",
+        "470054N 0244720E",
+        "470043N 0235741E",
+        "472716N 0233558E",
+        "472851N 0234023E",
+        "473122N 0234449E"
+      ],
+      "upper": "FL100",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA29L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "473353N 0234552E",
+        "472722N 0243912E",
+        "470054N 0244720E",
+        "470043N 0235741E",
+        "472716N 0233558E",
+        "472851N 0234023E",
+        "473122N 0234449E"
+      ],
+      "upper": "FL200",
+      "lower": "FL100",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA29M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "473353N 0234552E",
+        "472722N 0243912E",
+        "470054N 0244720E",
+        "470043N 0235741E",
+        "472716N 0233558E",
+        "472851N 0234023E",
+        "473122N 0234449E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA29T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "473353N 0234552E",
+        "472722N 0243912E",
+        "470054N 0244720E",
+        "470043N 0235741E",
+        "472716N 0233558E",
+        "472851N 0234023E",
+        "473122N 0234449E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA29U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "473353N 0234552E",
+        "472722N 0243912E",
+        "470054N 0244720E",
+        "470043N 0235741E",
+        "472716N 0233558E",
+        "472851N 0234023E",
+        "473122N 0234449E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA30G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "470056N 0254705E",
+        "463448N 0255708E",
+        "463335N 0251212E",
+        "463306N 0245647E",
+        "464542N 0245231E",
+        "470054N 0244720E"
+      ],
+      "upper": "FL90",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA30L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "470056N 0254705E",
+        "463448N 0255708E",
+        "463335N 0251212E",
+        "463306N 0245647E",
+        "464542N 0245231E",
+        "470054N 0244720E"
+      ],
+      "upper": "FL200",
+      "lower": "FL90",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA30M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "470056N 0254705E",
+        "463448N 0255708E",
+        "463335N 0251212E",
+        "463306N 0245647E",
+        "464542N 0245231E",
+        "470054N 0244720E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA30T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "470056N 0254705E",
+        "463448N 0255708E",
+        "463335N 0251212E",
+        "463306N 0245647E",
+        "464542N 0245231E",
+        "470054N 0244720E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA30U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "470056N 0254705E",
+        "463448N 0255708E",
+        "463335N 0251212E",
+        "463306N 0245647E",
+        "464542N 0245231E",
+        "470054N 0244720E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA31G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "472722N 0243912E",
+        "472533N 0245406E",
+        "472439N 0253756E",
+        "470056N 0254705E",
+        "470054N 0244720E"
+      ],
+      "upper": "FL100",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA31L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "472722N 0243912E",
+        "472533N 0245406E",
+        "472439N 0253756E",
+        "470056N 0254705E",
+        "470054N 0244720E"
+      ],
+      "upper": "FL200",
+      "lower": "FL100",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA31M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "472722N 0243912E",
+        "472533N 0245406E",
+        "472439N 0253756E",
+        "470056N 0254705E",
+        "470054N 0244720E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA31T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "472722N 0243912E",
+        "472533N 0245406E",
+        "472439N 0253756E",
+        "470056N 0254705E",
+        "470054N 0244720E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA31U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "472722N 0243912E",
+        "472533N 0245406E",
+        "472439N 0253756E",
+        "470056N 0254705E",
+        "470054N 0244720E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA32G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "470139N 0262932E",
+        "464127N 0263734E",
+        "463845N 0263515E",
+        "463551N 0263354E",
+        "463448N 0255708E",
+        "470056N 0254705E"
+      ],
+      "upper": "FL95",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA32L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "470139N 0262932E",
+        "464127N 0263734E",
+        "463845N 0263515E",
+        "463551N 0263354E",
+        "463448N 0255708E",
+        "470056N 0254705E"
+      ],
+      "upper": "FL200",
+      "lower": "FL95",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA32M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "470139N 0262932E",
+        "464127N 0263734E",
+        "463845N 0263515E",
+        "463551N 0263354E",
+        "463448N 0255708E",
+        "470056N 0254705E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA32T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "470139N 0262932E",
+        "464127N 0263734E",
+        "463845N 0263515E",
+        "463551N 0263354E",
+        "463448N 0255708E",
+        "470056N 0254705E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA32U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "470139N 0262932E",
+        "464127N 0263734E",
+        "463845N 0263515E",
+        "463551N 0263354E",
+        "463448N 0255708E",
+        "470056N 0254705E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA33G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "472439N 0253756E",
+        "472359N 0260018E",
+        "472157N 0260518E",
+        "471914N 0261302E",
+        "471909N 0262229E",
+        "470139N 0262932E",
+        "470056N 0254705E"
+      ],
+      "upper": "FL90",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA33L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "472439N 0253756E",
+        "472359N 0260018E",
+        "472157N 0260518E",
+        "471914N 0261302E",
+        "471909N 0262229E",
+        "470139N 0262932E",
+        "470056N 0254705E"
+      ],
+      "upper": "FL200",
+      "lower": "FL90",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA33M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "472439N 0253756E",
+        "472359N 0260018E",
+        "472157N 0260518E",
+        "471914N 0261302E",
+        "471909N 0262229E",
+        "470139N 0262932E",
+        "470056N 0254705E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA33T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "472439N 0253756E",
+        "472359N 0260018E",
+        "472157N 0260518E",
+        "471914N 0261302E",
+        "471909N 0262229E",
+        "470139N 0262932E",
+        "470056N 0254705E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA33U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "472439N 0253756E",
+        "472359N 0260018E",
+        "472157N 0260518E",
+        "471914N 0261302E",
+        "471909N 0262229E",
+        "470139N 0262932E",
+        "470056N 0254705E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA34G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "462403N 0253009E",
+        "461418N 0253438E",
+        "460122N 0243348E",
+        "460713N 0242430E",
+        "460923N 0242408E",
+        "461518N 0242308E",
+        "461810N 0243233E",
+        "462304N 0245800E"
+      ],
+      "upper": "FL65",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA34L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "462403N 0253009E",
+        "461418N 0253438E",
+        "460122N 0243348E",
+        "460713N 0242430E",
+        "460923N 0242408E",
+        "461518N 0242308E",
+        "461810N 0243233E",
+        "462304N 0245800E"
+      ],
+      "upper": "FL200",
+      "lower": "FL65",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA34M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "462403N 0253009E",
+        "461418N 0253438E",
+        "460122N 0243348E",
+        "460713N 0242430E",
+        "460923N 0242408E",
+        "461518N 0242308E",
+        "461810N 0243233E",
+        "462304N 0245800E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA34T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "462403N 0253009E",
+        "461418N 0253438E",
+        "460122N 0243348E",
+        "460713N 0242430E",
+        "460923N 0242408E",
+        "461518N 0242308E",
+        "461810N 0243233E",
+        "462304N 0245800E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA34U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "462403N 0253009E",
+        "461418N 0253438E",
+        "460122N 0243348E",
+        "460713N 0242430E",
+        "460923N 0242408E",
+        "461518N 0242308E",
+        "461810N 0243233E",
+        "462304N 0245800E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA35G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "461418N 0253438E",
+        "455941N 0254127E",
+        "454920N 0252715E",
+        "455951N 0243611E",
+        "460122N 0243348E"
+      ],
+      "upper": "FL70",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA35L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "461418N 0253438E",
+        "455941N 0254127E",
+        "454920N 0252715E",
+        "455951N 0243611E",
+        "460122N 0243348E"
+      ],
+      "upper": "FL200",
+      "lower": "FL70",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA35M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "461418N 0253438E",
+        "455941N 0254127E",
+        "454920N 0252715E",
+        "455951N 0243611E",
+        "460122N 0243348E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA35T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "461418N 0253438E",
+        "455941N 0254127E",
+        "454920N 0252715E",
+        "455951N 0243611E",
+        "460122N 0243348E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA35U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "461418N 0253438E",
+        "455941N 0254127E",
+        "454920N 0252715E",
+        "455951N 0243611E",
+        "460122N 0243348E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA36G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "462108N 0230437E",
+        "461843N 0232743E",
+        "461621N 0235022E",
+        "461023N 0235313E",
+        "455954N 0234435E",
+        "455934N 0233112E",
+        "460015N 0231146E"
+      ],
+      "upper": "FL80",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA36L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "462108N 0230437E",
+        "461843N 0232743E",
+        "461621N 0235022E",
+        "461023N 0235313E",
+        "455954N 0234435E",
+        "455934N 0233112E",
+        "460015N 0231146E"
+      ],
+      "upper": "FL200",
+      "lower": "FL80",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA36M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "462108N 0230437E",
+        "461843N 0232743E",
+        "461621N 0235022E",
+        "461023N 0235313E",
+        "455954N 0234435E",
+        "455934N 0233112E",
+        "460015N 0231146E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA36T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "462108N 0230437E",
+        "461843N 0232743E",
+        "461621N 0235022E",
+        "461023N 0235313E",
+        "455954N 0234435E",
+        "455934N 0233112E",
+        "460015N 0231146E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA36U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "462108N 0230437E",
+        "461843N 0232743E",
+        "461621N 0235022E",
+        "461023N 0235313E",
+        "455954N 0234435E",
+        "455934N 0233112E",
+        "460015N 0231146E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA37G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "464122N 0233817E",
+        "462333N 0234653E",
+        "461621N 0235022E",
+        "461843N 0232743E",
+        "462108N 0230437E",
+        "463244N 0230039E",
+        "463740N 0232209E"
+      ],
+      "upper": "FL90",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA37L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "464122N 0233817E",
+        "462333N 0234653E",
+        "461621N 0235022E",
+        "461843N 0232743E",
+        "462108N 0230437E",
+        "463244N 0230039E",
+        "463740N 0232209E"
+      ],
+      "upper": "FL200",
+      "lower": "FL90",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA37M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "464122N 0233817E",
+        "462333N 0234653E",
+        "461621N 0235022E",
+        "461843N 0232743E",
+        "462108N 0230437E",
+        "463244N 0230039E",
+        "463740N 0232209E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA37T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "464122N 0233817E",
+        "462333N 0234653E",
+        "461621N 0235022E",
+        "461843N 0232743E",
+        "462108N 0230437E",
+        "463244N 0230039E",
+        "463740N 0232209E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA37U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "464122N 0233817E",
+        "462333N 0234653E",
+        "461621N 0235022E",
+        "461843N 0232743E",
+        "462108N 0230437E",
+        "463244N 0230039E",
+        "463740N 0232209E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA40",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "444534N 0282900E",
+        "442500N 0293100E",
+        "445000N 0295100E",
+        "451000N 0291400E",
+        "450342N 0285449E",
+        "450126N 0283000E"
+      ],
+      "upper": "FL280",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA41",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "444534N 0282900E",
+        "442500N 0293100E",
+        "445000N 0295100E",
+        "451000N 0291400E",
+        "450342N 0285449E",
+        "450126N 0283000E"
+      ],
+      "upper": "FL660",
+      "lower": "L280",
+      "lowerRead": "FL280",
+      "note": "AIP prints \"L280\"; read as FL280.",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA42G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "462521N 0263413E",
+        "462004N 0263924E",
+        "460306N 0263459E",
+        "460717N 0261427E",
+        "462358N 0260554E",
+        "462458N 0260945E"
+      ],
+      "upper": "FL85",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA42L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "462521N 0263413E",
+        "462004N 0263924E",
+        "460306N 0263459E",
+        "460717N 0261427E",
+        "462358N 0260554E",
+        "462458N 0260945E"
+      ],
+      "upper": "FL200",
+      "lower": "FL85",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA43G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "462521N 0263413E",
+        "462004N 0263924E",
+        "460306N 0263459E",
+        "454409N 0263006E",
+        "455249N 0261643E",
+        "460805N 0255252E",
+        "461915N 0254749E",
+        "462358N 0260554E",
+        "462458N 0260945E"
+      ],
+      "upper": "FL90",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA43L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "462521N 0263413E",
+        "462004N 0263924E",
+        "460306N 0263459E",
+        "454409N 0263006E",
+        "455249N 0261643E",
+        "460805N 0255252E",
+        "461915N 0254749E",
+        "462358N 0260554E",
+        "462458N 0260945E"
+      ],
+      "upper": "FL200",
+      "lower": "FL90",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA43M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "462521N 0263413E",
+        "462004N 0263924E",
+        "460306N 0263459E",
+        "454409N 0263006E",
+        "455249N 0261643E",
+        "460805N 0255252E",
+        "461915N 0254749E",
+        "462358N 0260554E",
+        "462458N 0260945E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA43T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "462521N 0263413E",
+        "462004N 0263924E",
+        "460306N 0263459E",
+        "454409N 0263006E",
+        "455249N 0261643E",
+        "460805N 0255252E",
+        "461915N 0254749E",
+        "462358N 0260554E",
+        "462458N 0260945E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA43U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "462521N 0263413E",
+        "462004N 0263924E",
+        "460306N 0263459E",
+        "454409N 0263006E",
+        "455249N 0261643E",
+        "460805N 0255252E",
+        "461915N 0254749E",
+        "462358N 0260554E",
+        "462458N 0260945E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA44G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "465702N 0275524E",
+        "464504N 0280005E",
+        "463553N 0271520E",
+        "463747N 0271414E",
+        "463849N 0271327E",
+        "464014N 0271206E",
+        "464156N 0270959E",
+        "465700N 0272410E",
+        "465322N 0273456E"
+      ],
+      "upper": "5000 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA44L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "465702N 0275524E",
+        "464504N 0280005E",
+        "463553N 0271520E",
+        "463747N 0271414E",
+        "463849N 0271327E",
+        "464014N 0271206E",
+        "464156N 0270959E",
+        "465700N 0272410E",
+        "465322N 0273456E"
+      ],
+      "upper": "FL200",
+      "lower": "5000 FT AMSL",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA44M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "465702N 0275524E",
+        "464504N 0280005E",
+        "463553N 0271520E",
+        "463747N 0271414E",
+        "463849N 0271327E",
+        "464014N 0271206E",
+        "464156N 0270959E",
+        "465700N 0272410E",
+        "465322N 0273456E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA44T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "465702N 0275524E",
+        "464504N 0280005E",
+        "463553N 0271520E",
+        "463747N 0271414E",
+        "463849N 0271327E",
+        "464014N 0271206E",
+        "464156N 0270959E",
+        "465700N 0272410E",
+        "465322N 0273456E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA44U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "465702N 0275524E",
+        "464504N 0280005E",
+        "463553N 0271520E",
+        "463747N 0271414E",
+        "463849N 0271327E",
+        "464014N 0271206E",
+        "464156N 0270959E",
+        "465700N 0272410E",
+        "465322N 0273456E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA45L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "465113N 0263534E",
+        "462804N 0272955E",
+        "461119N 0271451E",
+        "463423N 0262039E"
+      ],
+      "upper": "FL200",
+      "lower": "FL105",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA45M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "465113N 0263534E",
+        "462804N 0272955E",
+        "461119N 0271451E",
+        "463423N 0262039E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA45T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "465113N 0263534E",
+        "462804N 0272955E",
+        "461119N 0271451E",
+        "463423N 0262039E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA45U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "465113N 0263534E",
+        "462804N 0272955E",
+        "461119N 0271451E",
+        "463423N 0262039E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA46T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "480756N 0263231E",
+        "480714N 0264939E",
+        "474000N 0270610E",
+        "471626N 0272956E",
+        "470507N 0274229E",
+        "465753N 0275641E",
+        "464305N 0271033E",
+        "475727N 0261725E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA46U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "480756N 0263231E",
+        "480714N 0264939E",
+        "474000N 0270610E",
+        "471626N 0272956E",
+        "470507N 0274229E",
+        "465753N 0275641E",
+        "464305N 0271033E",
+        "475727N 0261725E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA47G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "473712N 0270852E",
+        "472428N 0272339E",
+        "471530N 0271100E",
+        "470533N 0271459E",
+        "464619N 0265626E",
+        "464619N 0265055E",
+        "472145N 0263650E"
+      ],
+      "upper": "5000 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA47L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "473712N 0270852E",
+        "472428N 0272339E",
+        "471530N 0271100E",
+        "470533N 0271459E",
+        "464619N 0265626E",
+        "464619N 0265055E",
+        "472145N 0263650E"
+      ],
+      "upper": "FL200",
+      "lower": "5000 FT AMSL",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA47M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "473712N 0270852E",
+        "472428N 0272339E",
+        "471530N 0271100E",
+        "470533N 0271459E",
+        "464619N 0265626E",
+        "464619N 0265055E",
+        "472145N 0263650E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA47T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "473712N 0270852E",
+        "472428N 0272339E",
+        "471530N 0271100E",
+        "470533N 0271459E",
+        "464619N 0265626E",
+        "464619N 0265055E",
+        "472145N 0263650E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA47U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "473712N 0270852E",
+        "472428N 0272339E",
+        "471530N 0271100E",
+        "470533N 0271459E",
+        "464619N 0265626E",
+        "464619N 0265055E",
+        "472145N 0263650E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA48G",
+      "name": null,
+      "type": "TRA",
+      "circle": {
+        "centre": "463200N 0265200E",
+        "radiusNM": 6
+      },
+      "upper": "5500 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA48L",
+      "name": null,
+      "type": "TRA",
+      "circle": {
+        "centre": "463200N 0265200E",
+        "radiusNM": 6
+      },
+      "upper": "FL200",
+      "lower": "5500 FT AMSL",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA48M",
+      "name": null,
+      "type": "TRA",
+      "circle": {
+        "centre": "463200N 0265200E",
+        "radiusNM": 6
+      },
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA50G",
+      "name": null,
+      "type": "TRA",
+      "circle": {
+        "centre": "451258N 0265843E",
+        "radiusNM": 15
+      },
+      "upper": "5500 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA51G",
+      "name": null,
+      "type": "TRA",
+      "circle": {
+        "centre": "451258N 0265843E",
+        "radiusNM": 6
+      },
+      "upper": "5500 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA51L",
+      "name": null,
+      "type": "TRA",
+      "circle": {
+        "centre": "451258N 0265843E",
+        "radiusNM": 6
+      },
+      "upper": "FL200",
+      "lower": "5500 FT AMSL",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA51M",
+      "name": null,
+      "type": "TRA",
+      "circle": {
+        "centre": "451258N 0265843E",
+        "radiusNM": 6
+      },
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA52G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "455249N 0261643E",
+        "454409N 0263006E",
+        "452906N 0262616E",
+        "453639N 0260103E"
+      ],
+      "upper": "FL130",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA53G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "453639N 0260103E",
+        "452906N 0262616E",
+        "450810N 0262059E",
+        "452222N 0254715E"
+      ],
+      "upper": "FL130",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA54L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "460805N 0255252E",
+        "455249N 0261643E",
+        "454409N 0263006E",
+        "452906N 0262616E",
+        "453639N 0260103E",
+        "454003N 0254936E",
+        "455604N 0255816E"
+      ],
+      "upper": "FL200",
+      "lower": "FL130",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA54M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "460805N 0255252E",
+        "455249N 0261643E",
+        "454409N 0263006E",
+        "452906N 0262616E",
+        "453639N 0260103E",
+        "454003N 0254936E",
+        "455604N 0255816E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA54T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "460805N 0255252E",
+        "455249N 0261643E",
+        "454409N 0263006E",
+        "452906N 0262616E",
+        "453639N 0260103E",
+        "454003N 0254936E",
+        "455604N 0255816E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA54U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "460805N 0255252E",
+        "455249N 0261643E",
+        "454409N 0263006E",
+        "452906N 0262616E",
+        "453639N 0260103E",
+        "454003N 0254936E",
+        "455604N 0255816E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA55L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "454003N 0254936E",
+        "453639N 0260103E",
+        "452906N 0262616E",
+        "450810N 0262059E",
+        "452222N 0254715E",
+        "452447N 0254126E"
+      ],
+      "upper": "FL200",
+      "lower": "FL130",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA55M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "454003N 0254936E",
+        "453639N 0260103E",
+        "452906N 0262616E",
+        "450810N 0262059E",
+        "452222N 0254715E",
+        "452447N 0254126E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA55T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "454003N 0254936E",
+        "453639N 0260103E",
+        "452906N 0262616E",
+        "450810N 0262059E",
+        "452222N 0254715E",
+        "452447N 0254126E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA55U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "454003N 0254936E",
+        "453639N 0260103E",
+        "452906N 0262616E",
+        "450810N 0262059E",
+        "452222N 0254715E",
+        "452447N 0254126E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA60G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "463938N 0280000E",
+        "461327N 0280035E",
+        "461359N 0272900E",
+        "462000N 0271022E",
+        "463133N 0271952E"
+      ],
+      "upper": "5000 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA60L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "463938N 0280000E",
+        "461327N 0280035E",
+        "461359N 0272900E",
+        "462000N 0271022E",
+        "463133N 0271952E"
+      ],
+      "upper": "FL200",
+      "lower": "5000 FT AMSL",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA60M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "463938N 0280000E",
+        "461327N 0280035E",
+        "461359N 0272900E",
+        "462000N 0271022E",
+        "463133N 0271952E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA60T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "463938N 0280000E",
+        "461327N 0280035E",
+        "461359N 0272900E",
+        "462000N 0271022E",
+        "463133N 0271952E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA60U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "463938N 0280000E",
+        "461327N 0280035E",
+        "461359N 0272900E",
+        "462000N 0271022E",
+        "463133N 0271952E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA61G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "462000N 0271022E",
+        "461359N 0272900E",
+        "455122N 0272501E",
+        "455122N 0264637E",
+        "461329N 0265222E"
+      ],
+      "upper": "FL65",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA61L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "462000N 0271022E",
+        "461359N 0272900E",
+        "455122N 0272501E",
+        "455122N 0264637E",
+        "461329N 0265222E"
+      ],
+      "upper": "FL200",
+      "lower": "FL65",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA61M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "462000N 0271022E",
+        "461359N 0272900E",
+        "455122N 0272501E",
+        "455122N 0264637E",
+        "461329N 0265222E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA61T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "462000N 0271022E",
+        "461359N 0272900E",
+        "455122N 0272501E",
+        "455122N 0264637E",
+        "461329N 0265222E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA61U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "462000N 0271022E",
+        "461359N 0272900E",
+        "455122N 0272501E",
+        "455122N 0264637E",
+        "461329N 0265222E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA62G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "461359N 0272900E",
+        "461327N 0280035E",
+        "455122N 0275540E",
+        "455122N 0272501E"
+      ],
+      "upper": "4500 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA62L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "461359N 0272900E",
+        "461327N 0280035E",
+        "455122N 0275540E",
+        "455122N 0272501E"
+      ],
+      "upper": "FL200",
+      "lower": "4500 FT AMSL",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA62M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "461359N 0272900E",
+        "461327N 0280035E",
+        "455122N 0275540E",
+        "455122N 0272501E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA62T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "461359N 0272900E",
+        "461327N 0280035E",
+        "455122N 0275540E",
+        "455122N 0272501E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA62U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "461359N 0272900E",
+        "461327N 0280035E",
+        "455122N 0275540E",
+        "455122N 0272501E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA63G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "455122N 0264637E",
+        "455122N 0272501E",
+        "452935N 0272114E",
+        "453035N 0265051E",
+        "453052N 0264117E",
+        "453559N 0264237E"
+      ],
+      "upper": "FL65",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA63L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "455122N 0264637E",
+        "455122N 0272501E",
+        "452935N 0272114E",
+        "453035N 0265051E",
+        "453052N 0264117E"
+      ],
+      "upper": "FL200",
+      "lower": "FL65",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA63M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "455122N 0264637E",
+        "455122N 0272501E",
+        "452935N 0272114E",
+        "453035N 0265051E",
+        "453052N 0264117E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA63T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "455122N 0264637E",
+        "455122N 0272501E",
+        "452935N 0272114E",
+        "453035N 0265051E",
+        "453052N 0264117E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA63U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "455122N 0264637E",
+        "455122N 0272501E",
+        "452935N 0272114E",
+        "453035N 0265051E",
+        "453052N 0264117E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA64G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "455122N 0272501E",
+        "455122N 0275540E",
+        "452835N 0275040E",
+        "452935N 0272114E"
+      ],
+      "upper": "4000 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA64L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "455122N 0272501E",
+        "455122N 0275540E",
+        "452835N 0275040E",
+        "452935N 0272114E"
+      ],
+      "upper": "FL200",
+      "lower": "4000 FT AMSL",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA64M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "455122N 0272501E",
+        "455122N 0275540E",
+        "452835N 0275040E",
+        "452935N 0272114E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA64T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "455122N 0272501E",
+        "455122N 0275540E",
+        "452835N 0275040E",
+        "452935N 0272114E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA64U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "455122N 0272501E",
+        "455122N 0275540E",
+        "452835N 0275040E",
+        "452935N 0272114E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA65G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "453052N 0264117E",
+        "453035N 0265051E",
+        "452935N 0272114E",
+        "451155N 0272838E",
+        "451312N 0272538E",
+        "450753N 0272117E",
+        "450556N 0272613E",
+        "450954N 0272929E",
+        "450244N 0273236E",
+        "444728N 0273911E",
+        "445352N 0270637E",
+        "450407N 0263420E"
+      ],
+      "upper": "5500 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA65L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "453052N 0264117E",
+        "453035N 0265051E",
+        "452935N 0272114E",
+        "451155N 0272838E",
+        "451312N 0272538E",
+        "450753N 0272117E",
+        "450556N 0272613E",
+        "450954N 0272929E",
+        "450244N 0273236E",
+        "444728N 0273911E",
+        "445352N 0270637E",
+        "450407N 0263420E"
+      ],
+      "upper": "FL200",
+      "lower": "5500 FT AMSL",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA65M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "453052N 0264117E",
+        "453035N 0265051E",
+        "452935N 0272114E",
+        "451155N 0272838E",
+        "451104N 0272859E",
+        "450954N 0272929E",
+        "450244N 0273236E",
+        "444728N 0273911E",
+        "445352N 0270637E",
+        "450407N 0263420E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA65T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "453052N 0264117E",
+        "453035N 0265051E",
+        "452935N 0272114E",
+        "451155N 0272838E",
+        "451104N 0272859E",
+        "450954N 0272929E",
+        "450244N 0273236E",
+        "444728N 0273911E",
+        "445352N 0270637E",
+        "450407N 0263420E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA65U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "453052N 0264117E",
+        "453035N 0265051E",
+        "452935N 0272114E",
+        "451155N 0272838E",
+        "451104N 0272859E",
+        "450954N 0272929E",
+        "450244N 0273236E",
+        "444728N 0273911E",
+        "445352N 0270637E",
+        "450407N 0263420E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA66G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "452935N 0272114E",
+        "452835N 0275040E",
+        "451332N 0281732E",
+        "451107N 0273029E",
+        "451155N 0272838E"
+      ],
+      "upper": "4500 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA66L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "452935N 0272114E",
+        "452835N 0275040E",
+        "451332N 0281732E",
+        "451107N 0273029E",
+        "451155N 0272838E"
+      ],
+      "upper": "FL200",
+      "lower": "4500 FT AMSL",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA66M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "452935N 0272114E",
+        "452835N 0275040E",
+        "451332N 0281732E",
+        "451107N 0273029E",
+        "451104N 0272859E",
+        "451155N 0272838E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA66T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "452935N 0272114E",
+        "452835N 0275040E",
+        "451332N 0281732E",
+        "451107N 0273029E",
+        "451104N 0272859E",
+        "451155N 0272838E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA66U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "452935N 0272114E",
+        "452835N 0275040E",
+        "451332N 0281732E",
+        "451107N 0273029E",
+        "451104N 0272859E",
+        "451155N 0272838E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA67G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "451332N 0281732E",
+        "450746N 0282347E",
+        "450109N 0282253E",
+        "445054N 0275001E",
+        "444728N 0273911E",
+        "450244N 0273236E",
+        "450954N 0272929E",
+        "451107N 0273029E"
+      ],
+      "upper": "5000 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA67L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "451332N 0281732E",
+        "450746N 0282347E",
+        "450109N 0282253E",
+        "445054N 0275001E",
+        "444728N 0273911E",
+        "450244N 0273236E",
+        "450954N 0272929E",
+        "451107N 0273029E"
+      ],
+      "upper": "FL200",
+      "lower": "5000 FT AMSL",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA67M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "451332N 0281732E",
+        "450746N 0282347E",
+        "450109N 0282253E",
+        "445054N 0275001E",
+        "444728N 0273911E",
+        "450244N 0273236E",
+        "450954N 0272929E",
+        "451104N 0272859E",
+        "451107N 0273029E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA67T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "451332N 0281732E",
+        "450746N 0282347E",
+        "450109N 0282253E",
+        "445054N 0275001E",
+        "444728N 0273911E",
+        "450244N 0273236E",
+        "450954N 0272929E",
+        "451104N 0272859E",
+        "451107N 0273029E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA67U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "451332N 0281732E",
+        "450746N 0282347E",
+        "450109N 0282253E",
+        "445054N 0275001E",
+        "444728N 0273911E",
+        "450244N 0273236E",
+        "450954N 0272929E",
+        "451104N 0272859E",
+        "451107N 0273029E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA68G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "451312N 0272538E",
+        "451155N 0272838E",
+        "451107N 0273029E",
+        "450954N 0272929E",
+        "450556N 0272613E",
+        "450753N 0272117E"
+      ],
+      "upper": "3500 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA68L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "451312N 0272538E",
+        "451155N 0272838E",
+        "451107N 0273029E",
+        "450954N 0272929E",
+        "450556N 0272613E",
+        "450753N 0272117E"
+      ],
+      "upper": "FL200",
+      "lower": "3500 FT AMSL",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA69L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "451312N 0272538E",
+        "451155N 0272838E",
+        "451107N 0273029E",
+        "450954N 0272929E",
+        "450556N 0272613E",
+        "450753N 0272117E"
+      ],
+      "upper": "FL200",
+      "lower": "FL130",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA71G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "442624N 0275521E",
+        "441355N 0282323E",
+        "440421N 0282842E",
+        "440304N 0282924E",
+        "435858N 0283141E",
+        "435542N 0283330E",
+        "435138N 0283546E",
+        "434914N 0283336E",
+        "435406N 0280546E",
+        "440333N 0280016E",
+        "440429N 0275521E"
+      ],
+      "upper": "5500 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA71L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "442624N 0275521E",
+        "441355N 0282323E",
+        "440421N 0282842E",
+        "440304N 0282924E",
+        "435858N 0283141E",
+        "435542N 0283330E",
+        "435138N 0283546E",
+        "434914N 0283336E",
+        "435406N 0280546E",
+        "440333N 0280016E",
+        "440429N 0275521E"
+      ],
+      "upper": "FL200",
+      "lower": "5500 FT AMSL",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA71M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "442624N 0275521E",
+        "441355N 0282323E",
+        "440421N 0282842E",
+        "440304N 0282924E",
+        "435858N 0283141E",
+        "435542N 0283330E",
+        "435138N 0283546E",
+        "434914N 0283336E",
+        "435406N 0280546E",
+        "440333N 0280016E",
+        "440429N 0275521E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA71T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "442624N 0275521E",
+        "441355N 0282323E",
+        "440421N 0282842E",
+        "440304N 0282924E",
+        "435858N 0283141E",
+        "435542N 0283330E",
+        "435138N 0283546E",
+        "434914N 0283336E",
+        "435406N 0280546E",
+        "440333N 0280016E",
+        "440429N 0275521E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA71U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "442624N 0275521E",
+        "441355N 0282323E",
+        "440421N 0282842E",
+        "440304N 0282924E",
+        "435858N 0283141E",
+        "435542N 0283330E",
+        "435138N 0283546E",
+        "434914N 0283336E",
+        "435406N 0280546E",
+        "440333N 0280016E",
+        "440429N 0275521E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA72G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "443448N 0273125E",
+        "443428N 0273703E",
+        "442624N 0275521E",
+        "440429N 0275521E",
+        "440919N 0273125E"
+      ],
+      "upper": "5500 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA72L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "443448N 0273125E",
+        "443428N 0273703E",
+        "442624N 0275521E",
+        "440429N 0275521E",
+        "440919N 0273125E"
+      ],
+      "upper": "FL200",
+      "lower": "5500 FT AMSL",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA72M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "443448N 0273125E",
+        "443428N 0273703E",
+        "442624N 0275521E",
+        "440429N 0275521E",
+        "440919N 0273125E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA72T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "443448N 0273125E",
+        "443428N 0273703E",
+        "442624N 0275521E",
+        "440429N 0275521E",
+        "440919N 0273125E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA72U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "443448N 0273125E",
+        "443428N 0273703E",
+        "442624N 0275521E",
+        "440429N 0275521E",
+        "440919N 0273125E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA73G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "443613N 0270724E",
+        "443448N 0273125E",
+        "440919N 0273125E",
+        "441205N 0271908E",
+        "441321N 0270830E"
+      ],
+      "upper": "5500 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA73L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "443613N 0270724E",
+        "443448N 0273125E",
+        "440919N 0273125E",
+        "441205N 0271908E",
+        "441321N 0270830E"
+      ],
+      "upper": "FL200",
+      "lower": "5500 FT AMSL",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA73M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "443613N 0270724E",
+        "443448N 0273125E",
+        "440919N 0273125E",
+        "441205N 0271908E",
+        "441321N 0270830E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA73T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "443613N 0270724E",
+        "443448N 0273125E",
+        "440919N 0273125E",
+        "441205N 0271908E",
+        "441321N 0270830E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA73U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "443613N 0270724E",
+        "443448N 0273125E",
+        "440919N 0273125E",
+        "441205N 0271908E",
+        "441321N 0270830E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA74",
+      "name": null,
+      "type": "TRA",
+      "circle": {
+        "centre": "442332N 0274336E",
+        "radiusNM": 15
+      },
+      "upper": "5500 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA80G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "440401N 0283543E",
+        "440059N 0284300E",
+        "435404N 0283722E",
+        "435542N 0283330E",
+        "435706N 0283011E",
+        "435858N 0283141E"
+      ],
+      "upper": "3500 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA81G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "440408N 0284535E",
+        "440408N 0284812E",
+        "435404N 0284814E",
+        "435404N 0283722E",
+        "440059N 0284300E"
+      ],
+      "upper": "3000 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA82G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "435404N 0283722E",
+        "435404N 0284814E",
+        "434500N 0284814E",
+        "434500N 0283546E"
+      ],
+      "upper": "3000 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA83G",
+      "name": null,
+      "type": "TRA",
+      "circle": {
+        "centre": "434913N 0282649E",
+        "radiusNM": 2.5
+      },
+      "upper": "3500 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA84G",
+      "name": null,
+      "type": "TRA",
+      "circle": {
+        "centre": "435720N 0282700E",
+        "radiusNM": 2.5
+      },
+      "upper": "3500 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA85G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "440500N 0282500E",
+        "440421N 0282842E",
+        "440400N 0283040E",
+        "440304N 0282924E",
+        "440040N 0282610E",
+        "440150N 0282230E",
+        "440430N 0282200E"
+      ],
+      "upper": "3500 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA90G",
+      "name": null,
+      "type": "TRA",
+      "circle": {
+        "centre": "444220N 0264301E",
+        "radiusNM": 6
+      },
+      "upper": "2000 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA91G",
+      "name": null,
+      "type": "TRA",
+      "circle": {
+        "centre": "441932N 0263021E",
+        "radiusNM": 6
+      },
+      "upper": "2000 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA91L",
+      "name": null,
+      "type": "TRA",
+      "circle": {
+        "centre": "441932N 0263021E",
+        "radiusNM": 6
+      },
+      "upper": "FL200",
+      "lower": "2000 FT AMSL",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA92G",
+      "name": null,
+      "type": "TRA",
+      "circle": {
+        "centre": "441655N 0253201E",
+        "radiusNM": 6
+      },
+      "upper": "2000 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA92L",
+      "name": null,
+      "type": "TRA",
+      "circle": {
+        "centre": "441655N 0253201E",
+        "radiusNM": 6
+      },
+      "upper": "FL200",
+      "lower": "2000 FT AMSL",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA93G",
+      "name": null,
+      "type": "TRA",
+      "circle": {
+        "centre": "443018N 0252910E",
+        "radiusNM": 6
+      },
+      "upper": "2000 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA94G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "444704N 0253104E",
+        "444456N 0254015E",
+        "444145N 0254126E",
+        "444421N 0252600E"
+      ],
+      "upper": "2000 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA100G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "445359N 0233344E",
+        "443733N 0240409E",
+        "442605N 0241220E",
+        "443422N 0234004E"
+      ],
+      "upper": "4500 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA100L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "445359N 0233344E",
+        "443733N 0240409E",
+        "442605N 0241220E",
+        "443422N 0234004E"
+      ],
+      "upper": "FL200",
+      "lower": "4500 FT AMSL",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA100M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "445359N 0233344E",
+        "443733N 0240409E",
+        "442605N 0241220E",
+        "443422N 0234004E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA100T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "445359N 0233344E",
+        "443733N 0240409E",
+        "442605N 0241220E",
+        "443422N 0234004E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA100U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "445359N 0233344E",
+        "443733N 0240409E",
+        "442605N 0241220E",
+        "443422N 0234004E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA101G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "443422N 0234004E",
+        "442605N 0241220E",
+        "441912N 0241715E",
+        "441901N 0234451E"
+      ],
+      "upper": "4500 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA101L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "443422N 0234004E",
+        "442605N 0241220E",
+        "441912N 0241715E",
+        "441901N 0234451E"
+      ],
+      "upper": "FL200",
+      "lower": "4500 FT AMSL",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA101M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "443422N 0234004E",
+        "442605N 0241220E",
+        "441912N 0241715E",
+        "441901N 0234451E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA101T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "443422N 0234004E",
+        "442605N 0241220E",
+        "441912N 0241715E",
+        "441901N 0234451E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA101U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "443422N 0234004E",
+        "442605N 0241220E",
+        "441912N 0241715E",
+        "441901N 0234451E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA102G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "441912N 0241715E",
+        "441849N 0241730E",
+        "435503N 0240532E",
+        "440733N 0234837E",
+        "441901N 0234451E"
+      ],
+      "upper": "4000 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA102L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "441912N 0241715E",
+        "441849N 0241730E",
+        "435503N 0240532E",
+        "440733N 0234837E",
+        "441901N 0234451E"
+      ],
+      "upper": "FL200",
+      "lower": "4000 FT AMSL",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA102M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "441912N 0241715E",
+        "441849N 0241730E",
+        "435503N 0240532E",
+        "440733N 0234837E",
+        "441901N 0234451E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA102T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "441912N 0241715E",
+        "441849N 0241730E",
+        "435503N 0240532E",
+        "440733N 0234837E",
+        "441901N 0234451E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA102U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "441849N 0241730E",
+        "435503N 0240532E",
+        "440733N 0234837E",
+        "441901N 0234451E",
+        "441912N 0241715E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA103G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "442904N 0230410E",
+        "442831N 0232731E",
+        "435914N 0233702E",
+        "440226N 0231725E"
+      ],
+      "upper": "4500 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA103L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "442904N 0230410E",
+        "442831N 0232731E",
+        "435914N 0233702E",
+        "440226N 0231725E"
+      ],
+      "upper": "FL200",
+      "lower": "4500 FT AMSL",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA103M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "442904N 0230410E",
+        "442831N 0232731E",
+        "435914N 0233702E",
+        "440226N 0231725E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA103T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "442904N 0230410E",
+        "442831N 0232731E",
+        "435914N 0233702E",
+        "440226N 0231725E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA103U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "442904N 0230410E",
+        "442831N 0232731E",
+        "435914N 0233702E",
+        "440226N 0231725E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA104G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "445941N 0225512E",
+        "445645N 0231823E",
+        "443522N 0232522E",
+        "443658N 0230406E"
+      ],
+      "upper": "4500 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA104L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "445941N 0225512E",
+        "445645N 0231823E",
+        "443522N 0232522E",
+        "443658N 0230406E"
+      ],
+      "upper": "FL200",
+      "lower": "4500 FT AMSL",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA104M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "445941N 0225512E",
+        "445645N 0231823E",
+        "443522N 0232522E",
+        "443658N 0230406E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA104T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "445941N 0225512E",
+        "445645N 0231823E",
+        "443522N 0232522E",
+        "443658N 0230406E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA104U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "445941N 0225512E",
+        "445645N 0231823E",
+        "443522N 0232522E",
+        "443658N 0230406E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA105G",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "445359N 0233344E",
+        "443733N 0240409E",
+        "442605N 0241220E",
+        "441912N 0241715E",
+        "441901N 0234451E",
+        "443422N 0234004E"
+      ],
+      "upper": "4500 FT AMSL",
+      "lower": "GND",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA105L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "445359N 0233344E",
+        "443733N 0240409E",
+        "442605N 0241220E",
+        "441912N 0241715E",
+        "441901N 0234451E",
+        "443422N 0234004E"
+      ],
+      "upper": "FL200",
+      "lower": "4500 FT AMSL",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA105M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "445359N 0233344E",
+        "443733N 0240409E",
+        "442605N 0241220E",
+        "441912N 0241715E",
+        "441901N 0234451E",
+        "443422N 0234004E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA105T",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "445359N 0233344E",
+        "443733N 0240409E",
+        "442605N 0241220E",
+        "441912N 0241715E",
+        "441901N 0234451E",
+        "443422N 0234004E"
+      ],
+      "upper": "FL660",
+      "lower": "FL350",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA105U",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "445359N 0233344E",
+        "443733N 0240409E",
+        "442605N 0241220E",
+        "441912N 0241715E",
+        "441901N 0234451E",
+        "443422N 0234004E"
+      ],
+      "upper": "FL350",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA110A",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "473353N 0234552E",
+        "472722N 0243912E",
+        "472533N 0245406E",
+        "472439N 0253756E",
+        "472359N 0260018E",
+        "472157N 0260518E",
+        "471914N 0261302E",
+        "471909N 0262229E",
+        "470139N 0262932E",
+        "464127N 0263734E",
+        "463845N 0263515E",
+        "463551N 0263354E",
+        "463448N 0255708E",
+        "463335N 0251212E",
+        "463306N 0245647E",
+        "463253N 0244947E",
+        "463246N 0244704E",
+        "463348N 0243815E",
+        "463218N 0243032E",
+        "463202N 0242110E",
+        "463150N 0241431E",
+        "463458N 0241320E",
+        "464200N 0241300E",
+        "464551N 0240951E",
+        "470043N 0235741E",
+        "472716N 0233558E",
+        "472851N 0234023E",
+        "473122N 0234449E"
+      ],
+      "upper": "FL280",
+      "lower": "FL100",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA110B",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "473353N 0234552E",
+        "472722N 0243912E",
+        "472533N 0245406E",
+        "472439N 0253756E",
+        "472359N 0260018E",
+        "472323N 0262046E",
+        "471909N 0262229E",
+        "470139N 0262932E",
+        "464127N 0263734E",
+        "463845N 0263515E",
+        "463551N 0263354E",
+        "463448N 0255708E",
+        "463335N 0251212E",
+        "463306N 0245647E",
+        "463253N 0244947E",
+        "463246N 0244704E",
+        "463232N 0243846E",
+        "463218N 0243032E",
+        "463202N 0242110E",
+        "464200N 0241300E",
+        "464551N 0240951E",
+        "470043N 0235741E",
+        "472716N 0233558E",
+        "472851N 0234023E",
+        "473122N 0234449E"
+      ],
+      "upper": "FL660",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA110C",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "473353N 0234552E",
+        "472722N 0243912E",
+        "472533N 0245406E",
+        "472439N 0253756E",
+        "472359N 0260018E",
+        "472323N 0262046E",
+        "471909N 0262229E",
+        "470139N 0262932E",
+        "464127N 0263734E",
+        "463845N 0263515E",
+        "463551N 0263354E",
+        "463448N 0255708E",
+        "463335N 0251212E",
+        "464542N 0245231E",
+        "470052N 0242731E",
+        "472851N 0234023E",
+        "473122N 0234449E"
+      ],
+      "upper": "FL660",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA110D",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "472722N 0243912E",
+        "472533N 0245406E",
+        "472439N 0253756E",
+        "472359N 0260018E",
+        "472323N 0262046E",
+        "471909N 0262229E",
+        "470139N 0262932E",
+        "464127N 0263734E",
+        "463845N 0263515E",
+        "463551N 0263354E",
+        "463448N 0255708E",
+        "463335N 0251212E",
+        "464542N 0245231E",
+        "470054N 0244720E"
+      ],
+      "upper": "FL660",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA111A",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "463938N 0280000E",
+        "461327N 0280035E",
+        "455122N 0275540E",
+        "452835N 0275040E",
+        "451332N 0281732E",
+        "450746N 0282347E",
+        "450109N 0282253E",
+        "445054N 0275001E",
+        "444728N 0273911E",
+        "445352N 0270637E",
+        "450407N 0263420E",
+        "453052N 0264117E",
+        "453559N 0264237E",
+        "455122N 0264637E",
+        "461329N 0265222E",
+        "462000N 0271022E",
+        "463133N 0271952E"
+      ],
+      "upper": "FL280",
+      "lower": "FL65",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA111B",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "463938N 0280000E",
+        "461327N 0280035E",
+        "455122N 0275540E",
+        "452835N 0275040E",
+        "451332N 0281732E",
+        "450746N 0282347E",
+        "450109N 0282253E",
+        "445054N 0275001E",
+        "444728N 0273911E",
+        "445352N 0270637E",
+        "450407N 0263420E",
+        "453052N 0264117E",
+        "455122N 0264637E",
+        "461329N 0265222E",
+        "462000N 0271022E",
+        "463133N 0271952E"
+      ],
+      "upper": "FL660",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA111C",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "463938N 0280000E",
+        "461327N 0280035E",
+        "455122N 0275540E",
+        "452835N 0275040E",
+        "451332N 0281732E",
+        "450746N 0282347E",
+        "450109N 0282253E",
+        "445054N 0275001E",
+        "450244N 0273236E",
+        "450638N 0272648E",
+        "450929N 0272235E",
+        "453035N 0265051E",
+        "453559N 0264237E",
+        "455122N 0264637E",
+        "461329N 0265222E",
+        "462000N 0271022E",
+        "463133N 0271952E"
+      ],
+      "upper": "FL660",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA111D",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "463938N 0280000E",
+        "461327N 0280035E",
+        "455122N 0275540E",
+        "452835N 0275040E",
+        "452935N 0272114E",
+        "453035N 0265051E",
+        "453559N 0264237E",
+        "454409N 0263006E",
+        "455249N 0261643E",
+        "460805N 0255252E",
+        "461915N 0254749E",
+        "462358N 0260554E",
+        "462458N 0260945E",
+        "462521N 0263413E",
+        "462425N 0264443E",
+        "463133N 0271952E"
+      ],
+      "upper": "FL280",
+      "lower": "FL100",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA111E",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "463938N 0280000E",
+        "461327N 0280035E",
+        "455122N 0275540E",
+        "452835N 0275040E",
+        "452935N 0272114E",
+        "453035N 0265051E",
+        "453559N 0264237E",
+        "454409N 0263006E",
+        "455249N 0261643E",
+        "460805N 0255252E",
+        "461915N 0254749E",
+        "462358N 0260554E",
+        "462458N 0260945E",
+        "462521N 0263413E",
+        "462425N 0264443E",
+        "463133N 0271952E"
+      ],
+      "upper": "FL660",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA111F",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "463938N 0280000E",
+        "461327N 0280035E",
+        "455122N 0275540E",
+        "452835N 0275040E",
+        "451332N 0281732E",
+        "450746N 0282347E",
+        "450109N 0282253E",
+        "445054N 0275001E",
+        "450244N 0273236E",
+        "450638N 0272648E",
+        "450929N 0272235E",
+        "453035N 0265051E",
+        "453559N 0264237E",
+        "454409N 0263006E",
+        "455249N 0261643E",
+        "460805N 0255252E",
+        "461915N 0254749E",
+        "462358N 0260554E",
+        "462458N 0260945E",
+        "462521N 0263413E",
+        "462425N 0264443E",
+        "463133N 0271952E"
+      ],
+      "upper": "FL280",
+      "lower": "FL100",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA111H",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "463938N 0280000E",
+        "461327N 0280035E",
+        "455122N 0275540E",
+        "452835N 0275040E",
+        "451332N 0281732E",
+        "450746N 0282347E",
+        "450109N 0282253E",
+        "445054N 0275001E",
+        "450244N 0273236E",
+        "450638N 0272648E",
+        "450929N 0272235E",
+        "453035N 0265051E",
+        "453559N 0264237E",
+        "454409N 0263006E",
+        "455249N 0261643E",
+        "460805N 0255252E",
+        "461915N 0254749E",
+        "462358N 0260554E",
+        "462458N 0260945E",
+        "462521N 0263413E",
+        "462425N 0264443E",
+        "463133N 0271952E"
+      ],
+      "upper": "FL660",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA111I",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "463938N 0280000E",
+        "461327N 0280035E",
+        "455122N 0275540E",
+        "452835N 0275040E",
+        "452935N 0272114E",
+        "453035N 0265051E",
+        "453052N 0264117E",
+        "455122N 0264637E",
+        "461329N 0265222E",
+        "462000N 0271022E",
+        "463133N 0271952E"
+      ],
+      "upper": "FL280",
+      "lower": "FL65",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA111J",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "463938N 0280000E",
+        "461327N 0280035E",
+        "455122N 0275540E",
+        "452835N 0275040E",
+        "452935N 0272114E",
+        "453035N 0265051E",
+        "453052N 0264117E",
+        "455122N 0264637E",
+        "461329N 0265222E",
+        "462000N 0271022E",
+        "463133N 0271952E"
+      ],
+      "upper": "FL660",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA111K",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "453052N 0264117E",
+        "453035N 0265051E",
+        "452935N 0272114E",
+        "452835N 0275040E",
+        "451332N 0281732E",
+        "450746N 0282347E",
+        "450109N 0282253E",
+        "445054N 0275001E",
+        "444728N 0273911E",
+        "445352N 0270637E",
+        "450407N 0263420E"
+      ],
+      "upper": "FL280",
+      "lower": "FL65",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA111N",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "453052N 0264117E",
+        "453035N 0265051E",
+        "452935N 0272114E",
+        "452835N 0275040E",
+        "451332N 0281732E",
+        "450746N 0282347E",
+        "450109N 0282253E",
+        "445054N 0275001E",
+        "444728N 0273911E",
+        "445352N 0270637E",
+        "450407N 0263420E"
+      ],
+      "upper": "FL660",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA112L",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "462521N 0263413E",
+        "462004N 0263924E",
+        "460306N 0263459E",
+        "454409N 0263006E",
+        "452906N 0262616E",
+        "450810N 0262059E",
+        "452222N 0254715E",
+        "452447N 0254126E",
+        "461915N 0254749E",
+        "462358N 0260554E",
+        "462458N 0260945E"
+      ],
+      "upper": "FL200",
+      "lower": "FL130",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA112M",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "462521N 0263413E",
+        "462004N 0263924E",
+        "460306N 0263459E",
+        "454409N 0263006E",
+        "452906N 0262616E",
+        "450810N 0262059E",
+        "452222N 0254715E",
+        "452447N 0254126E",
+        "461915N 0254749E",
+        "462358N 0260554E",
+        "462458N 0260945E"
+      ],
+      "upper": "FL280",
+      "lower": "FL200",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA113A",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "473712N 0270852E",
+        "472428N 0272339E",
+        "465702N 0275524E",
+        "464504N 0280005E",
+        "463938N 0280000E",
+        "461327N 0280035E",
+        "455122N 0275540E",
+        "452835N 0275040E",
+        "451332N 0281732E",
+        "450746N 0282347E",
+        "450109N 0282253E",
+        "445054N 0275001E",
+        "444728N 0273911E",
+        "445352N 0270637E",
+        "450407N 0263420E",
+        "450412N 0263404E",
+        "453013N 0250117E",
+        "461023N 0235313E",
+        "461621N 0235022E",
+        "462333N 0234653E",
+        "464122N 0233817E",
+        "472716N 0233558E",
+        "472851N 0234023E",
+        "473122N 0234449E",
+        "473353N 0234552E",
+        "472722N 0243912E",
+        "472533N 0245406E",
+        "472439N 0253756E",
+        "472359N 0260018E"
+      ],
+      "upper": "FL280",
+      "lower": "FL130",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA113B",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "473712N 0270852E",
+        "472428N 0272339E",
+        "465702N 0275524E",
+        "464504N 0280005E",
+        "463938N 0280000E",
+        "461327N 0280035E",
+        "455122N 0275540E",
+        "452835N 0275040E",
+        "451332N 0281732E",
+        "450746N 0282347E",
+        "450109N 0282253E",
+        "445054N 0275001E",
+        "444728N 0273911E",
+        "445352N 0270637E",
+        "450407N 0263420E",
+        "450412N 0263404E",
+        "453013N 0250117E",
+        "461023N 0235313E",
+        "461621N 0235022E",
+        "462333N 0234653E",
+        "464122N 0233817E",
+        "472716N 0233558E",
+        "472851N 0234023E",
+        "473122N 0234449E",
+        "473353N 0234552E",
+        "472722N 0243912E",
+        "472533N 0245406E",
+        "472439N 0253756E",
+        "472359N 0260018E"
+      ],
+      "upper": "FL660",
+      "lower": "L280",
+      "lowerRead": "FL280",
+      "note": "AIP prints \"L280\"; read as FL280.",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTRA113C",
+      "name": null,
+      "type": "TRA",
+      "lateral": [
+        "473712N 0270852E",
+        "472428N 0272339E",
+        "465702N 0275524E",
+        "464504N 0280005E",
+        "463938N 0280000E",
+        "461327N 0280035E",
+        "455122N 0275540E",
+        "452835N 0275040E",
+        "451332N 0281732E",
+        "450746N 0282347E",
+        "450109N 0282253E",
+        "445054N 0275001E",
+        "450244N 0273236E",
+        "450638N 0272648E",
+        "450929N 0272235E",
+        "453035N 0265051E",
+        "453035N 0265051E",
+        "453559N 0264237E",
+        "454409N 0263006E",
+        "455249N 0261643E",
+        "460805N 0255252E",
+        "463335N 0251212E",
+        "464542N 0245231E",
+        "470052N 0242731E",
+        "472851N 0234023E",
+        "473122N 0234449E",
+        "473353N 0234552E",
+        "472722N 0243912E",
+        "472533N 0245406E",
+        "472439N 0253756E",
+        "472359N 0260018E"
+      ],
+      "upper": "FL660",
+      "lower": "FL280",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTSA59",
+      "name": "BUZĂU",
+      "type": "TSA",
+      "circle": {
+        "centre": "450738N 0264745E",
+        "radiusNM": 6
+      },
+      "upper": null,
+      "lower": null,
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTSA61",
+      "name": "CLINCENI",
+      "type": "TSA",
+      "circle": {
+        "centre": "441800N 0255600E",
+        "radiusNM": 6
+      },
+      "upper": null,
+      "lower": null,
+      "note": "No vertical limits published.",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTSA66",
+      "name": "LUCIU",
+      "type": "TSA",
+      "circle": {
+        "centre": "445820N 0270500E",
+        "radiusNM": 6
+      },
+      "upper": null,
+      "lower": null,
+      "note": "No vertical limits published.",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTSA67",
+      "name": "Pădurea SPĂTARU",
+      "type": "TSA",
+      "circle": {
+        "centre": "450520N 0264620E",
+        "radiusNM": 6
+      },
+      "upper": null,
+      "lower": null,
+      "note": "No vertical limits published.",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTSA68",
+      "name": "Pădurea FRASIN",
+      "type": "TSA",
+      "circle": {
+        "centre": "450610N 0264915E",
+        "radiusNM": 6
+      },
+      "upper": null,
+      "lower": null,
+      "note": "No vertical limits published.",
+      "activation": "by NOTAM"
+    },
+    {
+      "id": "LRTSA69",
+      "name": "SMEENI",
+      "type": "TSA",
+      "circle": {
+        "centre": "445940N 0265200E",
+        "radiusNM": 6
+      },
+      "upper": null,
+      "lower": null,
+      "note": "No vertical limits published.",
+      "activation": "by NOTAM"
+    }
+  ]
+}

@@ -177,6 +177,9 @@ function updatePanel(force) {
   const pr = sim.priorities();
   $('prio').innerHTML = pr.length ? pr.slice(0, 10).map(it => `<div class="pi p${it.p}" data-ac="${it.ac ? it.ac.id : ''}"><span class="lvl">P${it.p}</span><div class="t"><b>${esc(it.h)}</b><span>${esc(it.s)}</span></div><div class="acts">${actButtons(it)}</div></div>`).join('') : '<div class="empty">No open items. Keep scanning the sector.</div>';
 
+  const md = sim.nets.mtcd;
+  $('mtcdCount').textContent = md.length ? `${md.length} predicted, 20 min` : '20 min look-ahead';
+  $('mtcd').innerHTML = md.length ? md.slice(0, 8).map(c => `<div class="mt" data-ac="${c.a}"><b>${fmtT(c.t)}</b><span>${esc(c.acs)} / ${esc(c.bcs)}</span><span>min ${c.minNM.toFixed(1)} NM at ${fmtT(c.tMin)}${c.dvFt ? `, ${c.dvFt} ft` : ''}</span></div>`).join('') : '<div class="empty">No conflicts predicted in the next 20 minutes.</div>';
   renderAcBox();
   if (ROLE === 'solo') {
     $('injCount').textContent = `${scn.injects.filter(i => i.status === 'fired').length}/${scn.injects.length} fired`;
@@ -184,6 +187,19 @@ function updatePanel(force) {
   }
   if (ROLE === 'instructor') renderInstructor();
   $('log').innerHTML = sim.logs.slice(0, 40).map(l => `<div class="${l.cls}"><b>${fmtT(l.t)}</b> ${esc(l.text)}</div>`).join('') || '<div>Nothing yet.</div>';
+}
+
+/** What-if level probe for the selected aircraft; in the trainee window it runs in the instructor's Sim. */
+function probe(id, fl) {
+  Promise.resolve(sim.probeLevel(id, fl)).then(r => {
+    const out = $('probeOut');
+    if (!out || !r) return;
+    out.hidden = false;
+    if (!r.ok) { out.className = 'probe-out err'; out.textContent = r.msg; return; }
+    const lines = [...r.conflicts.map(c => `${c.cs}: loss in ${fmtT(c.t)}, min ${c.minNM.toFixed(1)} NM${c.dvFt ? ` / ${c.dvFt} ft` : ''} at ${fmtT(c.tMin)}`), ...r.areas.map(z => `enters ${z.id} in ${fmtT(z.tt)}`)];
+    out.className = 'probe-out' + (lines.length ? ' warn' : ' ok');
+    out.innerHTML = `<b>FL${fmtFL(r.fl)}</b> ${lines.length ? lines.map(esc).join('<br>') : 'no conflict or military area in the next 20 minutes'}`;
+  });
 }
 
 function actButtons(it) {
@@ -223,7 +239,8 @@ function renderAcBox() {
       <label for="cRate">Rate ft/min</label><span class="rate-in"><input type="number" id="cRate" step="100" min="500" max="6000" value="2000"><select id="cRateKind" aria-label="Rate limit"><option value="min">or greater</option><option value="max">or less</option></select></span><button class="btn sm" id="bRate">Set</button>
     </div>
     <datalist id="dctList">${[...new Set(pts)].map(p => `<option value="${p}">`).join('')}</datalist>
-    <div class="row-btns"><button class="btn sm" id="bOwn">Resume own navigation</button><button class="btn sm" id="bNormSpd">Resume normal speed</button></div>
+    <div class="row-btns"><button class="btn sm" id="bOwn">Resume own navigation</button><button class="btn sm" id="bNormSpd">Resume normal speed</button><button class="btn sm" id="bProbe" title="What if cleared to the level above: conflicts and military areas in the next 20 minutes">Probe level</button></div>
+    <div class="probe-out" id="probeOut" hidden></div>
   </div>`;
   updateKv(a);
   const id = a.id;
@@ -235,11 +252,12 @@ function renderAcBox() {
   $('bRate').onclick = () => result(sim.clearRate(id, +$('cRate').value, $('cRateKind').value));
   $('bNormSpd').onclick = () => result(sim.resumeSpeed(id));
   $('bOwn').onclick = () => result(sim.resumeNav(id));
+  $('bProbe').onclick = () => probe(id, +$('cFl').value);
 }
 function updateKv(a) {
   const k = $('acKv'); if (!k) return;
   const w = a.route[a.ri];
-  k.innerHTML = `<div><span>FL</span>${fmtFL(a.fl)}</div><div><span>CFL</span>${fmtFL(a.cfl)}${a.bust ? ' <b style="color:var(--alert)">≠' + fmtFL(a.sfl) + '</b>' : ''}</div><div><span>IAS</span>${Math.round(machToCas(tasToMach(a.tas, a.fl * 100), a.fl * 100))}${a.spd && a.spd.mode === 'ias' ? ' ✓' : ''}</div><div><span>Mach</span>${tasToMach(a.tas, a.fl * 100).toFixed(2).slice(1)}${a.spd && a.spd.mode === 'mach' ? ' ✓' : ''}</div><div><span>TAS</span>${Math.round(a.tas)}</div><div><span>GS</span>${Math.round(a.gs)}</div><div><span>HDG</span>${String(Math.round(a.hdg) || 360).padStart(3, '0')}</div><div><span>TRK</span>${String(Math.round(a.trk) || 360).padStart(3, '0')}</div><div><span>Rate</span>${a.rate ? a.rate.fpm + (a.rate.kind === 'min' ? '+' : '−') : '—'}</div><div><span>Next</span>${w ? w.id : '—'}</div><div><span>Dist</span>${w ? Math.round(dist([a.x, a.y], w.xy)) + ' NM' : '—'}</div><div><span>Mode</span>${a.mode === 'nav' ? 'OWN NAV' : 'HDG'}</div><div><span>SSR</span>${a.sq}</div><div><span>XFL</span>${a.xfl === null ? '—' : fmtFL(a.xfl) + (a.ctl === 'ass' && Math.round(a.cfl) !== a.xfl ? ' <b style="color:var(--warn)">≠CFL</b>' : '')}</div><div><span>Exit</span>${a.ctl === 'ass' && a.tExit !== null ? fmtT(a.tExit) : a.tEntry !== null ? 'in ' + fmtT(a.tEntry) : '—'}</div>`;
+  k.innerHTML = `<div><span>FL</span>${fmtFL(a.fl)}</div><div><span>CFL</span>${fmtFL(a.cfl)}${Math.round(a.sfl) !== Math.round(a.cfl) ? ' <b style="color:var(--alert)">≠' + fmtFL(a.sfl) + '</b>' : ''}</div><div><span>IAS</span>${Math.round(machToCas(tasToMach(a.tas, a.fl * 100), a.fl * 100))}${a.spd && a.spd.mode === 'ias' ? ' ✓' : ''}</div><div><span>Mach</span>${tasToMach(a.tas, a.fl * 100).toFixed(2).slice(1)}${a.spd && a.spd.mode === 'mach' ? ' ✓' : ''}</div><div><span>TAS</span>${Math.round(a.tas)}</div><div><span>GS</span>${Math.round(a.gs)}</div><div><span>HDG</span>${String(Math.round(a.hdg) || 360).padStart(3, '0')}</div><div><span>TRK</span>${String(Math.round(a.trk) || 360).padStart(3, '0')}</div><div><span>Rate</span>${a.rate ? a.rate.fpm + (a.rate.kind === 'min' ? '+' : '−') : '—'}</div><div><span>Next</span>${w ? w.id : '—'}</div><div><span>Dist</span>${w ? Math.round(dist([a.x, a.y], w.xy)) + ' NM' : '—'}</div><div><span>Mode</span>${a.mode === 'nav' ? 'OWN NAV' : 'HDG'}</div><div><span>SSR</span>${a.sq}</div><div><span>XFL</span>${a.xfl === null ? '—' : fmtFL(a.xfl) + (a.ctl === 'ass' && Math.round(a.cfl) !== a.xfl ? ' <b style="color:var(--warn)">≠CFL</b>' : '')}</div><div><span>Exit</span>${a.ctl === 'ass' && a.tExit !== null ? fmtT(a.tExit) : a.tEntry !== null ? 'in ' + fmtT(a.tEntry) : '—'}</div>`;
 }
 
 /* ---------- instructor ---------- */
@@ -431,7 +449,7 @@ function gradeItems(d) {
     ['Requests answered', `${d.reqAnswered}/${d.reqs}`, d.reqMissed ? 'w' : ''],
     ['Avg. response', d.avgResponse === null ? '—' : d.avgResponse + ' s', d.avgResponse !== null && d.avgResponse > 60 ? 'w' : ''],
     ['Weather self-deviations', d.selfDev, d.selfDev ? 'w' : ''],
-    ['TSA infringements', d.tsaInf, d.tsaInf ? 'a' : ''],
+    ['Military area infringements', d.tsaInf, d.tsaInf ? 'a' : ''],
     ['Late assumes', d.lateAssume, d.lateAssume ? 'w' : ''],
     ['Late transfers', d.lateXfer, d.lateXfer ? 'w' : ''],
     ['Wrong exit levels', d.wrongXfl, d.wrongXfl ? 'a' : ''],
@@ -473,6 +491,24 @@ function showDebrief() {
 }
 
 /* ---------- input ---------- */
+/* ---------- range-bearing line and SEP ---------- */
+function setTool(mode) {
+  R.tools.mode = mode; R.tools.first = null;
+  $('toolRbl').setAttribute('aria-pressed', mode === 'rbl');
+  $('toolSep').setAttribute('aria-pressed', mode === 'sep');
+  if (mode) toast(mode === 'rbl' ? 'RBL: click a point or a track, then another' : 'SEP: click two tracks');
+}
+/** One click with a tool on: a track (if one is under the pointer) or a point on the map. */
+function toolClick(ac, xy) {
+  const T = R.tools;
+  if (T.mode === 'sep' && !ac) { toast('SEP: click a track'); return; }
+  const end = ac ? { ac: ac.id, xy: [ac.x, ac.y] } : { xy };
+  if (!T.first) { T.first = end; return; }
+  if (T.mode === 'rbl') T.rbl.push({ a: T.first, b: end });
+  else if (end.ac !== T.first.ac) T.sep.push({ a: T.first.ac, b: end.ac });
+  setTool(null);
+}
+
 function bindInput() {
   const cv = $('scope');
   let drag = null;
@@ -492,6 +528,12 @@ function bindInput() {
     else { R.V.cx = drag.cx - dx / R.V.sc; R.V.cy = drag.cy - dy / R.V.sc; }
   });
   cv.addEventListener('pointerup', e => {
+    if (drag && !drag.moved && R.tools.mode) {
+      const r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
+      toolClick(R.hitTest(mx, my), R.toNM(mx, my));
+      drag = null;
+      return;
+    }
     if (drag && !drag.moved) {
       const r = cv.getBoundingClientRect();
       const a = R.hitTest(e.clientX - r.left, e.clientY - r.top);
@@ -504,6 +546,9 @@ function bindInput() {
     const r = cv.getBoundingClientRect();
     R.zoomAt(e.clientX - r.left, e.clientY - r.top, e.deltaY < 0 ? 1.15 : 1 / 1.15);
   }, { passive: false });
+  $('toolRbl').onclick = () => setTool(R.tools.mode === 'rbl' ? null : 'rbl');
+  $('toolSep').onclick = () => setTool(R.tools.mode === 'sep' ? null : 'sep');
+  $('toolClear').onclick = () => { R.tools.rbl = []; R.tools.sep = []; setTool(null); };
   $('zoomIn').onclick = () => { R.V.sc = Math.min(12, R.V.sc * 1.25); };
   $('zoomOut').onclick = () => { R.V.sc = Math.max(0.3, R.V.sc / 1.25); };
   $('fitSector').onclick = () => R.fitSector();
@@ -526,7 +571,7 @@ function bindInput() {
     if (pp) { pseudoPilot(pp.dataset.pp); return; }
     const f = e.target.closest('button[data-fire]');
     if (f) { sim.fireNow(+f.dataset.fire); updatePanel(true); return; }
-    const pi = e.target.closest('.pi');
+    const pi = e.target.closest('.pi, .mt');
     if (pi && pi.dataset.ac) {
       R.sel = +pi.dataset.ac; ui.acBoxFor = -1;
       const a = sim.get(R.sel); if (a) R.centreOn(a);
@@ -534,8 +579,8 @@ function bindInput() {
     }
   });
 
-  const defs = [['sectors', 'Sectors'], ['points', 'FRA E/X'], ['navaids', 'VOR'], ['airports', 'Aerodromes'], ['labels', 'All labels'], ['vec', 'Vector 2 min']];
-  $('layerChips').innerHTML = defs.map(d => `<button class="chip" data-l="${d[0]}" aria-pressed="true">${d[1]}</button>`).join('');
+  const defs = [['sectors', 'Sectors'], ['mil', 'Mil areas'], ['points', 'FRA E/X'], ['navaids', 'VOR'], ['airports', 'Aerodromes'], ['labels', 'All labels'], ['vec', 'Vector 2 min']];
+  $('layerChips').innerHTML = defs.map(d => `<button class="chip" data-l="${d[0]}" aria-pressed="${R.layers[d[0]] !== false}">${d[1]}</button>`).join('');
   $('layerChips').onclick = e => {
     const b = e.target.closest('button'); if (!b) return;
     const l = b.dataset.l, L = R.layers;

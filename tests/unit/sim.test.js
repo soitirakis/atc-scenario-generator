@@ -4,7 +4,7 @@ import HU from '../../data/HU/index.js';
 import { loadCountry, inSector } from '../../src/country.js';
 import { Sim, DIFF, TYPES } from '../../src/sim.js';
 import { buildLocalScenario } from '../../src/scenario.js';
-import { D2R, angDiff, brg } from '../../src/geo.js';
+import { D2R, angDiff, brg, pip } from '../../src/geo.js';
 import { machToTas, casToTas } from '../../src/atmos.js';
 import PERF from '../../data/performance.json';
 
@@ -64,6 +64,19 @@ describe('session loading', () => {
 });
 
 describe('built-in conflicts', () => {
+  it('every built-in pair really loses separation if nobody acts, including the later ones', () => {
+    for (const seed of [1, 2, 3, 4127]) {
+      const sim = fresh({ difficulty: 'advanced', seed }, []);
+      const conf = sim.ac.filter(a => a.conflict), pairs = [];
+      for (let i = 0; i < conf.length; i += 2) pairs.push({ a: conf[i], b: conf[i + 1], lost: false });
+      for (let t = 0; t < 22 * 60; t++) {
+        sim.step();
+        for (const p of pairs) if (sim.get(p.a.id) && sim.get(p.b.id) && Math.hypot(p.a.x - p.b.x, p.a.y - p.b.y) < 5 && Math.abs(p.a.fl - p.b.fl) < 10) p.lost = true;
+      }
+      // conflicts are set 4, 9.5, 15 and 20.5 minutes ahead; the first three fall inside 22 minutes
+      expect(pairs.slice(0, 3).map(p => p.lost), `seed ${seed}`).toEqual([true, true, true]);
+    }
+  });
   it('are detected by STCA before they become a loss of separation', () => {
     const sim = fresh({ difficulty: 'foundational' }, []);
     const pair = sim.ac.filter(a => a.conflict).map(a => a.id);
@@ -99,7 +112,7 @@ describe('injects', () => {
     const a = sim.ac.find(x => x.bust);
     expect(a).toBeTruthy();
     expect(a.sfl).not.toBe(a.cfl);
-    expect(sim.priorities().some(p => p.h.includes('level bust'))).toBe(true);
+    expect(sim.priorities().some(p => p.ac === a && /CLAM/.test(p.h))).toBe(true);
     sim.clearLevel(a.id, a.cfl);
     expect(a.bust).toBe(false);
     expect(a.sfl).toBe(a.cfl);
@@ -146,14 +159,18 @@ describe('injects', () => {
     expect(Math.abs(((req.thdg - before + 540) % 360) - 180)).toBe(25);
   });
 
-  it('MILITARY_TSA warns five minutes before it activates', () => {
+  it('MILITARY_TSA warns five minutes before a real military area over the sector activates', () => {
     const sim = fresh({}, at('MILITARY_TSA'));
     run(sim, 61);
     expect(sim.tsa).toHaveLength(1);
-    expect(sim.tsa[0].active).toBe(false);
+    const z = sim.tsa[0];
+    expect(z.active).toBe(false);
+    expect(z.id).toMatch(/^LRTRA/);
+    expect(sim.priorities().some(p => p.h === `${z.id} activates in 04:59`)).toBe(true);
+    // over the training sector: a vertex inside it, or the sector inside the area
+    expect(z.poly.some(p => inSector(p, sim.sector)) || sim.sector.polys.flat().some(p => pip(p, z.poly))).toBe(true);
     run(sim, 300);
-    expect(sim.tsa[0].active).toBe(true);
-    expect(inSector([sim.tsa[0].x, sim.tsa[0].y], sim.sector)).toBe(true);
+    expect(z.active).toBe(true);
   });
 
   it('POPUP_TRAFFIC appears at the sector boundary flagged as uncoordinated', () => {

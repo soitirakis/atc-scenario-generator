@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "title": "Night shift: KOMAN + LOMOS + NERDI collapsed, emergency and military area",
+  "country": "RO",
+  "sector": "KNL",
+  "difficulty": "intermediate",
+  "duration": 45,
+  "seed": 3301,
+  "objective": "Night shift: KOMAN, LOMOS and NERDI collapsed into one sector with light traffic. The workload comes from the events: a military area activation and an emergency descent, with a large sector to keep in view.",
+  "conflicts": 2,
+  "challenges": [
+    "One large collapsed sector: long routes, many entry and exit points, and boundaries with several neighbours",
+    "A military area from ENR 5.2 activates over the sector: your traffic must be clear of it before it is active",
+    "An emergency descent through occupied levels while the area is active"
+  ],
+  "criteria": [
+    "None of your aircraft inside the active military area within its vertical limits",
+    "Emergency acknowledged within 30 s and kept clear of other traffic down to FL100",
+    "No loss of separation (5 NM / 1000 ft)",
+    "Emergencies and STCA handled before routine requests"
+  ],
+  "wind": [
+    {
+      "fl": 50,
+      "dir": 212,
+      "kt": 23
+    },
+    {
+      "fl": 180,
+      "dir": 232,
+      "kt": 44
+    },
+    {
+      "fl": 340,
+      "dir": 242,
+      "kt": 88
+    },
+    {
+      "fl": 420,
+      "dir": 252,
+      "kt": 70
+    }
+  ],
+  "injects": [
+    {
+      "min": 5,
+      "type": "MILITARY_TSA",
+      "text": "Military activity: an ENR 5.2 area over the sector becomes active in five minutes. Keep your traffic out of it.",
+      "objective": "None of your aircraft inside the active military area within its vertical limits (10 min after activation)"
+    },
+    {
+      "min": 12,
+      "type": "CLIMB_REQUEST",
+      "text": "A flight near the area asks for its cruising level. Check the area's limits first.",
+      "objective": "Answered within 60 s"
+    },
+    {
+      "min": 18,
+      "type": "EMERGENCY_DESCENT",
+      "text": "Pressurisation failure. Emergency descent to FL100, squawk 7700, diverting.",
+      "objective": "Acknowledged within 30 s, and no STCA with it in the descent to FL100"
+    },
+    {
+      "min": 26,
+      "type": "POPUP_TRAFFIC",
+      "text": "An aircraft enters without coordination.",
+      "objective": "No STCA involving it in its first 3 min"
+    },
+    {
+      "min": 34,
+      "type": "LEVEL_BUST",
+      "text": "An aircraft passes its cleared level.",
+      "objective": "Level re-cleared within 60 s"
+    }
+  ]
+}

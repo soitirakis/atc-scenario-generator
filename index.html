@@ -56,6 +56,9 @@
         <span><i style="background:var(--alert)"></i>Loss of separation</span>
       </div></div>
       <div class="overlay ov-br">
+        <button class="chip" id="toolRbl" aria-pressed="false" title="Range and bearing: click two points or tracks">RBL</button>
+        <button class="chip" id="toolSep" aria-pressed="false" title="Separation: click two tracks">SEP</button>
+        <button class="chip" id="toolClear" title="Remove range-bearing lines and SEP">Clear</button>
         <button class="chip" id="zoomIn" aria-label="Zoom in">＋</button>
         <button class="chip" id="zoomOut" aria-label="Zoom out">－</button>
         <button class="chip" id="fitSector">Fit sector</button>
@@ -90,6 +93,10 @@
         <div class="sec">
           <h2>Priorities <small>highest first</small></h2>
           <div class="prio" id="prio"></div>
+        </div>
+        <div class="sec">
+          <h2>MTCD <small id="mtcdCount">20 min look-ahead</small></h2>
+          <div class="mtcd" id="mtcd"></div>
         </div>
         <div class="sec" id="acSec">
           <h2>Selected aircraft <small>click a track</small></h2>
