@@ -210,3 +210,9 @@ body:not([data-role="solo"]) .solo-only, body[data-role="trainee"] .not-trainee,
 /* scenario library and files */
 .io-msg { margin: 8px 0 0; }
 .io-msg.err { color: var(--alert); }
+
+/* MTCD list */
+.mtcd .mt { display: grid; grid-template-columns: 46px minmax(0, 1fr) auto; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--line); font-size: 12.5px; cursor: pointer; }
+.mtcd .mt:last-child { border-bottom: 0; }
+.mtcd .mt b { font-family: var(--f-data); font-weight: 500; color: var(--warn); font-variant-numeric: tabular-nums; }
+.mtcd .mt span:last-child { color: var(--muted); font-family: var(--f-data); font-variant-numeric: tabular-nums; }

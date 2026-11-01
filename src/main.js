@@ -177,6 +177,9 @@ function updatePanel(force) {
   const pr = sim.priorities();
   $('prio').innerHTML = pr.length ? pr.slice(0, 10).map(it => `<div class="pi p${it.p}" data-ac="${it.ac ? it.ac.id : ''}"><span class="lvl">P${it.p}</span><div class="t"><b>${esc(it.h)}</b><span>${esc(it.s)}</span></div><div class="acts">${actButtons(it)}</div></div>`).join('') : '<div class="empty">No open items. Keep scanning the sector.</div>';
 
+  const md = sim.nets.mtcd;
+  $('mtcdCount').textContent = md.length ? `${md.length} predicted, 20 min` : '20 min look-ahead';
+  $('mtcd').innerHTML = md.length ? md.slice(0, 8).map(c => `<div class="mt" data-ac="${c.a}"><b>${fmtT(c.t)}</b><span>${esc(c.acs)} / ${esc(c.bcs)}</span><span>min ${c.minNM.toFixed(1)} NM at ${fmtT(c.tMin)}${c.dvFt ? `, ${c.dvFt} ft` : ''}</span></div>`).join('') : '<div class="empty">No conflicts predicted in the next 20 minutes.</div>';
   renderAcBox();
   if (ROLE === 'solo') {
     $('injCount').textContent = `${scn.injects.filter(i => i.status === 'fired').length}/${scn.injects.length} fired`;
@@ -239,7 +242,7 @@ function renderAcBox() {
 function updateKv(a) {
   const k = $('acKv'); if (!k) return;
   const w = a.route[a.ri];
-  k.innerHTML = `<div><span>FL</span>${fmtFL(a.fl)}</div><div><span>CFL</span>${fmtFL(a.cfl)}${a.bust ? ' <b style="color:var(--alert)">≠' + fmtFL(a.sfl) + '</b>' : ''}</div><div><span>IAS</span>${Math.round(machToCas(tasToMach(a.tas, a.fl * 100), a.fl * 100))}${a.spd && a.spd.mode === 'ias' ? ' ✓' : ''}</div><div><span>Mach</span>${tasToMach(a.tas, a.fl * 100).toFixed(2).slice(1)}${a.spd && a.spd.mode === 'mach' ? ' ✓' : ''}</div><div><span>TAS</span>${Math.round(a.tas)}</div><div><span>GS</span>${Math.round(a.gs)}</div><div><span>HDG</span>${String(Math.round(a.hdg) || 360).padStart(3, '0')}</div><div><span>TRK</span>${String(Math.round(a.trk) || 360).padStart(3, '0')}</div><div><span>Rate</span>${a.rate ? a.rate.fpm + (a.rate.kind === 'min' ? '+' : '−') : '—'}</div><div><span>Next</span>${w ? w.id : '—'}</div><div><span>Dist</span>${w ? Math.round(dist([a.x, a.y], w.xy)) + ' NM' : '—'}</div><div><span>Mode</span>${a.mode === 'nav' ? 'OWN NAV' : 'HDG'}</div><div><span>SSR</span>${a.sq}</div><div><span>XFL</span>${a.xfl === null ? '—' : fmtFL(a.xfl) + (a.ctl === 'ass' && Math.round(a.cfl) !== a.xfl ? ' <b style="color:var(--warn)">≠CFL</b>' : '')}</div><div><span>Exit</span>${a.ctl === 'ass' && a.tExit !== null ? fmtT(a.tExit) : a.tEntry !== null ? 'in ' + fmtT(a.tEntry) : '—'}</div>`;
+  k.innerHTML = `<div><span>FL</span>${fmtFL(a.fl)}</div><div><span>CFL</span>${fmtFL(a.cfl)}${Math.round(a.sfl) !== Math.round(a.cfl) ? ' <b style="color:var(--alert)">≠' + fmtFL(a.sfl) + '</b>' : ''}</div><div><span>IAS</span>${Math.round(machToCas(tasToMach(a.tas, a.fl * 100), a.fl * 100))}${a.spd && a.spd.mode === 'ias' ? ' ✓' : ''}</div><div><span>Mach</span>${tasToMach(a.tas, a.fl * 100).toFixed(2).slice(1)}${a.spd && a.spd.mode === 'mach' ? ' ✓' : ''}</div><div><span>TAS</span>${Math.round(a.tas)}</div><div><span>GS</span>${Math.round(a.gs)}</div><div><span>HDG</span>${String(Math.round(a.hdg) || 360).padStart(3, '0')}</div><div><span>TRK</span>${String(Math.round(a.trk) || 360).padStart(3, '0')}</div><div><span>Rate</span>${a.rate ? a.rate.fpm + (a.rate.kind === 'min' ? '+' : '−') : '—'}</div><div><span>Next</span>${w ? w.id : '—'}</div><div><span>Dist</span>${w ? Math.round(dist([a.x, a.y], w.xy)) + ' NM' : '—'}</div><div><span>Mode</span>${a.mode === 'nav' ? 'OWN NAV' : 'HDG'}</div><div><span>SSR</span>${a.sq}</div><div><span>XFL</span>${a.xfl === null ? '—' : fmtFL(a.xfl) + (a.ctl === 'ass' && Math.round(a.cfl) !== a.xfl ? ' <b style="color:var(--warn)">≠CFL</b>' : '')}</div><div><span>Exit</span>${a.ctl === 'ass' && a.tExit !== null ? fmtT(a.tExit) : a.tEntry !== null ? 'in ' + fmtT(a.tEntry) : '—'}</div>`;
 }
 
 /* ---------- instructor ---------- */
@@ -431,7 +434,7 @@ function gradeItems(d) {
     ['Requests answered', `${d.reqAnswered}/${d.reqs}`, d.reqMissed ? 'w' : ''],
     ['Avg. response', d.avgResponse === null ? '—' : d.avgResponse + ' s', d.avgResponse !== null && d.avgResponse > 60 ? 'w' : ''],
     ['Weather self-deviations', d.selfDev, d.selfDev ? 'w' : ''],
-    ['TSA infringements', d.tsaInf, d.tsaInf ? 'a' : ''],
+    ['Military area infringements', d.tsaInf, d.tsaInf ? 'a' : ''],
     ['Late assumes', d.lateAssume, d.lateAssume ? 'w' : ''],
     ['Late transfers', d.lateXfer, d.lateXfer ? 'w' : ''],
     ['Wrong exit levels', d.wrongXfl, d.wrongXfl ? 'a' : ''],
@@ -526,7 +529,7 @@ function bindInput() {
     if (pp) { pseudoPilot(pp.dataset.pp); return; }
     const f = e.target.closest('button[data-fire]');
     if (f) { sim.fireNow(+f.dataset.fire); updatePanel(true); return; }
-    const pi = e.target.closest('.pi');
+    const pi = e.target.closest('.pi, .mt');
     if (pi && pi.dataset.ac) {
       R.sel = +pi.dataset.ac; ui.acBoxFor = -1;
       const a = sim.get(R.sel); if (a) R.centreOn(a);
@@ -534,8 +537,8 @@ function bindInput() {
     }
   });
 
-  const defs = [['sectors', 'Sectors'], ['points', 'FRA E/X'], ['navaids', 'VOR'], ['airports', 'Aerodromes'], ['labels', 'All labels'], ['vec', 'Vector 2 min']];
-  $('layerChips').innerHTML = defs.map(d => `<button class="chip" data-l="${d[0]}" aria-pressed="true">${d[1]}</button>`).join('');
+  const defs = [['sectors', 'Sectors'], ['mil', 'Mil areas'], ['points', 'FRA E/X'], ['navaids', 'VOR'], ['airports', 'Aerodromes'], ['labels', 'All labels'], ['vec', 'Vector 2 min']];
+  $('layerChips').innerHTML = defs.map(d => `<button class="chip" data-l="${d[0]}" aria-pressed="${R.layers[d[0]] !== false}">${d[1]}</button>`).join('');
   $('layerChips').onclick = e => {
     const b = e.target.closest('button'); if (!b) return;
     const l = b.dataset.l, L = R.layers;

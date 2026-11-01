@@ -16,7 +16,7 @@ export class Renderer {
   constructor(canvas, sim) {
     this.cv = canvas; this.ctx = canvas.getContext('2d'); this.sim = sim;
     this.V = { cx: 0, cy: 0, sc: 1, w: 0, h: 0, dpr: 1 };
-    this.layers = { sectors: true, points: 'ex', navaids: true, airports: true, labels: true, vec: 2 };
+    this.layers = { sectors: true, mil: false, points: 'ex', navaids: true, airports: true, labels: true, vec: 2 };
     this.sel = null; this.col = {};
     // label state per aircraft id: { slot, user: [dx, dy] | null, box: [x, y, w, h] | null }
     this.lab = new Map(); this.labSig = '';
@@ -261,13 +261,20 @@ export class Renderer {
     for (const n of C.neigh) ctx.fillText(n.label, sx(n.xy), sy(n.xy));
     ctx.textAlign = 'left';
 
-    // TSA
+    // military areas (ENR 5.2): all upper ones on request, the activated one always
+    const areaPath = poly => { ctx.beginPath(); poly.forEach((p, i) => (i ? ctx.lineTo(sx(p), sy(p)) : ctx.moveTo(sx(p), sy(p)))); ctx.closePath(); };
+    if (layers.mil && C.areas) {
+      ctx.strokeStyle = 'rgba(240,178,60,0.35)'; ctx.lineWidth = 1; ctx.setLineDash([3, 4]);
+      for (const z of C.areas) if (z.upper !== null && z.upper > 195) { areaPath(z.poly); ctx.stroke(); }
+      ctx.setLineDash([]);
+    }
     for (const z of sim.tsa) {
-      ctx.beginPath(); ctx.arc(sx([z.x, z.y]), sy([z.x, z.y]), z.r * V.sc, 0, Math.PI * 2);
+      areaPath(z.poly);
       ctx.setLineDash(z.active ? [] : [6, 4]); ctx.strokeStyle = z.active ? col.alert : col.warn; ctx.lineWidth = 1.5; ctx.stroke(); ctx.setLineDash([]);
       ctx.fillStyle = z.active ? 'rgba(255,93,79,0.08)' : 'rgba(240,178,60,0.05)'; ctx.fill();
+      const top = z.poly.reduce((m, p) => (p[1] < m[1] ? p : m), z.poly[0]);
       ctx.fillStyle = z.active ? col.alert : col.warn; ctx.font = `11px ${MONO}`;
-      ctx.fillText(`${z.name} FL195+ ${z.active ? 'ACTIVE' : 'ACT ' + fmtT(z.at - sim.t)}`, sx([z.x, z.y]) - 40, sy([z.x, z.y]) - z.r * V.sc - 6);
+      ctx.fillText(`${z.id} FL${fmtFL(z.lower)}-${fmtFL(z.upper)} ${z.active ? 'ACTIVE' : 'ACT ' + fmtT(z.at - sim.t)}`, sx(top) - 40, sy(top) - 6);
     }
     // weather
     for (const c of sim.wx) {
@@ -380,9 +387,11 @@ export class Renderer {
       if (st) { ctx.fillStyle = st === 'los' ? 'rgba(255,93,79,0.18)' : 'rgba(240,178,60,0.14)'; ctx.fillRect(bx, by, LW, LH); }
       ctx.fillStyle = a.req ? col.pend : color; ctx.fillText(l1, lx, ly + 10);
       ctx.fillStyle = color; ctx.fillText(fmtFL(a.fl) + trend, lx, ly + 23);
-      ctx.fillStyle = a.bust ? col.alert : color; ctx.fillText(fmtFL(a.cfl) + (a.bust ? '≠' + fmtFL(a.sfl) : ''), lx + 34, ly + 23);
+      // Mode S selected level that differs from the cleared level (CLAM shows the same), from the radar picture
+      const sflOff = Math.round(a.sfl) !== Math.round(a.cfl);
+      ctx.fillStyle = sflOff ? col.alert : color; ctx.fillText(fmtFL(a.cfl) + (sflOff ? '≠' + fmtFL(a.sfl) : ''), lx + 34, ly + 23);
       // agreed exit level, amber while the cleared level differs from it
-      if (!a.bust && a.xfl !== null && (a.ctl === 'ass' || a.ctl === 'pend')) {
+      if (!sflOff && a.xfl !== null && (a.ctl === 'ass' || a.ctl === 'pend')) {
         ctx.fillStyle = a.ctl === 'ass' && Math.round(a.cfl) !== a.xfl ? col.warn : color;
         ctx.fillText('X' + fmtFL(a.xfl), lx + 62, ly + 23);
       }

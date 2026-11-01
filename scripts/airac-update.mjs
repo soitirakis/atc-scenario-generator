@@ -9,7 +9,7 @@
 //   npm run airac -- --country HU --date 2026-11-26  # Hungary, edition in force on a date
 //   npm run airac -- --write                       # apply coordinate/role changes and add new points
 //
-// Romania: ROMATSA eAIP PDFs (ENR 4.1, ENR 4.4), a new edition every AIRAC cycle.
+// Romania: ROMATSA eAIP PDFs (ENR 4.1, ENR 4.4, ENR 5.2), a new edition every AIRAC cycle.
 // Hungary: HungaroControl eAIP HTML (ENR 4.1, ENR 4.4.1), amended on some cycles only,
 // so the edition in force is read from the eAIP index.
 //
@@ -17,7 +17,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseEnr44, parseEnr41, parseLhEnr441, parseLhEnr41, lhEditionOn, htmlText, diffPoints, diffNavaids, airacDates } from './airac-lib.mjs';
+import { parseEnr44, parseEnr41, parseLhEnr441, parseLhEnr41, parseLrEnr52, parseLhEnr52, lhEditionOn, htmlText, diffPoints, diffNavaids, diffAreas, airacDates } from './airac-lib.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -56,10 +56,12 @@ const COUNTRIES = {
       const base = `https://aisro.ro/aip/${ed}/DOCS/AIP/ENR/ENR4`;
       await download(`${base}/LR_ENR_4_1_en.pdf`, path.join(cache, 'ENR_4_1.pdf'));
       await download(`${base}/LR_ENR_4_4_en.pdf`, path.join(cache, 'ENR_4_4.pdf'));
-      const [enr41, enr44] = await Promise.all([pdfText(path.join(cache, 'ENR_4_1.pdf')), pdfText(path.join(cache, 'ENR_4_4.pdf'))]);
-      return { points: parseEnr44(enr44), navaids: parseEnr41(enr41) };
+      await download(`https://aisro.ro/aip/${ed}/DOCS/AIP/ENR/ENR5/LR_ENR_5_2_en.pdf`, path.join(cache, 'ENR_5_2.pdf'));
+      const [enr41, enr44, enr52] = await Promise.all(['ENR_4_1', 'ENR_4_4', 'ENR_5_2'].map(n => pdfText(path.join(cache, n + '.pdf'))));
+      return { points: parseEnr44(enr44), navaids: parseEnr41(enr41), areas: parseLrEnr52(enr52) };
     },
-    min: { points: 100, navaids: 10 },
+    areasSource: ed => ({ doc: 'ENR 5.2 Military exercise and training areas', edition: ed, url: `https://aisro.ro/aip/${ed}/DOCS/AIP/ENR/ENR5/LR_ENR_5_2_en.pdf` }),
+    min: { points: 100, navaids: 10, areas: 100 },
     addRoles: ['E', 'X', 'EX'],
     updateMeta(meta, ed) {
       const old = meta.airac.edition;
@@ -88,10 +90,12 @@ const COUNTRIES = {
       const base = `https://ais-en.hungarocontrol.hu/aip/${ed}/${ed}-AIRAC/html/eAIP`;
       await download(`${base}/LH-ENR-4.1-en-HU.html`, path.join(cache, 'ENR_4_1.html'));
       await download(`${base}/LH-ENR-4.4.1-en-HU.html`, path.join(cache, 'ENR_4_4_1.html'));
+      await download(`${base}/LH-ENR-5.2-en-HU.html`, path.join(cache, 'ENR_5_2.html'));
       const txt = f => htmlText(fs.readFileSync(path.join(cache, f), 'utf8'));
-      return { points: parseLhEnr441(txt('ENR_4_4_1.html')), navaids: parseLhEnr41(txt('ENR_4_1.html')) };
+      return { points: parseLhEnr441(txt('ENR_4_4_1.html')), navaids: parseLhEnr41(txt('ENR_4_1.html')), areas: parseLhEnr52(txt('ENR_5_2.html')) };
     },
-    min: { points: 100, navaids: 5 },
+    areasSource: ed => ({ doc: 'ENR 5.2 Military exercise and training areas', edition: ed, url: `https://ais-en.hungarocontrol.hu/aip/${ed}/${ed}-AIRAC/html/eAIP/LH-ENR-5.2-en-HU.html` }),
+    min: { points: 100, navaids: 5, areas: 20 },
     // data/HU keeps every point with an FRA role, so any new one is added
     addRoles: ['E', 'X', 'EX', 'L', 'I'],
     updateMeta(meta, ed) {
@@ -117,17 +121,17 @@ function print(title, d) {
   for (const a of d.added) console.log('  +', a.id, a.pos, a.role || '');
 }
 
-let ed, parsedPts, parsedNav;
+let ed, parsedPts, parsedNav, parsedAreas;
 try {
   ed = await K.edition();
-  ({ points: parsedPts, navaids: parsedNav } = await K.fetch(ed.edition, K.cache(ed.edition)));
+  ({ points: parsedPts, navaids: parsedNav, areas: parsedAreas } = await K.fetch(ed.edition, K.cache(ed.edition)));
 } catch (e) {
   console.error(e.message);
   process.exit(1);
 }
 const meta0 = readJSON('meta.json');
-console.log(`${code} eAIP edition ${ed.edition}${ed.amdt ? ` (AIRAC AMDT ${ed.amdt})` : ''}: parsed ${parsedPts.length} significant points, ${parsedNav.length} VOR stations. data/${code} is on ${meta0.airac.edition}.`);
-if (parsedPts.length < K.min.points || parsedNav.length < K.min.navaids) {
+console.log(`${code} eAIP edition ${ed.edition}${ed.amdt ? ` (AIRAC AMDT ${ed.amdt})` : ''}: parsed ${parsedPts.length} significant points, ${parsedNav.length} VOR stations, ${parsedAreas.length} military areas. data/${code} is on ${meta0.airac.edition}.`);
+if (parsedPts.length < K.min.points || parsedNav.length < K.min.navaids || parsedAreas.length < K.min.areas) {
   console.error('Parsed far fewer items than expected. The page layout may have changed; check scripts/airac-lib.mjs.');
   process.exit(2);
 }
@@ -136,6 +140,10 @@ const points = readJSON('points.json'), navaids = readJSON('navaids.json'), traf
 const dp = diffPoints(points, parsedPts, K.addRoles), dn = diffNavaids(navaids, parsedNav);
 print('Significant points', dp);
 print('VOR/DME', dn);
+const areasFile = path.join(dataDir, 'areas.json');
+const storedAreas = fs.existsSync(areasFile) ? readJSON('areas.json').areas : [];
+const da = diffAreas(storedAreas, parsedAreas);
+print('Military areas (ENR 5.2)', da);
 
 const referenced = new Set([...Object.values(traffic.gates).flatMap(g => g.pts), ...(traffic.mainAirports || []).flatMap(m => [...Object.values(m.arr), ...Object.values(m.dep)])]);
 const blocked = dp.removed.filter(r => referenced.has(r.id));
@@ -143,7 +151,7 @@ if (blocked.length) console.log(`\n! Removed points still used by traffic.json: 
 const lostRole = dp.changed.filter(c => c.role && c.role[1] === null);
 if (lostRole.length) console.log(`\n! No longer FRA relevant in the AIP: ${lostRole.map(c => c.id).join(', ')}. --write keeps their old role; drop them or reassign them in traffic.json by hand.`);
 
-const changes = dp.changed.length + dp.removed.length + dp.added.length + dn.changed.length + dn.removed.length + dn.added.length;
+const changes = [dp, dn, da].reduce((n, d) => n + d.changed.length + d.removed.length + d.added.length, 0);
 if (write) {
   const byId = new Map(parsedPts.map(p => [p.id, p]));
   const keep = points
@@ -153,10 +161,15 @@ if (write) {
   writeJSON('points.json', keep);
   const navById = new Map(parsedNav.map(n => [n.id, n]));
   writeJSON('navaids.json', navaids.map(n => { const p = navById.get(n.id); return p ? { ...n, pos: p.pos, freq: p.freq } : n; }));
+  writeJSON('areas.json', {
+    _note: 'Military areas from eAIP ENR 5.2, written by scripts/airac-update.mjs. Lateral limits and vertical limits as published (AIP notation). lateral: vertices without the closing one; circle: centre and radius. A limit of null means the AIP issues it by NOTAM. Where the AIP prints a limit as "L280", upperRead/lowerRead give the flight level it is read as, and note says so. "along border" segments follow data/<CODE>/borders.json, which is approximated.',
+    _source: K.areasSource(ed.edition),
+    areas: parsedAreas
+  });
   const meta = readJSON('meta.json');
   K.updateMeta(meta, ed);
   writeJSON('meta.json', meta);
-  console.log(`\nWrote data/${code}/points.json, navaids.json and meta.json. Run \`npm test\` before committing.`);
+  console.log(`\nWrote data/${code}/points.json, navaids.json, areas.json and meta.json. Run \`npm test\` before committing.`);
 } else if (changes) {
   console.log('\nRe-run with --write to apply.');
 } else console.log(`\nNo changes. Data is current for this edition${meta0.airac.edition !== ed.edition ? ` (--write would only move meta.json from ${meta0.airac.edition} to ${ed.edition})` : ''}.`);

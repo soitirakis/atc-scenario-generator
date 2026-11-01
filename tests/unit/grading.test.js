@@ -3,6 +3,7 @@ import RO from '../../data/RO/index.js';
 import { loadCountry } from '../../src/country.js';
 import { Sim, GRADING } from '../../src/sim.js';
 import { buildLocalScenario } from '../../src/scenario.js';
+import { pip } from '../../src/geo.js';
 
 const C = loadCountry(RO);
 const cfg = { sector: 'ARG', difficulty: 'intermediate', duration: 30, seed: 4127, objective: 'General radar handling.' };
@@ -27,6 +28,21 @@ const intruder = (sim, a, nm, ft = 0) => {
   const b = sim.initKinematics(sim.makeAircraft({ cs: 'INT1', type: 'A320', x: a.x + nm, y: a.y, fl: a.fl + ft / 100, cfl: a.fl + ft / 100, sfl: a.fl + ft / 100, route: [{ id: 'FAR', xy: [a.x + nm, a.y - 2000] }], entry: 'X', exit: 'Y' }));
   sim.ac.push(b);
   return b;
+};
+/** The point deepest inside an area polygon (farthest from its edges), on a 1 NM grid. */
+const insideOf = z => {
+  const xs = z.poly.map(p => p[0]), ys = z.poly.map(p => p[1]);
+  const edge = ([x, y]) => Math.min(...z.poly.map((p, i) => {
+    const q = z.poly[(i + 1) % z.poly.length], dx = q[0] - p[0], dy = q[1] - p[1], L2 = dx * dx + dy * dy;
+    const t = L2 ? Math.max(0, Math.min(1, ((x - p[0]) * dx + (y - p[1]) * dy) / L2)) : 0;
+    return Math.hypot(x - p[0] - t * dx, y - p[1] - t * dy);
+  }));
+  let best = null, depth = 0;
+  for (let y = Math.min(...ys); y < Math.max(...ys); y++) for (let x = Math.min(...xs); x < Math.max(...xs); x++) {
+    if (pip([x, y], z.poly) && edge([x, y]) > depth) { depth = edge([x, y]); best = { x, y }; }
+  }
+  if (depth < 5) throw new Error(`${z.id}: no point 5 NM inside`);
+  return best;
 };
 /** Step until the inject has a final result (or `max` seconds pass). */
 const settle = (sim, inj, max = 1200) => { for (let i = 0; i < max && inj.result.state === 'pending'; i++) sim.step(); return inj.result; };
@@ -122,29 +138,47 @@ describe('inject grading', () => {
     expect(r.reason).toMatch(/deviat|not answered/);
   });
 
-  it('MILITARY_TSA met: no aircraft inside at FL195+ for 10 min after activation', () => {
+  it('MILITARY_TSA activates a real ENR 5.2 area reaching cruise levels over the sector', () => {
+    const { sim, inj } = fired('MILITARY_TSA');
+    const z = inj.g.zone;
+    expect(sim.C.areas.map(a => a.id)).toContain(z.id);
+    expect(inj.target).toBe(z.id);
+    expect(z.upper).toBeGreaterThan(245);
+    expect(z.lower).toBeLessThan(410);
+    expect(z.at - sim.t).toBe(300 - 1); // active five minutes after the inject fired
+  });
+  it('MILITARY_TSA met: none of your aircraft inside for 10 min after activation', () => {
     const { sim, inj } = fired('MILITARY_TSA');
     only(sim);
     const r = settle(sim, inj);
     expect(r.state).toBe('met');
     expect(r.t).toBe(GRADING.MILITARY_TSA.windowS);
   });
-  it('MILITARY_TSA not met: an aircraft inside the active area at FL195+', () => {
+  it('MILITARY_TSA not met: one of your aircraft inside the active area within its limits', () => {
     const { sim, inj } = fired('MILITARY_TSA');
     only(sim);
-    const z = inj.g.zone;
+    const z = inj.g.zone, fl = Math.min(z.upper, 410) - 10;
     run(sim, z.at - sim.t);
-    intruder(sim, { x: z.x - 2, y: z.y, fl: 300 }, 2);
-    const r = settle(sim, inj, 5);
+    intruder(sim, { ...insideOf(z), fl }, 0).ctl = 'ass';
+    const r = settle(sim, inj, 3);
     expect(r.state).toBe('not met');
-    expect(r.reason).toMatch(/INT1 inside at FL300/);
+    expect(r.reason).toMatch(new RegExp(`INT1 inside ${z.id} at FL${fl}`));
   });
-  it('MILITARY_TSA: an aircraft below FL195 does not count', () => {
+  it('MILITARY_TSA: an aircraft outside the vertical limits does not count', () => {
     const { sim, inj } = fired('MILITARY_TSA');
     only(sim);
     const z = inj.g.zone;
     run(sim, z.at - sim.t);
-    intruder(sim, { x: z.x, y: z.y, fl: 150 }, 0);
+    intruder(sim, { ...insideOf(z), fl: z.lower - 20 }, 0).ctl = 'ass';
+    run(sim, 5);
+    expect(inj.result.state).toBe('pending');
+  });
+  it('MILITARY_TSA: an aircraft that is not yours (not assumed or pending) does not count', () => {
+    const { sim, inj } = fired('MILITARY_TSA');
+    only(sim);
+    const z = inj.g.zone;
+    run(sim, z.at - sim.t);
+    intruder(sim, { ...insideOf(z), fl: Math.min(z.upper, 410) - 10 }, 0).ctl = 'none';
     run(sim, 5);
     expect(inj.result.state).toBe('pending');
   });

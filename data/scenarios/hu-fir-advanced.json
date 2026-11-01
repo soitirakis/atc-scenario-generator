@@ -64,7 +64,7 @@
       "min": 21,
       "type": "MILITARY_TSA",
       "text": "A TSA becomes active in five minutes, FL195 and above.",
-      "objective": "No aircraft inside the active area at FL195+ (10 min after activation)"
+      "objective": "None of your aircraft inside the active military area within its vertical limits (10 min after activation)"
     },
     {
       "min": 27,

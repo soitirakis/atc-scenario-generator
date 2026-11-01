@@ -1,0 +1,635 @@
+{
+  "_note": "Military areas from eAIP ENR 5.2, written by scripts/airac-update.mjs. Lateral limits and vertical limits as published (AIP notation). lateral: vertices without the closing one; circle: centre and radius. A limit of null means the AIP issues it by NOTAM. Where the AIP prints a limit as \"L280\", upperRead/lowerRead give the flight level it is read as, and note says so. \"along border\" segments follow data/<CODE>/borders.json, which is approximated.",
+  "_source": {
+    "doc": "ENR 5.2 Military exercise and training areas",
+    "edition": "2026-09-03",
+    "url": "https://ais-en.hungarocontrol.hu/aip/2026-09-03/2026-09-03-AIRAC/html/eAIP/LH-ENR-5.2-en-HU.html"
+  },
+  "areas": [
+    {
+      "id": "LHTRA11A",
+      "name": "PAPA ALPHA",
+      "type": "TRA",
+      "lateral": [
+        "472959N 0175015E",
+        "472959N 0181529E",
+        "471331N 0181507E",
+        "471259N 0175900E"
+      ],
+      "upper": "FL 125",
+      "lower": "GND",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA11B",
+      "name": "PAPA BRAVO",
+      "type": "TRA",
+      "lateral": [
+        "471259N 0175900E",
+        "471331N 0181507E",
+        "470212N 0181457E",
+        "465529N 0175135E",
+        "470646N 0174335E"
+      ],
+      "upper": "9500 FT ALT",
+      "lower": "4000 FT ALT",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA11C",
+      "name": "PAPA CHARLIE",
+      "type": "TRA",
+      "lateral": [
+        "471259N 0175900E",
+        "471331N 0181507E",
+        "470212N 0181457E",
+        "465529N 0175135E",
+        "470646N 0174335E"
+      ],
+      "upper": "4000 FT ALT",
+      "lower": "GND",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA13",
+      "name": "TISZA",
+      "type": "TRA",
+      "lateral": [
+        "472212N 0200910E",
+        "472038N 0201743E",
+        "471829N 0202929E",
+        "471045N 0202532E",
+        "470008N 0202008E",
+        "465401N 0201703E",
+        "465559N 0200729E",
+        "470241N 0200428E",
+        "471203N 0195953E"
+      ],
+      "upper": "FL 145",
+      "lower": "9500 FT ALT",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA14A",
+      "name": "MEZO ALPHA",
+      "type": "TRA",
+      "lateral": [
+        "471829N 0202929E",
+        "471245N 0204529E",
+        "470610N 0204314E",
+        "471045N 0202532E"
+      ],
+      "upper": "2000 FT ALT",
+      "lower": "GND",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA14B",
+      "name": "MEZO BRAVO",
+      "type": "TRA",
+      "lateral": [
+        "471045N 0202532E",
+        "470610N 0204314E",
+        "465613N 0203951E",
+        "470008N 0202008E"
+      ],
+      "upper": "2000 FT ALT",
+      "lower": "GND",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA14C",
+      "name": "MEZO CHARLIE",
+      "type": "TRA",
+      "lateral": [
+        "470008N 0202008E",
+        "465613N 0203951E",
+        "464943N 0203740E",
+        "465401N 0201703E"
+      ],
+      "upper": "2000 FT ALT",
+      "lower": "GND",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA16",
+      "name": "ARPAD",
+      "type": "TRA",
+      "lateral": [
+        "464943N 0203740E",
+        "464505N 0205357E",
+        "462940N 0204358E",
+        "463203N 0202335E"
+      ],
+      "upper": "FL 115",
+      "lower": "GND",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA21A",
+      "name": "WEST ALPHA",
+      "type": "TRA",
+      "lateral": [
+        "465105N 0162126E",
+        "463352N 0180006E",
+        "460854N 0180425E",
+        "460445N 0172645E",
+        "462256N 0170114E",
+        "462930N 0163702E",
+        "464101N 0162522E"
+      ],
+      "upper": "FL 245",
+      "lower": "9500 FT ALT",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA21B",
+      "name": "WEST BRAVO",
+      "type": "TRA",
+      "lateral": [
+        "465105N 0162126E",
+        "464502N 0175809E",
+        "463352N 0180006E"
+      ],
+      "upper": "FL 215",
+      "lower": "FL 135",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA21C",
+      "name": "WEST CHARLIE",
+      "type": "TRA",
+      "lateral": [
+        "464502N 0175809E",
+        "463726N 0181335E",
+        "455737N 0182351E",
+        "455529N 0175254E",
+        "460445N 0172645E",
+        "460854N 0180425E"
+      ],
+      "upper": "FL 175",
+      "lower": "FL 135",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA21D",
+      "name": "WEST DELTA",
+      "type": "TRA",
+      "lateral": [
+        "462658N 0172525E",
+        "461447N 0175841E",
+        "455529N 0175254E",
+        "460445N 0172645E",
+        "462256N 0170114E"
+      ],
+      "upper": "9500 FT ALT",
+      "lower": "4000 FT ALT",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA21E",
+      "name": "WEST ECHO",
+      "type": "TRA",
+      "lateral": [
+        "462658N 0172525E",
+        "461447N 0175841E",
+        "455529N 0175254E",
+        "460445N 0172645E",
+        "462256N 0170114E"
+      ],
+      "upper": "4000 FT ALT",
+      "lower": "GND",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA22A",
+      "name": "SOUTH ALPHA",
+      "type": "TRA",
+      "lateral": [
+        "470342N 0192349E",
+        "470241N 0200428E",
+        "465559N 0200729E",
+        "464943N 0203740E",
+        "463203N 0202335E",
+        "463728N 0194717E"
+      ],
+      "upper": "FL 175",
+      "lower": "FL 125",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA22B",
+      "name": "SOUTH BRAVO",
+      "type": "TRA",
+      "lateral": [
+        "464943N 0203740E",
+        "463943N 0211234E",
+        "462319N 0210540E",
+        "462140N 0205519E",
+        "462648N 0195641E",
+        "463728N 0194717E",
+        "463203N 0202335E"
+      ],
+      "upper": "FL 175",
+      "lower": "9500 FT ALT",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA22C",
+      "name": "SOUTH CHARLIE",
+      "type": "TRA",
+      "lateral": [
+        "470342N 0192349E",
+        "470241N 0200428E",
+        "465559N 0200729E",
+        "464943N 0203740E",
+        "463943N 0211234E",
+        "462319N 0210540E",
+        "462140N 0205519E",
+        "462648N 0195641E"
+      ],
+      "upper": "FL 245",
+      "lower": "FL 175",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA22D",
+      "name": "SOUTH DELTA",
+      "type": "TRA",
+      "lateral": [
+        "465945N 0190242E",
+        "462143N 0193952E",
+        "461429N 0190859E",
+        "463056N 0184947E",
+        "463337N 0185631E",
+        "463909N 0185202E",
+        "463600N 0184405E",
+        "464851N 0182835E"
+      ],
+      "upper": "FL 145",
+      "lower": "9500 FT ALT",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA22E",
+      "name": "SOUTH ECHO",
+      "type": "TRA",
+      "lateral": [
+        "463957N 0192213E",
+        "463959N 0192954E",
+        "463728N 0194717E",
+        "462648N 0195641E",
+        "462143N 0193952E"
+      ],
+      "upper": "FL 125",
+      "lower": "9500 FT ALT",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA22F",
+      "name": "SOUTH FOXTROT",
+      "type": "TRA",
+      "lateral": [
+        "465046N 0191134E",
+        "462143N 0193952E",
+        "461512N 0191156E",
+        "464352N 0184811E"
+      ],
+      "upper": "9500 FT ALT",
+      "lower": "4000 FT ALT",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA23A",
+      "name": "EAST ALPHA",
+      "type": "TRA",
+      "lateral": [
+        "481115N 0202525E",
+        "474559N 0213339E",
+        "472201N 0214313E",
+        "471210N 0213301E",
+        "470506N 0212808E",
+        "472943N 0201605E",
+        "475800N 0195615E"
+      ],
+      "upper": "FL 245",
+      "lower": "9500 FT ALT",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA23B",
+      "name": "EAST BRAVO",
+      "type": "TRA",
+      "lateral": [
+        "472201N 0214313E",
+        "471125N 0214729E",
+        "470219N 0213649E",
+        "465152N 0213027E",
+        "471548N 0203054E",
+        "472943N 0201605E",
+        "470506N 0212808E",
+        "471210N 0213301E"
+      ],
+      "upper": "FL 175",
+      "lower": "FL 135",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA23C",
+      "name": "EAST CHARLIE",
+      "type": "TRA",
+      "lateral": [
+        "475800N 0195615E",
+        "480710N 0195452E",
+        "481757N 0202718E",
+        "475845N 0212810E",
+        "474559N 0213339E",
+        "481115N 0202525E"
+      ],
+      "upper": "FL 175",
+      "lower": "FL 135",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA23D",
+      "name": "EAST DELTA",
+      "type": "TRA",
+      "lateral": [
+        "481115N 0202525E",
+        "475018N 0212203E",
+        "472252N 0210213E",
+        "474125N 0200756E",
+        "475800N 0195615E"
+      ],
+      "upper": "9500 FT ALT",
+      "lower": "4000 FT ALT",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA23E",
+      "name": "EAST ECHO",
+      "type": "TRA",
+      "lateral": [
+        "481115N 0202525E",
+        "475018N 0212203E",
+        "472252N 0210213E",
+        "474125N 0200756E",
+        "475800N 0195615E"
+      ],
+      "upper": "4000 FT ALT",
+      "lower": "GND",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA31A",
+      "name": "UPPER WEST ALPHA",
+      "type": "TRA",
+      "lateral": [
+        "463352N 0180006E",
+        "462829N 0184129E",
+        "461000N 0190529E",
+        "460259N 0184005E",
+        "455737N 0182351E",
+        "455529N 0175254E",
+        "460445N 0172645E"
+      ],
+      "upper": "FL 285",
+      "lower": "FL 245",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA31B",
+      "name": "UPPER WEST BRAVO",
+      "type": "TRA",
+      "lateral": [
+        "464210N 0164659E",
+        "463352N 0180006E",
+        "460445N 0172645E",
+        "463605N 0164210E"
+      ],
+      "upper": "FL 285",
+      "lower": "FL 245",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA41",
+      "name": "WEST ALPHA CORRIDOR",
+      "type": "TRA",
+      "lateral": [
+        "463500N 0174800E",
+        "470000N 0192100E",
+        "465400N 0192700E",
+        "463000N 0175700E"
+      ],
+      "upper": "FL 135",
+      "lower": "9500 FT ALT",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA43L",
+      "name": "EAST ALPHA CORRIDOR LOW",
+      "type": "TRA",
+      "lateral": [
+        "470004N 0195835E",
+        "473013N 0202152E",
+        "472717N 0203100E",
+        "465600N 0200722E"
+      ],
+      "upper": "FL 125",
+      "lower": "9500 FT ALT",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA43H",
+      "name": "EAST ALPHA CORRIDOR HIGH",
+      "type": "TRA",
+      "lateral": [
+        "470004N 0195835E",
+        "473013N 0202152E",
+        "472717N 0203100E",
+        "465600N 0200722E"
+      ],
+      "upper": "FL 195",
+      "lower": "FL 125",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA51A",
+      "name": "KENYERI ALPHA",
+      "type": "TRA",
+      "lateral": [
+        "473119N 0171041E",
+        "473122N 0170231E",
+        "472920N 0165550E",
+        "470633N 0171051E",
+        "471036N 0172413E"
+      ],
+      "upper": "9500 FT ALT",
+      "lower": "GND",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA51B",
+      "name": "KENYERI BRAVO",
+      "type": "TRA",
+      "lateral": [
+        "473119N 0171041E",
+        "473122N 0170231E",
+        "472920N 0165550E",
+        "470633N 0171051E",
+        "471036N 0172413E"
+      ],
+      "upper": "FL 245",
+      "lower": "9500 FT ALT",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA53L",
+      "name": "BVR LOW",
+      "type": "TRA",
+      "lateral": [
+        "473510N 0193750E",
+        "474311N 0193446E",
+        "475138N 0194226E",
+        "480747N 0195536E",
+        "along border HUNGARY_SLOVAKREPUBLIC",
+        "481235N 0200619E",
+        "481115N 0202525E",
+        "474559N 0213339E",
+        "473630N 0215230E",
+        "472226N 0215659E",
+        "along border HUNGARY_ROMANIA",
+        "465441N 0213704E",
+        "465250N 0211310E",
+        "471923N 0201357E"
+      ],
+      "upper": "FL 385",
+      "lower": "FL 245",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA53H",
+      "name": "BVR HIGH",
+      "type": "TRA",
+      "lateral": [
+        "473510N 0193750E",
+        "474311N 0193446E",
+        "475138N 0194226E",
+        "480747N 0195536E",
+        "along border HUNGARY_SLOVAKREPUBLIC",
+        "481235N 0200619E",
+        "481115N 0202525E",
+        "474559N 0213339E",
+        "473630N 0215230E",
+        "472226N 0215659E",
+        "along border HUNGARY_ROMANIA",
+        "465441N 0213704E",
+        "465250N 0211310E",
+        "471923N 0201357E"
+      ],
+      "upper": "FL 525",
+      "lower": "FL 385",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA53EL",
+      "name": "BVR EAST LOW",
+      "type": "TRA",
+      "lateral": [
+        "470506N 0212808E",
+        "471210N 0213301E",
+        "472201N 0214313E",
+        "474559N 0213339E",
+        "473630N 0215230E",
+        "472226N 0215659E",
+        "along border HUNGARY_ROMANIA",
+        "465441N 0213704E",
+        "465250N 0211310E"
+      ],
+      "upper": "FL 195",
+      "lower": "9500 FT ALT",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA53EH",
+      "name": "BVR EAST HIGH",
+      "type": "TRA",
+      "lateral": [
+        "470506N 0212808E",
+        "471210N 0213301E",
+        "472201N 0214313E",
+        "474559N 0213339E",
+        "473630N 0215230E",
+        "472226N 0215659E",
+        "along border HUNGARY_ROMANIA",
+        "465441N 0213704E",
+        "465250N 0211310E"
+      ],
+      "upper": "FL 245",
+      "lower": "FL 195",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA53SL",
+      "name": "BVR SOUTH LOW",
+      "type": "TRA",
+      "lateral": [
+        "472943N 0201605E",
+        "470506N 0212808E",
+        "465250N 0211310E",
+        "471537N 0202220E",
+        "471923N 0201357E"
+      ],
+      "upper": "FL 195",
+      "lower": "9500 FT ALT",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA53SH",
+      "name": "BVR SOUTH HIGH",
+      "type": "TRA",
+      "lateral": [
+        "472943N 0201605E",
+        "470506N 0212808E",
+        "465250N 0211310E",
+        "471537N 0202220E",
+        "471923N 0201357E"
+      ],
+      "upper": "FL 245",
+      "lower": "FL 195",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA53W",
+      "name": "BVR WEST",
+      "type": "TRA",
+      "lateral": [
+        "475138N 0194226E",
+        "472943N 0201605E",
+        "471923N 0201357E",
+        "473510N 0193750E",
+        "474311N 0193446E"
+      ],
+      "upper": "FL 245",
+      "lower": "FL 195",
+      "activation": "HX"
+    },
+    {
+      "id": "LHTRA53N",
+      "name": "BVR NORTH",
+      "type": "TRA",
+      "lateral": [
+        "475138N 0194226E",
+        "480747N 0195536E",
+        "along border HUNGARY_SLOVAKREPUBLIC",
+        "481235N 0200619E",
+        "481115N 0202525E",
+        "475800N 0195615E",
+        "472943N 0201605E"
+      ],
+      "upper": "FL 245",
+      "lower": "FL 195",
+      "activation": "HX"
+    }
+  ]
+}

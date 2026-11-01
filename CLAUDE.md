@@ -16,6 +16,7 @@ En-route ATC radar training simulator. Vanilla JS (ES modules) built with Vite i
 - `src/sim.js` must stay DOM-free. All simulation state lives on the `Sim` instance; the UI only reads it and calls command methods (`clearLevel`, `turn`, `direct`, `speed`, `answer`, `ackEmergency`, `fireNow`), which return `{ ok, msg }`.
 - Time advances only through `Sim.step()` (1 simulated second). Never use `Math.random()` inside the sim; use `this.rng` so seeds stay reproducible. The reproducibility test in `tests/unit/sim.test.js` guards this.
 - `src/render.js` never mutates simulation state.
+- Safety nets and monitoring aids (STCA aside) live in `src/nets/` as pure modules: they take plain state or trajectories (`Sim.trajectory`) and return alerts, with their settings exported as a config object and their own unit tests. `Sim.netsScan` runs them; priorities read `sim.nets`. Level busts are detected by CLAM, not by the inject's `a.bust` flag.
 - Geometry is in a flat NM plane: x east, y **south** (screen-like). Bearings: 0 = north = negative y. Use helpers in `geo.js`.
 - Sector routine: each aircraft has a control state `ctl` (`none`, `pend`, `ass`, `xfer`) and an agreed exit level `xfl`. Only `pend`/`ass` aircraft take clearances (`_cmd` refuses the rest); `assume` and `transfer` change the state and count late assumes, late transfers and wrong exit levels in `stats`. Entry, exit and hand-off times come from `lookAhead`, which follows the route; a boundary crossing only counts if the flight stays on the other side for `ROUTINE.crossS`.
 - New inject types: add to `TYPES` in `sim.js`, implement in `fireInject`, add text in `scenario.js` `INJECT_TEXT`, and add a unit test. The Claude prompt lists `TYPES` automatically.
@@ -37,6 +38,7 @@ En-route ATC radar training simulator. Vanilla JS (ES modules) built with Vite i
 - Anything not from an official source (border approximations, flows, TSA geometry) must be labelled as such in the file's `_note` and in the README.
 - Point roles: `E`, `X`, `EX`, `L` (entry/exit only up to FL175), `I`. The rule is implemented in `scripts/airac-lib.mjs` `classifyRole`; data must agree with it.
 - Do not delete points still referenced by `traffic.json`.
+- `areas.json` (ENR 5.2) is written only by `npm run airac -- --write`; do not hand-edit it. Limits stay as published; a misprint is kept and read through `upperRead`/`lowerRead` with a `note`. The MILITARY_TSA inject picks from these areas (`Sim.pickArea`).
 
 ## Style
 - Plain modern JS, 2-space indent, single quotes, no semicolon-free style changes.
