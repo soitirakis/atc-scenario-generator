@@ -146,8 +146,29 @@ export function airacDates(from, count = 3, ref = Date.UTC(2026, 9, 1)) {
 
 /* ---------- ENR 5.2 military areas ---------- */
 const COORD = /\d{6}[NS] \d{7}[EW]/g;
-// a vertical limit as published: FL200, FL 125, 4500 FT AMSL, 9500 FT ALT, 1017 FT MSL, GND, UNL
-const LIMIT = /\b(?:F?L ?\d{2,3}|\d{3,5} FT (?:AMSL|MSL|ALT|AGL)|GND|UNL)\b/g; // F?: a few entries print "L280"
+// A vertical limit in a format we read: FL200, FL 125, 4500 FT AMSL, 9500 FT ALT, 1017 FT MSL, GND, UNL.
+// Anything else makes the parse fail, so a new format is looked at instead of read wrongly.
+const LIMIT_FORMAT = /^(?:FL ?\d{2,3}|\d{3,5} FT (?:AMSL|MSL|ALT|AGL)|GND|UNL)$/;
+const LIMIT_TOKEN = '(?:FL ?\\d{2,3}|\\d{3,5} FT (?:AMSL|MSL|ALT|AGL)|GND|UNL)';
+
+/**
+ * Misprinted limits we accept, and how we read them. Keyed "<area> <upper|lower> <as printed>".
+ * eAIP Romania ENR 5.2, AIRAC AIP AMDT 04/25 (17 APR 2025), checked on the rendered pages: the "F" of
+ * "FL" is missing in the PDF itself, not lost in text extraction.
+ */
+export const KNOWN_LIMIT_TYPOS = {
+  'LRTRA27L upper L200': 'FL200', // page ENR 5.2-5
+  'LRTRA41 lower L280': 'FL280', // page ENR 5.2-9
+  'LRTRA113B lower L280': 'FL280' // page ENR 5.2-24
+};
+
+/** Check one published limit: { value } if we read it, { value, read } for a known typo; throws otherwise. */
+export function checkLimit(id, which, value) {
+  if (LIMIT_FORMAT.test(value)) return { value };
+  const typo = KNOWN_LIMIT_TYPOS[`${id} ${which} ${value}`];
+  if (typo) return { value, read: typo };
+  throw new Error(`ENR 5.2: unrecognised ${which} limit "${value}" for ${id}. Add the format to scripts/airac-lib.mjs, or to KNOWN_LIMIT_TYPOS if the AIP misprints it.`);
+}
 
 /** "FL 125" -> 125, "9500 FT ALT" -> 95, "GND" -> 0, "UNL" -> 999; null when not a limit. */
 export function limitToFL(s) {
@@ -172,9 +193,9 @@ export function parseLrEnr52(text) {
   lines.forEach((l, i) => { if (head.test(l.trim())) starts.push(i); });
   return starts.map((s, k) => {
     const [, id, name] = head.exec(lines[s].trim());
-    const block = lines.slice(s + 1, k + 1 < starts.length ? starts[k + 1] : lines.length)
-      .filter(l => !/^=== page|^A ?IP\b|^ROMANIA\b|^ENR 5\.2-\d+|^\d{2} [A-Z]{3} \d{4}|^ROMATSA\b|^(TEMPORARY|AIR DEFENCE)/.test(l.trim()))
-      .join(' ').replace(/\s+/g, ' ');
+    const own = lines.slice(s + 1, k + 1 < starts.length ? starts[k + 1] : lines.length).map(l => l.trim())
+      .filter(l => l && !/^=== page|^A ?IP\b|^ROMANIA\b|^ENR 5\.2-\d+|^\d{2} [A-Z]{3} \d{4}|^ROMATSA\b|^A ?IRAC AIP AMDT|^1 +2 +3$|^(TEMPORARY|AIR DEFENCE)/.test(l));
+    const block = own.join(' ').replace(/\s+/g, ' ');
     const coords = block.match(COORD) || [];
     const area = { id, name: name || null, type: id.slice(2, 5) };
     const circle = /Circle of ([\d.]+) NM radius centred on point of coordinates: (\d{6}[NS] \d{7}[EW])/.exec(block);
@@ -185,11 +206,18 @@ export function parseLrEnr52(text) {
       area.lateral = coords[0] === coords[coords.length - 1] ? coords.slice(0, -1) : coords;
       rest = block.slice(last + coords[coords.length - 1].length);
     }
-    const notam = /^\s*Vertical limits are issued by NOTAM/.test(rest);
-    const lim = notam ? [] : (rest.match(LIMIT) || []).slice(0, 2);
-    area.upper = lim[0] || null; area.lower = lim[1] || null;
-    // The AIP prints a few limits as "L200" / "L280": kept as published, read as a flight level.
-    for (const k of ['upper', 'lower']) if (/^L\d{3}$/.test(area[k] || '')) { area[k + 'Read'] = 'F' + area[k]; area.note = `AIP prints "${area[k]}"; read as F${area[k]}.`; }
+    // the upper and lower limits are the two lines after the last line of the lateral limits
+    let lastGeo = -1;
+    own.forEach((l, i) => { if (COORD.test(l)) lastGeo = i; COORD.lastIndex = 0; });
+    const after = own.slice(lastGeo + 1);
+    if (/^Vertical limits are issued/.test(after[0] || '')) { area.upper = null; area.lower = null; }
+    // some lower-airspace TSAs print no vertical limits at all: the next line is already "Active: ..."
+    else if (/^Active:/.test(after[0] || '')) { area.upper = null; area.lower = null; area.note = 'No vertical limits published.'; }
+    else for (const [i, which] of [[0, 'upper'], [1, 'lower']]) {
+      const c = checkLimit(id, which, (after[i] || '').replace(/\s+/g, ' '));
+      area[which] = c.value;
+      if (c.read) { area[which + 'Read'] = c.read; area.note = `AIP prints "${c.value}"; read as ${c.read}.`; }
+    }
     const act = /Active: (by [A-Z]+)/.exec(rest);
     area.activation = act ? act[1] : null;
     return area;
@@ -198,17 +226,25 @@ export function parseLrEnr52(text) {
 
 /**
  * Parse HungaroControl ENR 5.2 (HTML text) the same way. Lateral limits may include
- * "along border HUNGARY_ROMANIA"-style segments, kept as written.
+ * "along border HUNGARY_ROMANIA"-style segments, kept as written. Names have no digits, so one
+ * area's match cannot run on into the next.
  */
 export function parseLhEnr52(text) {
   const t = text.replace(/\s+/g, ' ');
-  const re = /\b(LH(?:TRA|TSA)[0-9A-Z]+) \/ (.+?) (\d{6}[NS] \d{7}[EW](?:(?: - | )(?:\d{6}[NS] \d{7}[EW]|along border [A-Z_]+))+) ((?:FL ?\d{2,3}|\d{3,5} FT (?:AMSL|MSL|ALT|AGL)|GND|UNL)) \/ ((?:FL ?\d{2,3}|\d{3,5} FT (?:AMSL|MSL|ALT|AGL)|GND|UNL)) (\S+)/g;
+  const re = new RegExp(`\\b(LH(?:TRA|TSA)[0-9A-Z]+) \\/ ([^\\d/]+?) (\\d{6}[NS] \\d{7}[EW](?:(?: - | )(?:\\d{6}[NS] \\d{7}[EW]|along border [A-Z_]+))+) (${LIMIT_TOKEN}) \\/ (${LIMIT_TOKEN}) (\\S+)`, 'g');
   const out = [];
   let m;
   while ((m = re.exec(t))) {
     const lateral = m[3].match(/\d{6}[NS] \d{7}[EW]|along border [A-Z_]+/g);
     if (lateral[0] === lateral[lateral.length - 1]) lateral.pop();
     out.push({ id: m[1], name: m[2], type: m[1].slice(2, 5), lateral, upper: m[4], lower: m[5], activation: m[6] });
+  }
+  // an area whose limits are in a format we do not read would not match above: fail instead of dropping it
+  const listed = [...new Set([...t.matchAll(/\b(LH(?:TRA|TSA)[0-9A-Z]+) \//g)].map(x => x[1]))];
+  const missing = listed.filter(id => !out.some(a => a.id === id));
+  if (missing.length) {
+    const at = t.indexOf(missing[0] + ' /');
+    throw new Error(`ENR 5.2: could not read ${missing.join(', ')}; unrecognised format near "${t.slice(at, at + 160)}…". Update parseLhEnr52 in scripts/airac-lib.mjs.`);
   }
   return out;
 }

@@ -107,7 +107,7 @@ describe('scenario file validation errors', () => {
 describe('scenario library', () => {
   it('has the six scenarios', () => {
     expect(LIBRARY.map(l => [l.file.country, l.file.sector, l.file.difficulty])).toEqual([
-      ['RO', 'ARG', 'foundational'], ['RO', 'DIN', 'intermediate'], ['RO', 'KOM', 'advanced'],
+      ['RO', 'ARG', 'foundational'], ['RO', 'DIN', 'intermediate'], ['RO', 'KNL', 'intermediate'],
       ['RO', 'NER', 'intermediate'], ['HU', 'EAST', 'intermediate'], ['HU', 'FIR', 'advanced']
     ]);
   });
