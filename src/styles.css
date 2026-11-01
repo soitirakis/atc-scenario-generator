@@ -69,8 +69,11 @@ select { padding-right: 4px; }
 .overlay { position: absolute; display: flex; gap: 6px; flex-wrap: wrap; }
 .ov-tl { top: 8px; left: 8px; right: 8px; pointer-events: none; }
 .ov-tl > * { pointer-events: auto; }
-.ov-br { bottom: 8px; right: 8px; }
-.ov-bl { bottom: 8px; left: 8px; pointer-events: none; }
+/* bottom bar: legend left, tool and zoom chips right; when the row is too narrow they wrap, legend above.
+   Only the chips take clicks, so tracks under the bar's empty space stay clickable. */
+.ov-bottom { bottom: 8px; left: 8px; right: 8px; justify-content: space-between; align-items: flex-end; pointer-events: none; }
+.map-tools { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; margin-left: auto; }
+.map-tools > * { pointer-events: auto; }
 .chip { font-family: var(--f-data); font-size: 11px; background: color-mix(in srgb, var(--panel) 88%, transparent); border: 1px solid var(--line); border-radius: 3px; padding: 3px 7px; cursor: pointer; user-select: none; }
 .chip[aria-pressed=false] { color: var(--muted); opacity: 0.75; }
 .chip[aria-pressed=true] { border-color: var(--map-hi); }
@@ -188,11 +191,6 @@ body:not([data-role="solo"]) .solo-only, body[data-role="trainee"] .not-trainee,
   .panel { max-height: none; }
   .tab-body { overflow: visible; }
   .stats { grid-template-columns: repeat(2, 1fr); }
-}
-/* narrow screens: the map chips take the whole bottom row and the legend sits above them */
-@media (max-width: 600px) {
-  .ov-br { left: 8px; justify-content: flex-end; }
-  .ov-bl { bottom: 44px; right: 8px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 

@@ -20,7 +20,7 @@ test('loads Romania with a ready scenario and no horizontal overflow', async ({ 
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow).toBeLessThanOrEqual(0);
   // the map overlays (layer chips, legend, tool and zoom chips) do not cover each other
-  const boxes = await page.evaluate(() => ['#layerChips', '#legend', '.ov-br'].map(q => { const r = document.querySelector(q).getBoundingClientRect(); return { q, l: r.left, r: r.right, t: r.top, b: r.bottom }; }));
+  const boxes = await page.evaluate(() => ['#layerChips', '#legend', '#mapTools'].map(q => { const r = document.querySelector(q).getBoundingClientRect(); return { q, l: r.left, r: r.right, t: r.top, b: r.bottom }; }));
   for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
     const [p, q] = [boxes[i], boxes[j]];
     expect(p.r <= q.l || q.r <= p.l || p.b <= q.t || q.b <= p.t, `${p.q} overlaps ${q.q}`).toBe(true);
