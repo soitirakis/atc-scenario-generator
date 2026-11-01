@@ -12,7 +12,7 @@ export const CHANNEL_NAME = 'atc-scenario-generator';
 export const PROTOCOL = 1;
 
 /** The actions a controller can take. Anything else from a trainee window is refused. */
-export const TRAINEE_COMMANDS = ['clearLevel', 'clearRate', 'turn', 'direct', 'speed', 'mach', 'resumeSpeed', 'resumeNav', 'answer', 'assume', 'transfer', 'ackEmergency'];
+export const TRAINEE_COMMANDS = ['clearLevel', 'clearRate', 'turn', 'direct', 'speed', 'mach', 'resumeSpeed', 'resumeNav', 'answer', 'assume', 'transfer', 'ackEmergency', 'probeLevel'];
 const ALLOWED = new Set(TRAINEE_COMMANDS);
 
 export class Link {

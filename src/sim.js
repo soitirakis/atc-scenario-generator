@@ -8,6 +8,7 @@ import { clam } from './nets/clam.js';
 import { apw, APW } from './nets/apw.js';
 import { ram } from './nets/ram.js';
 import { mtcd, MTCD } from './nets/mtcd.js';
+import { levelProbe } from './tools/probe.js';
 
 export const TYPES = {
   CLIMB_REQUEST: 'Level request',
@@ -748,6 +749,23 @@ export class Sim {
       const flights = this.ac.filter(a => a.fl >= 100).map(ac => ({ ac, traj: this.trajectory(ac, MTCD.lookaheadS, MTCD.stepS) }));
       N.mtcd = mtcd(flights).filter(c => this.ours(c.a) || this.ours(c.b) || inSector(c.xy, this.sector)).map(c => ({ a: c.a.id, b: c.b.id, acs: c.a.cs, bcs: c.b.cs, t: c.t, tMin: c.tMin, minNM: c.minNM, dvFt: c.dvFt }));
     }
+  }
+
+  /**
+   * What-if level probe: the flight's path as if cleared to fl now, against every other flight's
+   * planned path (20 min, as MTCD) and the military areas, active or due. Read-only.
+   */
+  probeLevel(id, fl) {
+    const a = this.get(id);
+    if (!a) return { ok: false, msg: 'Aircraft no longer on frequency' };
+    fl = Math.round(+fl);
+    if (!(fl >= 100 && fl <= 450)) return { ok: false, msg: 'Probe a level from FL100 to FL450' };
+    const what = { ...a, cfl: fl, sfl: fl, vr: null };
+    const traj = this.trajectory(what, MTCD.lookaheadS, MTCD.stepS);
+    const others = this.ac.filter(x => x !== a && x.fl >= 100).map(x => ({ cs: x.cs, traj: this.trajectory(x, MTCD.lookaheadS, MTCD.stepS) }));
+    const areas = this.tsa.map(z => ({ ...z, from: Math.max(0, z.at - this.t) }));
+    const r = levelProbe(traj, others, areas);
+    return { ok: true, id, fl, conflicts: r.conflicts.map(c => ({ ...c, minNM: Math.round(c.minNM * 10) / 10 })), areas: r.areas };
   }
 
   /* ---------------- military areas (ENR 5.2) ---------------- */

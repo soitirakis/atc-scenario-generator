@@ -26,6 +26,7 @@ En-route radar training simulator that builds scenarios and injects for a chosen
   - exit level coordination requests from the next sector
   - late transfers from the previous sector
 - **Clearances**: level, heading, direct-to, speed, and approve/unable on requests.
+- **Controller tools**: range-bearing lines, a SEP tool and a what-if level probe (see below).
 - **Assume and transfer of control**: traffic about to enter the sector is transferred to you as pending and must be assumed; traffic leaving must be transferred before it crosses the boundary, cleared to its agreed exit level (XFL). Only aircraft on your frequency (pending or assumed) take clearances.
 - **Debrief** at the end of the session, including late assumes, late transfers and wrong exit levels.
 - **Repeatable sessions**: the same seed, sector and difficulty always give the same traffic.
@@ -92,6 +93,14 @@ APW, CLAM and RAM alerts appear in the priorities list, for your traffic (assume
 
 **These are simplified training versions, not the operational systems:** there is no alert suppression (an alert stays up for as long as its condition holds), and no per-area tuning (one set of parameters for the whole FIR, with no adaptation by area, sector or flight phase).
 
+## Controller tools
+
+Pure modules in `src/tools/`, with unit tests. They work the same in the trainee window.
+
+- **RBL** (chip on the radar): click a point or a track, then another. The line shows the bearing (degrees true) and range, and a track end follows the track. **Clear** removes all lines.
+- **SEP**: click two tracks. It shows where each will be at their closest point, and the minimum distance and time, if both keep their present track and ground speed. Amber below 5 NM.
+- **Probe level** (selected aircraft): pick a level in the Level list and press **Probe level**. It shows what clearing that level would do in the next 20 minutes, against every other flight's planned path, as MTCD predicts them. That covers each conflict (time to loss, minimum distance and when) and any military area, active or due, it would enter within that area's limits. Nothing is cleared. In the trainee window the probe runs in the instructor's simulation and the result comes back over the link.
+
 ## Scenario files and library
 
 On the Scenario tab (solo or instructor window):
@@ -103,7 +112,7 @@ On the Scenario tab (solo or instructor window):
 
 ```bash
 npm test             # unit tests (Vitest): geometry, data integrity, simulation, scenarios, AIRAC parser
-npm run test:coverage  # unit tests with coverage; fails below 85% on src/sim.js, src/scenario.js or any src/nets module
+npm run test:coverage  # unit tests with coverage; fails below 85% on src/sim.js, src/scenario.js or any src/nets or src/tools module
 npm run test:e2e     # end-to-end (Playwright) against the built file, desktop and phone viewports
 ```
 
@@ -124,6 +133,7 @@ src/
   country.js          raw country module -> projected data
   sim.js              simulation engine (no DOM): traffic, physics, STCA, injects, clearances
   nets/               APW, CLAM, RAM, MTCD: pure modules, each with its settings (no DOM)
+  tools/              range-bearing line, SEP, level probe: pure modules (no DOM)
   scenario.js         local scenario builder, Claude prompt and validator
   render.js           canvas radar display
   link.js             instructor/trainee windows: BroadcastChannel protocol, trainee snapshot, read-only view

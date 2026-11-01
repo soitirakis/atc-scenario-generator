@@ -26,7 +26,8 @@ En-route ATC radar training simulator. Vanilla JS (ES modules) built with Vite i
 ## Two windows
 - `src/link.js` is DOM-free like `sim.js`; the instructor window owns the Sim, the trainee window only has a `SimView` built from snapshots.
 - `makeSnapshot` decides what a trainee may see. Add aircraft fields to `AC_FIELDS` only if a controller would know them. Log lines meant only for the instructor use `sim.log(text, cls, 'i')`; priority items only for the instructor carry `instr: true`.
-- A trainee window may only run the commands in `TRAINEE_COMMANDS`. New controller actions go there; instructor actions (injects, pseudo-pilot) never do.
+- A trainee window may only run the commands in `TRAINEE_COMMANDS`. New controller actions go there; instructor actions (injects, pseudo-pilot) never do. Read-only controller tools that need the Sim (`probeLevel`) go there too and return their result in the reply.
+- Controller tools live in `src/tools/` as pure modules. Their on-screen state (`R.tools`: RBL lines, SEP pairs, tool mode) belongs to `main.js`; `render.js` only draws it.
 
 ## Performance and wind
 - Climb/descent rates, speeds and Mach come only from `data/performance.json` (OpenAP WRAP, GPL-3.0), regenerated with `node scripts/openap-wrap.mjs`; do not hand-edit it and do not add BADA data. A new aircraft type in `traffic.json` needs an entry in that script's `TYPE_MAP` with a reason.

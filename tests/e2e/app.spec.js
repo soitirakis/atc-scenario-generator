@@ -261,3 +261,39 @@ test('session ends with a debrief', async ({ page }) => {
   await expect(page.locator('#debInjects')).toContainText(/objectives met/);
   expect(await page.locator('#debTimeline .deb-tl > div').count()).toBeGreaterThan(n);
 });
+
+test('RBL and SEP tools on the radar, and the level probe on the selected aircraft', async ({ page }) => {
+  await page.locator('#pausedStart').click();
+  await page.locator('#playBtn').click(); // freeze, so tracks stay where we click
+  await page.locator('#fitSector').click();
+  const box = await page.locator('#scope').boundingBox();
+  // two assumed tracks on screen, well apart
+  const pts = await page.evaluate(() => {
+    const R = window.__radar, s = window.__sim, on = a => { const x = R.sx([a.x, a.y]), y = R.sy([a.x, a.y]); return x > 40 && y > 40 && x < R.V.w - 40 && y < R.V.h - 40; };
+    const mine = s.ac.filter(a => a.ctl === 'ass' && on(a));
+    const a = mine[0], b = mine.find(m => Math.hypot(m.x - a.x, m.y - a.y) > 30);
+    return [a, b].map(m => ({ id: m.id, x: R.sx([m.x, m.y]), y: R.sy([m.x, m.y]) }));
+  });
+  const click = p => page.mouse.click(box.x + p.x, box.y + p.y);
+
+  await page.locator('#toolRbl').click();
+  await expect(page.locator('#toolRbl')).toHaveAttribute('aria-pressed', 'true');
+  await click(pts[0]); await click(pts[1]);
+  expect(await page.evaluate(() => window.__radar.tools.rbl.map(l => [l.a.ac, l.b.ac]))).toEqual([[pts[0].id, pts[1].id]]);
+  await expect(page.locator('#toolRbl')).toHaveAttribute('aria-pressed', 'false');
+
+  await page.locator('#toolSep').click();
+  await click(pts[0]); await click(pts[1]);
+  expect(await page.evaluate(() => window.__radar.tools.sep)).toEqual([{ a: pts[0].id, b: pts[1].id }]);
+  expect(await page.evaluate(() => window.__radar.sel)).toBeNull(); // tool clicks do not select
+
+  await page.locator('#toolClear').click();
+  expect(await page.evaluate(() => [window.__radar.tools.rbl.length, window.__radar.tools.sep.length])).toEqual([0, 0]);
+
+  // probe: select a track, pick a level, probe
+  await click(pts[0]);
+  await expect(page.locator('#cFl')).toBeVisible();
+  await page.locator('#bProbe').click();
+  await expect(page.locator('#probeOut')).toBeVisible();
+  await expect(page.locator('#probeOut')).toContainText(/^FL\d{3}/);
+});

@@ -189,6 +189,19 @@ function updatePanel(force) {
   $('log').innerHTML = sim.logs.slice(0, 40).map(l => `<div class="${l.cls}"><b>${fmtT(l.t)}</b> ${esc(l.text)}</div>`).join('') || '<div>Nothing yet.</div>';
 }
 
+/** What-if level probe for the selected aircraft; in the trainee window it runs in the instructor's Sim. */
+function probe(id, fl) {
+  Promise.resolve(sim.probeLevel(id, fl)).then(r => {
+    const out = $('probeOut');
+    if (!out || !r) return;
+    out.hidden = false;
+    if (!r.ok) { out.className = 'probe-out err'; out.textContent = r.msg; return; }
+    const lines = [...r.conflicts.map(c => `${c.cs}: loss in ${fmtT(c.t)}, min ${c.minNM.toFixed(1)} NM${c.dvFt ? ` / ${c.dvFt} ft` : ''} at ${fmtT(c.tMin)}`), ...r.areas.map(z => `enters ${z.id} in ${fmtT(z.tt)}`)];
+    out.className = 'probe-out' + (lines.length ? ' warn' : ' ok');
+    out.innerHTML = `<b>FL${fmtFL(r.fl)}</b> ${lines.length ? lines.map(esc).join('<br>') : 'no conflict or military area in the next 20 minutes'}`;
+  });
+}
+
 function actButtons(it) {
   const id = it.ac && it.ac.id, b = (a, label, cls = '') => `<button class="btn sm ${cls}" data-a="${a}" data-id="${id}">${label}</button>`;
   if (it.act === 'req') return it.ac.req && it.ac.req.kind === 'coord' ? b('ok', 'Accept') + b('no', 'Refuse') : b('ok', 'Approve') + b('no', 'Unable');
@@ -226,7 +239,8 @@ function renderAcBox() {
       <label for="cRate">Rate ft/min</label><span class="rate-in"><input type="number" id="cRate" step="100" min="500" max="6000" value="2000"><select id="cRateKind" aria-label="Rate limit"><option value="min">or greater</option><option value="max">or less</option></select></span><button class="btn sm" id="bRate">Set</button>
     </div>
     <datalist id="dctList">${[...new Set(pts)].map(p => `<option value="${p}">`).join('')}</datalist>
-    <div class="row-btns"><button class="btn sm" id="bOwn">Resume own navigation</button><button class="btn sm" id="bNormSpd">Resume normal speed</button></div>
+    <div class="row-btns"><button class="btn sm" id="bOwn">Resume own navigation</button><button class="btn sm" id="bNormSpd">Resume normal speed</button><button class="btn sm" id="bProbe" title="What if cleared to the level above: conflicts and military areas in the next 20 minutes">Probe level</button></div>
+    <div class="probe-out" id="probeOut" hidden></div>
   </div>`;
   updateKv(a);
   const id = a.id;
@@ -238,6 +252,7 @@ function renderAcBox() {
   $('bRate').onclick = () => result(sim.clearRate(id, +$('cRate').value, $('cRateKind').value));
   $('bNormSpd').onclick = () => result(sim.resumeSpeed(id));
   $('bOwn').onclick = () => result(sim.resumeNav(id));
+  $('bProbe').onclick = () => probe(id, +$('cFl').value);
 }
 function updateKv(a) {
   const k = $('acKv'); if (!k) return;
@@ -476,6 +491,24 @@ function showDebrief() {
 }
 
 /* ---------- input ---------- */
+/* ---------- range-bearing line and SEP ---------- */
+function setTool(mode) {
+  R.tools.mode = mode; R.tools.first = null;
+  $('toolRbl').setAttribute('aria-pressed', mode === 'rbl');
+  $('toolSep').setAttribute('aria-pressed', mode === 'sep');
+  if (mode) toast(mode === 'rbl' ? 'RBL: click a point or a track, then another' : 'SEP: click two tracks');
+}
+/** One click with a tool on: a track (if one is under the pointer) or a point on the map. */
+function toolClick(ac, xy) {
+  const T = R.tools;
+  if (T.mode === 'sep' && !ac) { toast('SEP: click a track'); return; }
+  const end = ac ? { ac: ac.id, xy: [ac.x, ac.y] } : { xy };
+  if (!T.first) { T.first = end; return; }
+  if (T.mode === 'rbl') T.rbl.push({ a: T.first, b: end });
+  else if (end.ac !== T.first.ac) T.sep.push({ a: T.first.ac, b: end.ac });
+  setTool(null);
+}
+
 function bindInput() {
   const cv = $('scope');
   let drag = null;
@@ -495,6 +528,12 @@ function bindInput() {
     else { R.V.cx = drag.cx - dx / R.V.sc; R.V.cy = drag.cy - dy / R.V.sc; }
   });
   cv.addEventListener('pointerup', e => {
+    if (drag && !drag.moved && R.tools.mode) {
+      const r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
+      toolClick(R.hitTest(mx, my), R.toNM(mx, my));
+      drag = null;
+      return;
+    }
     if (drag && !drag.moved) {
       const r = cv.getBoundingClientRect();
       const a = R.hitTest(e.clientX - r.left, e.clientY - r.top);
@@ -507,6 +546,9 @@ function bindInput() {
     const r = cv.getBoundingClientRect();
     R.zoomAt(e.clientX - r.left, e.clientY - r.top, e.deltaY < 0 ? 1.15 : 1 / 1.15);
   }, { passive: false });
+  $('toolRbl').onclick = () => setTool(R.tools.mode === 'rbl' ? null : 'rbl');
+  $('toolSep').onclick = () => setTool(R.tools.mode === 'sep' ? null : 'sep');
+  $('toolClear').onclick = () => { R.tools.rbl = []; R.tools.sep = []; setTool(null); };
   $('zoomIn').onclick = () => { R.V.sc = Math.min(12, R.V.sc * 1.25); };
   $('zoomOut').onclick = () => { R.V.sc = Math.max(0.3, R.V.sc / 1.25); };
   $('fitSector').onclick = () => R.fitSector();

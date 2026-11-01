@@ -216,3 +216,11 @@ body:not([data-role="solo"]) .solo-only, body[data-role="trainee"] .not-trainee,
 .mtcd .mt:last-child { border-bottom: 0; }
 .mtcd .mt b { font-family: var(--f-data); font-weight: 500; color: var(--warn); font-variant-numeric: tabular-nums; }
 .mtcd .mt span:last-child { color: var(--muted); font-family: var(--f-data); font-variant-numeric: tabular-nums; }
+
+/* level probe */
+.probe-out { margin-top: 8px; padding: 6px 8px; border-radius: 4px; background: var(--panel-2); font-size: 12.5px; line-height: 1.45; font-family: var(--f-data); }
+.probe-out b { margin-right: 6px; }
+.probe-out.ok { color: var(--ok); }
+.probe-out.warn { color: var(--warn); }
+.probe-out.err { color: var(--alert); }
+.chip[aria-pressed="true"]#toolRbl, .chip[aria-pressed="true"]#toolSep { border-color: var(--accent); color: var(--accent); }
