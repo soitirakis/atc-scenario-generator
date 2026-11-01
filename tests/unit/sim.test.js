@@ -8,6 +8,9 @@ import { D2R, angDiff, brg, pip } from '../../src/geo.js';
 import { machToTas, casToTas } from '../../src/atmos.js';
 import PERF from '../../data/performance.json';
 
+/** Long simulations (whole sessions, many sectors) get more than the default 5 s, which coverage instrumentation can exceed. */
+const LONG_SIM_MS = 60_000;
+
 const C = loadCountry(RO);
 const cfg = (o = {}) => ({ sector: 'ARG', difficulty: 'intermediate', duration: 30, seed: 4127, objective: 'General radar handling.', ...o });
 const fresh = (o, injects) => {
@@ -84,7 +87,7 @@ describe('built-in conflicts', () => {
       // conflicts are set 4, 9.5, 15 and 20.5 minutes ahead; the first three fall inside 22 minutes
       expect(pairs.slice(0, 3).map(p => p.lost), `seed ${seed}`).toEqual([true, true, true]);
     }
-  });
+  }, LONG_SIM_MS);
   it('are detected by STCA before they become a loss of separation', () => {
     const sim = fresh({ difficulty: 'foundational' }, []);
     const pair = sim.ac.filter(a => a.conflict).map(a => a.id);
@@ -329,7 +332,7 @@ describe('sector routine: assume and transfer', () => {
         expect([raw.meta.code, sector, d.lateAssume, d.lateXfer, d.wrongXfl]).toEqual([raw.meta.code, sector, 0, 0, 0]);
       }
     }
-  });
+  }, LONG_SIM_MS);
 
   it('only flights on frequency raise requests', () => {
     const sim = fresh({ difficulty: 'advanced' }, []);

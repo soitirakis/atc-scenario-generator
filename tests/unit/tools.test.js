@@ -58,6 +58,15 @@ describe('level probe on plain trajectories', () => {
   it('1000 ft away from it: no conflict', () => {
     expect(levelProbe(line(-80, 480 / 3600, 360), [other], []).conflicts).toEqual([]);
   });
+  it('several conflicts and areas come out soonest first, whatever order they are given in', () => {
+    const near = { cs: 'NEAR', traj: line(0, -480 / 3600, 350) }; // meets the probed flight sooner
+    const box = (id, x0) => ({ ...area, id, poly: [[x0, -10], [x0 + 5, -10], [x0 + 5, 10], [x0, 10]] });
+    const r = levelProbe(line(-80, 480 / 3600, 350), [other, near], [box('FAR', 40), box('CLOSE', -40)]);
+    expect(r.conflicts.map(c => c.cs)).toEqual(['NEAR', 'OTH']);
+    expect(r.conflicts[0].t).toBeLessThan(r.conflicts[1].t);
+    expect(r.areas.map(z => z.id)).toEqual(['CLOSE', 'FAR']);
+    expect(r.areas[0].tt).toBeLessThan(r.areas[1].tt);
+  });
   it('military areas: entered within their limits, only once they are active', () => {
     expect(levelProbe(line(-80, 480 / 3600, 300), [], [area]).areas).toEqual([{ id: 'TRA', tt: 540 }]);
     expect(levelProbe(line(-80, 480 / 3600, 360), [], [area]).areas).toEqual([]); // above it
