@@ -1,6 +1,6 @@
 // Simulation engine. No DOM access: the UI reads state from a Sim instance and
 // calls its command methods. Time advances in fixed 1-second steps via step().
-import { D2R, dist, brg, angDiff, segInt, mulberry32, moveToward, fmtFL, fmtT, pip } from './geo.js';
+import { D2R, dist, brg, angDiff, segInt, mulberry32, moveToward, fmtFL, fmtT, pip, centroid } from './geo.js';
 import { inSector } from './country.js';
 import { machToTas, casToTas, tasToMach, windAt, normaliseWind } from './atmos.js';
 import PERF from '../data/performance.json';
@@ -22,7 +22,10 @@ export const TYPES = {
   COORD_REQUEST: 'Exit level coordination',
   LATE_TRANSFER: 'Late transfer from previous sector',
   READBACK_ERROR: 'Readback error',
-  SIMILAR_CALLSIGN: 'Similar callsigns'
+  SIMILAR_CALLSIGN: 'Similar callsigns',
+  COMLOSS: 'COMLOSS and QRA scramble',
+  OAT_FORMATION: 'OAT formation crossing (non-RVSM)',
+  TSA_EXTENSION: 'Short-notice military area extension'
 };
 
 export const DIFF = {
@@ -47,6 +50,18 @@ function distToSeg(p, a, b) {
  * it is busy gets "say again". In the readback-error and similar-callsign injects the aircraft acts on
  * what it read back actS seconds after the readback, unless corrected first.
  */
+/**
+ * Civil-military injects (training constructs; data/<CODE>/military.json): COMLOSS is declared after
+ * comlossS of silence, the military must be notified within notifyS, the QRA pair is airborne
+ * scrambleS after the notification, joins the silent aircraft and stays joinedS before contact is
+ * restored and it returns to base. OAT tracks are non-RVSM: 5 NM and 2000 ft from FL290 up
+ * (1000 ft below). An OAT formation is pre-notified formationLeadS before it enters; a short-notice
+ * extension takes effect extensionNoticeS after notice and lowers the area by extensionFL.
+ */
+export const CIVMIL = { comlossS: 300, notifyS: 120, scrambleS: 180, coordS: 60, joinNM: 2, joinedS: 180, formationLeadS: 180, extensionNoticeS: 120, extensionFL: 20, lateralNM: 5, verticalFt: 1000, nonRvsmFt: 2000, rvsmFromFL: 290 };
+/** Vertical minimum (ft) between two tracks: 2000 ft from FL290 if either is non-RVSM (OAT), else 1000. */
+export const vMin = (a, b) => ((a.oat && a.oat.nonRvsm) || (b.oat && b.oat.nonRvsm)) && Math.max(a.fl, b.fl) >= CIVMIL.rvsmFromFL ? CIVMIL.nonRvsmFt : CIVMIL.verticalFt;
+
 export const RADIO = { readbackMinS: 2, readbackMaxS: 6, readbackS: 2, actS: 10 };
 
 /** A callsign that sounds like cs: same operator, last two digits swapped (or the last one changed). */
@@ -76,7 +91,10 @@ export const GRADING = {
   COORD_REQUEST: { answerS: 60, text: 'Answered within 60 s, and the aircraft leaves at the agreed level' },
   LATE_TRANSFER: { assumeS: 30, text: 'Assumed within 30 s of its first call' },
   READBACK_ERROR: { windowS: 600, text: 'Wrong readback corrected before the aircraft acts on it' },
-  SIMILAR_CALLSIGN: { windowS: 600, text: 'Clearance taken by the wrong aircraft corrected before it acts on it' }
+  SIMILAR_CALLSIGN: { windowS: 600, text: 'Clearance taken by the wrong aircraft corrected before it acts on it' },
+  COMLOSS: { windowS: 1500, text: 'Military notified within 2 min of COMLOSS, QRA coordination answered within 60 s, and your traffic kept 5 NM / 2000 ft (1000 ft below FL290) from the QRA' },
+  OAT_FORMATION: { windowS: 1500, text: 'Coordination answered within 60 s, and your traffic kept 5 NM / 2000 ft (1000 ft below FL290) from the formation' },
+  TSA_EXTENSION: { windowS: 600, text: 'None of your aircraft inside the extended area within its new limits (10 min after it takes effect)' }
 };
 const LEVELS_ODD = [290, 310, 330, 350, 370, 390];
 const LEVELS_EVEN = [300, 320, 340, 360, 380, 400];
@@ -197,6 +215,7 @@ export class Sim {
    * overrides (a.vr) and an emergency descent take precedence.
    */
   vRate(a, fl = a.fl, climbing = a.sfl > fl) {
+    if (a.oat) return climbing ? a.oat.perf.climbFpm : a.oat.perf.descentFpm; // military.json, a training construct
     if (a.emg) return 4000;
     if (a.vr) return a.vr;
     const P = this.perfOf(a), ft = fl * 100;
@@ -231,6 +250,7 @@ export class Sim {
   }
   /** True airspeed (kt) for the speed to fly, in ISA, never above the type's maximum Mach. */
   tasFor(a) {
+    if (a.oat) return a.oat.phase === 'intercept' ? a.oat.perf.dashKt : a.oat.perf.tasKt;
     const t = this.speedTarget(a), ft = a.fl * 100;
     const tas = t.mode === 'mach' ? machToTas(t.v, ft) : casToTas(t.v, ft);
     return Math.min(tas, machToTas(this.perfOf(a).cruise.maxMach.max, ft));
@@ -467,6 +487,7 @@ export class Sim {
       a.y += vy / 3600;
 
       if (a.rcf > 0 && this.t >= a.rcf) { a.rcf = 0; if (a.sq === '7600') a.sq = this.squawk(); this.log(`${a.cs} re-established contact on secondary frequency`, 'w'); }
+      if (a.oat) { this.oatStep(a); continue; } // military traffic: not in the civil sector routine
       const inside = inSector([a.x, a.y], sec);
       if (inside && !a.lastIn) this.entered(a);
       else if (!inside && a.lastIn) this.left(a);
@@ -521,7 +542,7 @@ export class Sim {
     this.ac = this.ac.filter(a => !a.done);
 
     this.spawnTimer--;
-    if (this.spawnTimer <= 0 && this.ac.length < this.target) {
+    if (this.spawnTimer <= 0 && this.ac.filter(a => !a.oat).length < this.target) {
       const p = this.planFlight({ mustCross: this.rng() < 0.7 ? sec : null });
       if (p && this.clearToSpawn(p, 0)) this.spawnFromPlan(p, 0);
       this.spawnTimer = 25 + Math.floor(this.rng() * 50);
@@ -532,6 +553,7 @@ export class Sim {
       for (const a of this.ac) { a.plots.push([a.px, a.py]); if (a.plots.length > 6) a.plots.shift(); a.px = a.x; a.py = a.y; }
     }
     this.radioStep();
+    this.civmilStep();
     this.stcaScan();
     this.netsScan();
     this.gradeInjects();
@@ -541,16 +563,18 @@ export class Sim {
   }
 
   stcaScan() {
-    const res = [], now = new Set(), A = this.ac, { lateralNM, verticalFt, lookaheadS } = SEPARATION;
+    const res = [], now = new Set(), A = this.ac, { lateralNM, lookaheadS } = SEPARATION;
     const profiles = new Map(), profile = a => { if (!profiles.has(a)) profiles.set(a, this.levelProfile(a)); return profiles.get(a); };
     for (let i = 0; i < A.length; i++) for (let j = i + 1; j < A.length; j++) {
       const a = A[i], b = A[j];
       if (a.fl < 100 || b.fl < 100) continue;
+      if ((a.oat && b.oat) || (a.oat && a.oat.target === b) || (b.oat && b.oat.target === a)) continue; // a formation, or an intercept
+      const vmin = vMin(a, b);
       const dh = dist([a.x, a.y], [b.x, b.y]);
       if (dh > 60) continue;
       const dv = Math.abs(a.fl - b.fl) * 100;
       const key = a.id < b.id ? `${a.id}-${b.id}` : `${b.id}-${a.id}`;
-      if (dh < lateralNM && dv < verticalFt) {
+      if (dh < lateralNM && dv < vmin) {
         now.add(key);
         if (!this.los.has(key)) { this.los.set(key, this.t); this.stats.losCount++; this.log(`LOSS OF SEPARATION ${a.cs} / ${b.cs} ${dh.toFixed(1)} NM ${Math.round(dv)} ft`, 'a'); this.mark(`Loss of separation ${a.cs} / ${b.cs}`, 'a'); }
         this.stats.losSec++;
@@ -564,7 +588,7 @@ export class Sim {
       for (let t = 10; t <= lookaheadS; t += 10) {
         const pa = [a.x + va[0] * t, a.y + va[1] * t], pb = [b.x + vb[0] * t, b.y + vb[1] * t];
         const fa = la[t / 10 - 1], fb = lb[t / 10 - 1];
-        if (dist(pa, pb) < lateralNM && Math.abs(fa - fb) * 100 < verticalFt) { res.push({ a, b, dh, dv, level: 'pred', tt: t, key }); break; }
+        if (dist(pa, pb) < lateralNM && Math.abs(fa - fb) * 100 < vmin) { res.push({ a, b, dh, dv, level: 'pred', tt: t, key }); break; }
       }
     }
     for (const k of [...this.los.keys()]) if (!now.has(k)) this.los.delete(k);
@@ -580,6 +604,7 @@ export class Sim {
     const sec = this.sector;
     for (const a of this.ac) {
       a.inbound = false; a.tEntry = null; a.tExit = null;
+      if (a.oat) continue;
       if (a.lastIn) {
         // where it leaves for good, or leaves en-route control while still inside. Same 5 s resolution as
         // staysOut, and a slightly shorter excursion counts, so the transfer prompt never comes after the penalty.
@@ -737,6 +762,38 @@ export class Sim {
         t2.ctl = 'none'; t2.noXfer = true; t2.pendAt = t2.lastIn ? this.t : null; t2.assumedAt = undefined; inj.target = t2.cs; inj.g = { ac: t2 }; break;
       }
     }
+    if (inj.type === 'COMLOSS') {
+      // silent, transponder normal: on radar it looks like any other flight until COMLOSS is declared
+      const a = tgt && this.get(tgt.id);
+      if (a) {
+        a.rcf = this.t + 99999; a.req = null; a.comloss = { inj };
+        inj.target = a.cs; inj.g = { ac: a, declareAt: this.t + CIVMIL.comlossS };
+        this.log(`Inject: ${a.cs} goes silent (no 7600); COMLOSS in ${fmtT(CIVMIL.comlossS)}`, 'w', 'i');
+      }
+    }
+    if (inj.type === 'OAT_FORMATION' && this.C.military) {
+      const M = this.C.military, perf = M.aircraft[M.formation.aircraft];
+      // a straight crossing through the sector, entering about formationLeadS from now
+      const c = sec.c || centroid(sec.polys[0]), h = this.rng() * 360, d = [Math.sin(h * D2R), -Math.cos(h * D2R)];
+      let k = 0; while (k < 400 && inSector([c[0] - d[0] * k, c[1] - d[1] * k], sec)) k++;
+      const lead = perf.tasKt * CIVMIL.formationLeadS / 3600, start = [c[0] - d[0] * (k + lead), c[1] - d[1] * (k + lead)];
+      let e = 0; while (e < 400 && inSector([c[0] + d[0] * e, c[1] + d[1] * e], sec)) e++;
+      const end = [c[0] + d[0] * (e + 40), c[1] + d[1] * (e + 40)];
+      const fl = [300, 320, 340, 360][Math.floor(this.rng() * 4)];
+      const f = this.makeOat({ kind: 'formation', cs: `${M.formation.callsign}${41 + Math.floor(this.rng() * 50)}`, type: M.formation.aircraft, n: M.formation.n, xy: start, fl, sfl: fl, route: [{ id: 'MIL', xy: end }] });
+      this.raiseRequest(f, 'mil', null, `(MIL) formation of ${M.formation.n}, non-RVSM, crossing ${sec.name} at FL${fmtFL(fl)} in about ${Math.round(CIVMIL.formationLeadS / 60)} min. Acknowledge.`);
+      inj.target = f.cs; inj.g = { ac: f, req: f.req };
+    }
+    if (inj.type === 'TSA_EXTENSION') {
+      // extend the latest military area down by extensionFL at short notice; with none, activate one at short notice
+      const z = [...this.tsa].reverse().find(q => !q.ext) || this.pickArea();
+      if (z) {
+        const ext = { ...z, ext: true, active: false, at: this.t + CIVMIL.extensionNoticeS, lower: Math.max(0, z.lower - (this.tsa.includes(z) ? CIVMIL.extensionFL : 0)) };
+        if (this.tsa.includes(z)) ext.name = `${z.id} extended`;
+        this.tsa.push(ext); inj.g = { zone: ext }; inj.target = z.id;
+        this.log(`Short notice: military area ${z.id} ${this.tsa.includes(z) ? 'extended to ' : 'active, '}${areaBand(ext)} in ${fmtT(CIVMIL.extensionNoticeS)}`, 'w');
+      }
+    }
     if (inj.type === 'READBACK_ERROR') {
       // armed: the next level or heading clearance to one of your aircraft is read back wrong
       inj.g = { armed: true }; inj.target = 'next level or heading clearance';
@@ -758,7 +815,7 @@ export class Sim {
         this.log(`${b.cs} calling, FL${fmtFL(b.fl)}`);
       }
     }
-    if (!inj.target) this.log(`Inject ${TYPES[inj.type]}: ${inj.type === 'MILITARY_TSA' ? 'no military area over or near the sector' : 'no suitable aircraft in sector'}`, 'w', 'i');
+    if (!inj.target) this.log(`Inject ${TYPES[inj.type]}: ${inj.type === 'OAT_FORMATION' && !this.C.military ? 'no military data for this country' : inj.type === 'MILITARY_TSA' || inj.type === 'TSA_EXTENSION' ? 'no military area over or near the sector' : 'no suitable aircraft in sector'}`, 'w', 'i');
     // graded only when the inject found something to act on
     if (inj.g) inj.result = { state: 'pending', t: null, reason: GRADING[inj.type].text, at: null };
     this.mark(`${TYPES[inj.type]}${inj.target ? ' · ' + inj.target : ''} fired${inj.g ? '' : ', no suitable aircraft'}`);
@@ -925,7 +982,8 @@ export class Sim {
         }
         return null;
       }
-      case 'MILITARY_TSA': {
+      case 'MILITARY_TSA':
+      case 'TSA_EXTENSION': {
         const z = g.zone;
         if (!z.active) return null;
         const since = this.t - z.at;
@@ -938,6 +996,28 @@ export class Sim {
         const c = gone ? null : stcaWith(a);
         if (c) return fail(el, `STCA with ${other(c, a)} after ${el} s`);
         if (el >= L.windowS || gone) return met(el, `no STCA in its first ${Math.round(L.windowS / 60)} min`);
+        return null;
+      }
+      case 'COMLOSS': {
+        if (!g.declared) return gone ? { none: true, reason: `${a.cs} left before COMLOSS was declared` } : null;
+        const late = (g.notifiedAt ?? this.t) - g.declared;
+        if (late > CIVMIL.notifyS) return fail(g.notifiedAt === undefined ? null : late, g.notifiedAt === undefined ? `military not notified within ${CIVMIL.notifyS / 60} min of COMLOSS` : `military notified ${late} s after COMLOSS, limit ${CIVMIL.notifyS} s`);
+        if (g.notifiedAt === undefined) return null;
+        const q = g.qra;
+        if (!q) return this.C.military ? null : met(Math.max(0, late), `military notified ${Math.max(0, late)} s after COMLOSS (no QRA base configured)`);
+        const r = answered(g.req, CIVMIL.coordS);
+        if (r && !r.ok) return { ...r, reason: `QRA coordination: ${r.reason}` };
+        const c = this.oatConflict(q);
+        if (c) return fail(Math.max(0, late), `${c.cs} within ${dist([c.x, c.y], [q.x, q.y]).toFixed(1)} NM / ${Math.round(Math.abs(c.fl - q.fl) * 100)} ft of ${q.cs} (OAT)`);
+        if (!this.get(q.id) || el > L.windowS) return r ? met(Math.max(0, late), `military notified ${Math.max(0, late)} s after COMLOSS, coordination answered after ${r.s} s, separation from ${q.cs} kept`) : fail(null, 'QRA coordination not answered');
+        return null;
+      }
+      case 'OAT_FORMATION': {
+        const r = answered(g.req, CIVMIL.coordS);
+        if (r && !r.ok) return { ...r, reason: `coordination: ${r.reason}` };
+        const c = this.oatConflict(a);
+        if (c) return fail(el, `${c.cs} within ${dist([c.x, c.y], [a.x, a.y]).toFixed(1)} NM / ${Math.round(Math.abs(c.fl - a.fl) * 100)} ft of ${a.cs} (OAT, non-RVSM)`);
+        if (gone || el > L.windowS) return r ? met(r.s, `coordination answered after ${r.s} s, separation from ${a.cs} kept`) : fail(null, 'coordination not answered');
         return null;
       }
       case 'READBACK_ERROR':
@@ -1065,6 +1145,7 @@ export class Sim {
   _cmd(id, what, fn, alt = null) {
     const a = this.get(id);
     if (!a) return { ok: false, msg: 'Aircraft no longer on frequency' };
+    if (a.oat) return { ok: false, msg: `${a.cs} is OAT under military control` };
     if (!this.onFreq(a)) return { ok: false, msg: `${a.cs} is not on your frequency${a.ctl === 'xfer' ? ' (transferred)' : a.noXfer ? ' (not transferred to you yet)' : ''}` };
     if (!this._tx && this.freqBusy()) return this.sayAgain(a);
     if (a.rcf) { this.log(`${what} to ${a.cs} — no reply`, 'w'); return { ok: false, msg: `${a.cs}: no reply` }; }
@@ -1081,6 +1162,86 @@ export class Sim {
     fn(a);
     this.queueReadback(a, what);
     return { ok: true };
+  }
+
+  /* ---------------- civil-military (training constructs) ---------------- */
+  /** A military track: flown by oatStep, never cleared by the trainee, separated from with vMin. */
+  makeOat({ kind, cs, type, n, xy, fl, sfl, route }) {
+    const perf = this.C.military.aircraft[type];
+    const a = this.makeAircraft({ cs, type, cat: 'oat', x: xy[0], y: xy[1], fl, cfl: sfl, sfl, rfl: sfl, route, entry: 'MIL', exit: 'MIL' });
+    a.ctl = 'mil'; a.oat = { kind, n, nonRvsm: perf.nonRvsm, perf, phase: kind === 'qra' ? 'intercept' : 'cross', target: null };
+    this.initKinematics(a);
+    a.hdg = route[0] ? brg(xy, route[0].xy) : 0;
+    this.ac.push(a);
+    return a;
+  }
+  /** Notify the military of a COMLOSS (a controller action, from either window). */
+  notifyMil(id) {
+    const a = this.get(id);
+    if (!a) return { ok: false, msg: 'Aircraft no longer on the display' };
+    if (!a.comloss) return { ok: false, msg: `${a.cs} is in contact: nothing to notify` };
+    const g = a.comloss.inj.g;
+    if (g.notifiedAt !== undefined) return { ok: false, msg: `Military already notified about ${a.cs}` };
+    g.notifiedAt = this.t;
+    this.log(`Military notified: ${a.cs} COMLOSS, FL${fmtFL(a.fl)}`);
+    this.mark(`Military notified about ${a.cs}`, 'ok');
+    if (!this.C.military) this.log('No QRA base configured for this country: no scramble', 'w', 'i');
+    return { ok: true };
+  }
+  civmilStep() {
+    for (const inj of this.scenario.injects) {
+      if (inj.status !== 'fired' || !inj.g || inj.type !== 'COMLOSS') continue;
+      const g = inj.g, a = g.ac;
+      if (!g.declared && this.t >= g.declareAt && this.get(a.id) && a.rcf) {
+        g.declared = this.t; a.comloss.declared = true;
+        this.log(`COMLOSS ${a.cs}: no contact for ${Math.round(CIVMIL.comlossS / 60)} min, FL${fmtFL(a.fl)}. Notify the military.`, 'a');
+        this.mark(`COMLOSS ${a.cs} declared`, 'a');
+      }
+      if (g.notifiedAt !== undefined && !g.qra && this.C.military && this.t >= g.notifiedAt + CIVMIL.scrambleS && this.get(a.id)) {
+        const M = this.C.military, base = M.qra.reduce((m, q) => (dist(q.xy, [a.x, a.y]) < dist(m.xy, [a.x, a.y]) ? q : m), M.qra[0]);
+        const q = this.makeOat({ kind: 'qra', cs: `${base.callsign}${11 + Math.floor(this.rng() * 80)}`, type: base.aircraft, n: 2, xy: base.xy, fl: 50, sfl: Math.round(a.fl), route: [{ id: a.cs, xy: [a.x, a.y] }] });
+        q.oat.target = a; q.oat.base = base;
+        this.raiseRequest(q, 'mil', null, `(MIL) QRA pair airborne from ${base.id}, climbing FL${fmtFL(Math.round(a.fl))} through your airspace to intercept ${a.cs}. Acknowledge.`);
+        g.qra = q; g.req = q.req;
+        this.mark(`QRA ${q.cs} airborne from ${base.id}`, 'w');
+      }
+    }
+  }
+  /** One second of a military track (after the shared motion step). */
+  oatStep(a) {
+    const o = a.oat, tgt = o.target && this.get(o.target.id) ? o.target : null;
+    // an unanswered military call lapses like any request (the grading has already counted it)
+    if (a.req && this.t - a.req.t > REQUEST_TIMEOUT_S) { this.stats.reqMissed++; this.log(`${a.cs} ${a.req.text.replace(/ Acknowledge\.$/, '')}: no answer`, 'w'); a.req = null; }
+    if (o.kind === 'qra') {
+      if (o.phase === 'intercept') {
+        if (!tgt) { this.rtb(a); return; }
+        a.route = [{ id: tgt.cs, xy: [tgt.x, tgt.y] }]; a.ri = 0; a.sfl = a.cfl = Math.round(tgt.fl);
+        if (dist([a.x, a.y], [tgt.x, tgt.y]) < CIVMIL.joinNM && Math.abs(a.fl - tgt.fl) < 10) {
+          o.phase = 'joined'; o.joinedAt = this.t;
+          this.log(`${a.cs} (MIL) joined ${tgt.cs}`, 'w');
+        }
+      } else if (o.phase === 'joined') {
+        if (!tgt) { this.rtb(a); return; }
+        a.x = tgt.x + 0.8; a.y = tgt.y + 0.8; a.fl = a.sfl = a.cfl = tgt.fl; a.hdg = tgt.hdg; // flying in company
+        if (this.t - o.joinedAt >= CIVMIL.joinedS) {
+          tgt.rcf = this.t + 1; delete tgt.comloss;
+          this.rtb(a);
+        }
+      } else if (dist([a.x, a.y], o.base.xy) < 5) a.done = 'mil';
+    } else if (a.ri >= a.route.length) a.done = 'mil';
+    if (Math.abs(a.x) > 420 || Math.abs(a.y) > 300) a.done = 'mil';
+    if (a.done) this.log(`${a.cs} (MIL) left your area`);
+  }
+  rtb(a) {
+    a.oat.phase = 'rtb'; a.oat.target = null;
+    const b = a.oat.base;
+    a.route = [{ id: b.id, xy: b.xy }]; a.ri = 0; a.sfl = a.cfl = 100;
+    this.log(`${a.cs} (MIL) returning to ${b.id}`);
+  }
+  /** One of your aircraft too close to an OAT track (not the one it intercepts), or null. */
+  oatConflict(o) {
+    if (!this.get(o.id)) return null;
+    return this.ac.find(x => this.ours(x) && x !== o.oat.target && !x.oat && dist([x.x, x.y], [o.x, o.y]) < CIVMIL.lateralNM && Math.abs(x.fl - o.fl) * 100 < vMin(x, o)) || null;
   }
 
   /* ---------------- radio ---------------- */
@@ -1243,7 +1404,7 @@ export class Sim {
   answer(id, approve) {
     const a = this.get(id);
     if (!a || !a.req) return { ok: false, msg: 'No open request' };
-    const r = a.req, coord = r.kind === 'coord'; // coordination is with the next sector, not with the aircraft
+    const r = a.req, coord = r.kind === 'coord' || r.kind === 'mil'; // coordination with the next sector or the military, not the aircraft
     if (!coord && !this.onFreq(a)) return { ok: false, msg: `${a.cs} is not on your frequency` };
     if (!coord && a.rcf) return { ok: false, msg: `${a.cs}: no reply` };
     if (!coord && this.freqBusy()) return this.sayAgain(a);
@@ -1251,7 +1412,8 @@ export class Sim {
     r.answeredAt = this.t; r.approved = approve;
     if (r.cell) r.cell.answers.push(this.t - r.t);
     if (!coord) this.stats.cmds++;
-    if (coord) {
+    if (r.kind === 'mil') this.log(`${a.cs} coordination with the military acknowledged`);
+    else if (coord) {
       if (approve) { a.xfl = r.value; this.log(`${a.cs} exit level FL${fmtFL(r.value)} agreed with the next sector`); }
       else this.log(`${a.cs} exit level change refused, FL${fmtFL(a.xfl)} stands`);
     } else if (approve) {
@@ -1280,6 +1442,7 @@ export class Sim {
     const items = [];
     for (const a of this.ac) {
       if (a.emg) items.push({ p: 1, ac: a, h: `${a.cs} emergency descent`, s: `Squawk 7700, descending FL${fmtFL(a.fl)} to FL100, diverting ${a.route[0] ? a.route[0].id : ''}${a.emgAck ? ' · acknowledged' : ''}`, act: a.emgAck ? null : 'ack' });
+      if (a.comloss && a.comloss.declared) { const g = a.comloss.inj.g; items.push({ p: 1, ac: a, h: `${a.cs} COMLOSS`, s: g.notifiedAt === undefined ? `No contact for ${fmtT(this.t - g.declared + CIVMIL.comlossS)}. Notify the military.` : `Military notified${g.qra ? `, ${g.qra.cs} (QRA) airborne` : ', QRA scramble expected'}. Keep traffic clear.`, act: g.notifiedAt === undefined ? 'notify' : null }); }
       if (a.rcf && a.sq === '7600') items.push({ p: 1, ac: a, h: `${a.cs} radio failure`, s: `Squawk 7600. Continues FL${fmtFL(a.cfl)} on own navigation. Separate others from it.` });
       const cl = this.nets.clam.get(a.id), rm = this.nets.ram.get(a.id), ap = this.nets.apw.get(a.id);
       if (cl) items.push({ p: cl.kind === 'DEV' ? 1 : 2, ac: a, h: `${a.cs} CLAM ${cl.kind === 'DEV' ? 'level deviation' : 'selected level'}`, s: `Cleared FL${fmtFL(a.cfl)}, selected FL${fmtFL(a.sfl)}, now FL${fmtFL(a.fl)}. Re-issue the level.` });
@@ -1305,7 +1468,7 @@ export class Sim {
         const atXfl = a.xfl === null || Math.round(a.cfl) === a.xfl;
         items.push({ p: atXfl ? 3 : 2, ac: a, h: `${a.cs} transfer, exits in ${fmtT(a.tExit)}`, s: a.xfl === null ? `FL${fmtFL(a.cfl)}, no agreed exit level` : atXfl ? `Cleared FL${fmtFL(a.cfl)}, the agreed exit level` : `Cleared FL${fmtFL(a.cfl)}, agreed exit FL${fmtFL(a.xfl)}. Re-clear before transfer.`, act: 'xfer' });
       }
-      if (a.req) items.push({ p: a.req.kind === 'wx' || a.req.kind === 'coord' ? 2 : 3, ac: a, h: `${a.cs} ${a.req.text}`, s: `Waiting ${this.t - a.req.t} s`, act: 'req' });
+      if (a.req) items.push({ p: a.req.kind === 'mil' ? 1 : a.req.kind === 'wx' || a.req.kind === 'coord' ? 2 : 3, ac: a, h: `${a.cs} ${a.req.text}`, s: `Waiting ${this.t - a.req.t} s`, act: 'req' });
       if (a.popupUntil > this.t) items.push({ p: 2, ac: a, h: `${a.cs} uncoordinated`, s: `Entering at FL${fmtFL(a.fl)}. Check conflicts and accept or turn.` });
     }
     const next = this.scenario.injects.find(i => i.status === 'pending');

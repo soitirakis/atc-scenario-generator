@@ -208,7 +208,8 @@ function probe(id, fl) {
 
 function actButtons(it) {
   const id = it.ac && it.ac.id, b = (a, label, cls = '') => `<button class="btn sm ${cls}" data-a="${a}" data-id="${id}">${label}</button>`;
-  if (it.act === 'req') return it.ac.req && it.ac.req.kind === 'coord' ? b('ok', 'Accept') + b('no', 'Refuse') : b('ok', 'Approve') + b('no', 'Unable');
+  if (it.act === 'notify') return b('notify', 'Notify MIL', 'warn');
+  if (it.act === 'req') return it.ac.req && it.ac.req.kind === 'mil' ? b('ok', 'Acknowledge') : it.ac.req && it.ac.req.kind === 'coord' ? b('ok', 'Accept') + b('no', 'Refuse') : b('ok', 'Approve') + b('no', 'Unable');
   if (it.act === 'ack') return b('ack', 'Ack', 'warn');
   if (it.act === 'assume') return b('assume', 'Assume', 'primary');
   if (it.act === 'xfer') return b('xfer', 'Transfer');
@@ -222,11 +223,18 @@ function renderAcBox() {
     if (ui.acBoxFor !== null) { $('acBox').innerHTML = '<div class="empty">Click an aircraft on the radar or a priority item to issue clearances.</div>'; ui.acBoxFor = null; }
     return;
   }
-  const sig = `${a.id}|${a.req ? a.req.text : ''}|${a.rcf}|${a.emg}${a.emgAck}|${a.ctl}${a.noXfer}|${a.xfl}`;
-  if (ui.acBoxFor === a.id && sig === ui.acBoxSig) { updateKv(a); return; }
+  const sig = `${a.id}|${a.req ? a.req.text : ''}|${a.rcf}|${a.emg}${a.emgAck}|${a.ctl}${a.noXfer}|${a.xfl}|${a.oat ? Math.round(a.fl) + a.oat.phase + Math.round(a.gs / 10) : ''}`;
+  if (ui.acBoxFor === a.id && sig === ui.acBoxSig) { if (!a.oat) updateKv(a); return; }
   ui.acBoxFor = a.id; ui.acBoxSig = sig;
   const lvls = []; for (let f = 100; f <= 410; f += 10) lvls.push(f);
   const pts = [...a.route.slice(a.ri).map(w => w.id), ...C.pointList.filter(p => dist(p.xy, [a.x, a.y]) < 150).map(p => p.id)];
+  if (a.oat) { // military: shown for awareness, no clearances
+    $('acBox').innerHTML = `<div class="ac-card"><div class="ac-head"><b>${esc(a.cs)}</b><span>${esc(a.type)}${a.oat.n > 1 ? ' x' + a.oat.n : ''} · OAT · ${a.oat.kind === 'qra' ? 'QRA ' + a.oat.phase : 'formation'}</span></div>
+      <div class="note">Operational air traffic under military control. Not on your frequency: no clearances. ${a.oat.nonRvsm ? 'Non-RVSM: keep 2000 ft from FL290 up, 1000 ft below, or 5 NM.' : ''}</div>
+      <div class="kv"><div><span>FL</span>${fmtFL(a.fl)}</div><div><span>Target FL</span>${fmtFL(a.sfl)}</div><div><span>GS</span>${Math.round(a.gs)}</div><div><span>TRK</span>${String(Math.round(a.trk) || 360).padStart(3, '0')}</div></div>
+      ${a.req ? `<div class="row-btns"><span class="note" style="flex:1;min-width:0">${esc(a.req.text)}</span><button class="btn sm primary" data-a="ok" data-id="${a.id}">Acknowledge</button></div>` : ''}</div>`;
+    return;
+  }
   $('acBox').innerHTML = `<div class="ac-card">
     <div class="ac-head"><b>${esc(a.cs)}</b><span>${esc(a.type)} · ${esc(a.entry)} → ${esc(a.exit)} · ${a.cat.toUpperCase()}</span></div>
     <div class="row-btns" id="acCtl"><span class="note" style="flex:1;min-width:0">${a.noXfer && a.ctl === 'none' ? 'NOT TRANSFERRED by the previous sector' : CTL[a.ctl]}${a.xfl !== null ? ` · agreed exit FL${fmtFL(a.xfl)}` : ''}</span>${a.ctl === 'pend' || a.noXfer ? `<button class="btn sm primary" data-a="assume" data-id="${a.id}">Assume</button>` : a.ctl === 'ass' ? `<button class="btn sm" data-a="xfer" data-id="${a.id}">Transfer</button>` : ''}</div>
@@ -604,6 +612,7 @@ function bindInput() {
       if (b.dataset.a === 'ok') result(sim.answer(id, true));
       if (b.dataset.a === 'no') result(sim.answer(id, false));
       if (b.dataset.a === 'ack') result(sim.ackEmergency(id));
+      if (b.dataset.a === 'notify') result(sim.notifyMil(id));
       return;
     }
     const tl = e.target.closest('button[data-tl]');

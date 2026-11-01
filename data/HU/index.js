@@ -8,5 +8,6 @@ import airports from './airports.json';
 import traffic from './traffic.json';
 import map from './map.json';
 import areas from './areas.json';
+import military from './military.json';
 
-export default { meta, sectors, borders, navaids, points, airports, traffic, map, areas };
+export default { meta, sectors, borders, navaids, points, airports, traffic, map, areas, military };

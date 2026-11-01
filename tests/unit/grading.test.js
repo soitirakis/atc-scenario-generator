@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import RO from '../../data/RO/index.js';
 import { loadCountry } from '../../src/country.js';
-import { Sim, GRADING, RADIO } from '../../src/sim.js';
+import { Sim, GRADING, RADIO, CIVMIL } from '../../src/sim.js';
 import { buildLocalScenario } from '../../src/scenario.js';
 import { pip } from '../../src/geo.js';
 
@@ -49,7 +49,7 @@ const settle = (sim, inj, max = 1200) => { for (let i = 0; i < max && inj.result
 
 describe('inject grading', () => {
   it('every inject type has an objective and limits in GRADING', () => {
-    for (const t of ['LEVEL_BUST', 'RADIO_FAILURE', 'EMERGENCY_DESCENT', 'WEATHER_CELL', 'MILITARY_TSA', 'POPUP_TRAFFIC', 'CLIMB_REQUEST', 'COORD_REQUEST', 'LATE_TRANSFER', 'READBACK_ERROR', 'SIMILAR_CALLSIGN']) {
+    for (const t of ['LEVEL_BUST', 'RADIO_FAILURE', 'EMERGENCY_DESCENT', 'WEATHER_CELL', 'MILITARY_TSA', 'POPUP_TRAFFIC', 'CLIMB_REQUEST', 'COORD_REQUEST', 'LATE_TRANSFER', 'READBACK_ERROR', 'SIMILAR_CALLSIGN', 'COMLOSS', 'OAT_FORMATION', 'TSA_EXTENSION']) {
       expect(GRADING[t], t).toBeTruthy();
       expect(GRADING[t].text, t).toMatch(/\w/);
     }
@@ -331,6 +331,74 @@ describe('inject grading', () => {
     expect(r.reason).toMatch(new RegExp(`${b.cs} acted on ${b.cs} taking ${a.cs}'s clearance`));
     expect(b.cfl).toBe(fl); // the other flight climbs
     expect(a.cfl).toBe(aFrom); // the one it was meant for does not
+  });
+
+  /* civil-military */
+  const comlossToQra = (notify = true) => {
+    const { sim, inj, a } = fired('COMLOSS');
+    only(sim, a);
+    run(sim, inj.g.declareAt - sim.t);
+    if (notify) { sim.notifyMil(a.id); run(sim, CIVMIL.scrambleS + 1); }
+    return { sim, inj, a, q: inj.g.qra };
+  };
+  it('COMLOSS met: military notified in time, QRA coordination answered, traffic kept clear', () => {
+    const { sim, inj, q } = comlossToQra();
+    sim.answer(q.id, true);
+    const r = settle(sim, inj, 3000);
+    expect(r.state).toBe('met');
+    expect(r.reason).toMatch(new RegExp(`military notified 0 s after COMLOSS, coordination answered after \\d+ s, separation from ${q.cs} kept`));
+  });
+  it('COMLOSS not met: the military is not notified within 2 min', () => {
+    const { sim, inj } = comlossToQra(false);
+    const r = settle(sim, inj, CIVMIL.notifyS + 2);
+    expect(r.state).toBe('not met');
+    expect(r.reason).toBe('military not notified within 2 min of COMLOSS');
+  });
+  it('COMLOSS not met: one of your aircraft inside 5 NM / 2000 ft of the QRA', () => {
+    const { sim, inj, q } = comlossToQra();
+    sim.answer(q.id, true);
+    intruder(sim, q, 3, 1500).ctl = 'ass';
+    const r = settle(sim, inj, 3);
+    expect(r.state).toBe('not met');
+    expect(r.reason).toMatch(new RegExp(`INT1 within \\d\\.\\d NM / \\d+ ft of ${q.cs} \\(OAT\\)`)); // the fighters are climbing
+  });
+  it('OAT_FORMATION met: acknowledged in time and traffic kept clear', () => {
+    const { sim, inj, a } = fired('OAT_FORMATION');
+    only(sim, a);
+    sim.answer(a.id, true);
+    const r = settle(sim, inj, 3000);
+    expect(r.state).toBe('met');
+    expect(r.reason).toMatch(/coordination answered after \d+ s, separation from .* kept/);
+  });
+  it('OAT_FORMATION not met: the military coordination is not answered within 60 s', () => {
+    const { sim, inj } = fired('OAT_FORMATION');
+    const r = settle(sim, inj, CIVMIL.coordS + 2);
+    expect(r.state).toBe('not met');
+    expect(r.reason).toBe('coordination: not answered within 60 s');
+  });
+  it('OAT_FORMATION not met: one of your aircraft inside 5 NM / 2000 ft of the non-RVSM formation', () => {
+    const { sim, inj, a } = fired('OAT_FORMATION');
+    only(sim, a);
+    sim.answer(a.id, true);
+    intruder(sim, a, 3, a.fl >= 290 ? 1500 : 500).ctl = 'ass';
+    const r = settle(sim, inj, 3);
+    expect(r.state).toBe('not met');
+    expect(r.reason).toMatch(new RegExp(`INT1 within .* of ${a.cs} \\(OAT, non-RVSM\\)`));
+  });
+  it('TSA_EXTENSION met: none of your aircraft inside the area at short notice', () => {
+    const { sim, inj } = fired('TSA_EXTENSION');
+    only(sim);
+    expect(settle(sim, inj).state).toBe('met');
+  });
+  it('TSA_EXTENSION not met: one of your aircraft inside it within its limits', () => {
+    const { sim, inj } = fired('TSA_EXTENSION');
+    only(sim);
+    const z = inj.g.zone;
+    run(sim, z.at - sim.t);
+    intruder(sim, { ...insideOf(z), fl: Math.min(z.upper, 410) - 10 }, 0).ctl = 'ass';
+    const r = settle(sim, inj, 3);
+    expect(r.state).toBe('not met');
+    expect(r.reason).toMatch(new RegExp(`INT1 inside ${z.id}`));
   });
 
   it('the debrief lists each inject with its result, and a timeline of key events', () => {

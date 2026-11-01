@@ -12,7 +12,7 @@ export const CHANNEL_NAME = 'atc-scenario-generator';
 export const PROTOCOL = 1;
 
 /** The actions a controller can take. Anything else from a trainee window is refused. */
-export const TRAINEE_COMMANDS = ['clearLevel', 'clearRate', 'turn', 'direct', 'speed', 'mach', 'resumeSpeed', 'resumeNav', 'answer', 'assume', 'transfer', 'ackEmergency', 'probeLevel', 'command'];
+export const TRAINEE_COMMANDS = ['clearLevel', 'clearRate', 'turn', 'direct', 'speed', 'mach', 'resumeSpeed', 'resumeNav', 'answer', 'assume', 'transfer', 'ackEmergency', 'probeLevel', 'command', 'notifyMil'];
 const ALLOWED = new Set(TRAINEE_COMMANDS);
 
 export class Link {
@@ -101,6 +101,8 @@ export function makeSnapshot(sim, { session = 0, running = false, speed = 1 } = 
     o.plots = a.plots.map(p => [p[0], p[1]]);
     o.req = a.req ? { kind: a.req.kind, value: a.req.value, text: a.req.text, t: a.req.t } : null;
     o.rcf = a.rcf > 0 && a.sq === '7600'; // only a 7600 squawk shows a radio failure on radar
+    o.oat = a.oat ? { kind: a.oat.kind, n: a.oat.n, nonRvsm: a.oat.nonRvsm, phase: a.oat.phase } : null;
+    o.comloss = a.comloss && a.comloss.declared ? true : null; // declared COMLOSS is on the controller's display
     return o;
   });
   return {

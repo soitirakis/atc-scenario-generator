@@ -27,6 +27,7 @@ En-route radar training simulator that builds scenarios and injects for a chosen
   - late transfers from the previous sector
   - a readback error (wrong level or heading read back)
   - similar callsigns on frequency, one taking the other's clearance
+  - civil-military (training constructs): COMLOSS escalating to a QRA scramble, a non-RVSM OAT formation crossing, a short-notice military area extension
 - **Clearances**: level, heading, direct-to, speed, and approve/unable on requests, from the panels or a **command line in controller shorthand** (see below).
 - **Readbacks**: every clearance is read back by the pilot 2-6 s later and occupies the frequency; a clearance given while it is busy gets "say again".
 - **Controller tools**: range-bearing lines, a SEP tool and a what-if level probe (see below).
@@ -95,6 +96,20 @@ Each is a DOM-free module in `src/nets/` with its own unit tests. The simulator 
 APW, CLAM and RAM alerts appear in the priorities list, for your traffic (assumed or pending).
 
 **These are simplified training versions, not the operational systems:** there is no alert suppression (an alert stays up for as long as its condition holds), and no per-area tuning (one set of parameters for the whole FIR, with no adaptation by area, sector or flight phase).
+
+## Civil-military injects
+
+Training constructs (`data/<CODE>/military.json`, labelled in its `_note`), timings in `CIVMIL` in `src/sim.js`:
+
+| Inject | What happens | Graded on |
+|---|---|---|
+| **COMLOSS and QRA scramble** | an aircraft goes silent with a normal squawk (no 7600). After 5 min the system declares COMLOSS and the priorities offer **Notify MIL**. 3 min after the notification a QRA pair takes off from the nearest configured base, climbs through civil traffic as OAT under military control to the silent aircraft, joins it; 3 min later contact is restored and the pair returns to base | military notified within 2 min of COMLOSS; the military's coordination call answered within 60 s; your traffic kept 5 NM / 2000 ft (1000 ft below FL290) from the QRA |
+| **OAT formation (non-RVSM)** | the military pre-notify a formation of two crossing the sector at FL300-FL360 in about 3 min | coordination answered within 60 s; your traffic kept 5 NM / 2000 ft from it |
+| **Short-notice extension** | the latest military area is extended 2000 ft down at 2 minutes' notice (with none active, one is activated at short notice) | none of your aircraft inside the new limits for 10 min |
+
+**QRA bases.** Romania: **LRCK** (Mihail Kogălniceanu), F-16; position from the AIP aerodrome list. Hungary: **LHKE** (Kecskemét), JAS 39 Gripen; position from eAIP ENR 2.1, the centre of the KECSKEMET MCTR circle, which ENR 2.1 says is the aerodrome reference point. LRFT (Fetești) and LRCT (Câmpia Turzii) are left out for now: the civil eAIP does not publish them. That a base holds QRA, the aircraft, callsigns and timeline are invented for training.
+
+**OAT tracks** are drawn as magenta diamonds (filled for a pair or formation) with their own label: callsign, `OAT x2`, level and `NRVSM`, and role (`QRA INTERCEPT`, `MIL`). They are under military control: not on your frequency, no clearances, never pending or assumed. Military fighters are treated as non-RVSM, so STCA, MTCD-style grading and the injects use 5 NM / 2000 ft from FL290 up (1000 ft below). Fighter performance (climb, descent, cruise and intercept speed) is in `military.json` as round training figures: OpenAP has no fighter models.
 
 ## Command line and readbacks
 
@@ -211,6 +226,7 @@ One value in OpenAP's own data is kept as published although it lies outside its
 | `navaids.json` | 16 VOR/DME | eAIP ENR 4.1 (AIRAC AMDT 11/26, page 3: 01/25) |
 | `points.json` | 131 significant points with FRA role | eAIP ENR 4.4 (AIRAC AMDT 11/26) |
 | `airports.json` | aerodrome reference points | eAIP AD 2 |
+| `military.json` | QRA base LRCK (F-16), OAT formation, fighter performance | **training construct**; LRCK position from AD 2 (`airports.json`); LRFT and LRCT not in the civil eAIP, left out |
 | `areas.json` | 270 military areas (264 TRA, 6 TSA) with lateral and vertical limits | eAIP ENR 5.2 (edition 2026-10-29), parsed by `npm run airac`; three limits the AIP prints as `L200`/`L280` are kept as published and read as flight levels (an allow-list in `scripts/airac-lib.mjs`; any other unknown format stops the parse) |
 | `traffic.json` | gates, flow weights, operators, main airports (LROP), agreed exit levels | modelling choice, not published data; exit levels are **modelled, not from a published Letter of Agreement** |
 | `data/performance.json` (shared) | per-type climb/descent rates by level band, climb/cruise/descent Mach and speeds | converted from [OpenAP](https://github.com/TUDelft-CNS-ATM/openap) WRAP kinematic data (TU Delft, GPL-3.0) at commit [`46753acb`](https://github.com/TUDelft-CNS-ATM/openap/tree/46753acb988c1e8c9d47ec5ae72d6fb75b9cf260/openap/data/wrap) by `scripts/openap-wrap.mjs` |
@@ -229,6 +245,7 @@ eAIP: https://aisro.ro/aip/2026-10-29/html/ro/aip_toc_enr.html
 - military area activity: the areas are published, but when one is active is the instructor's choice (the AIP says "by NOTAM"), and the simulator treats an active TRA as closed to your traffic, without transit by clearance;
 - the flow weights;
 - the border segments between published sector corners;
+- the civil-military injects: which base holds QRA, the aircraft, callsigns, timeline and fighter performance (`military.json`);
 - aircraft performance: WRAP values are statistical models fitted to ADS-B flight data, not manufacturer or BADA data. BADA was not used because it requires a EUROCONTROL licence.
 
 The Ukrainian entry and exit points are kept in the data but carry no traffic (`closed: true`).
@@ -242,6 +259,7 @@ The Ukrainian entry and exit points are kept in the data but carry no traffic (`
 | `navaids.json` | 9 DVOR/DME | eAIP ENR 4.1 (AIRAC AMDT 006/2026) |
 | `points.json` | 107 FRA significant points with role | eAIP ENR 4.4.1 (AIRAC AMDT 006/2026) |
 | `airports.json` | aerodrome reference points | eAIP AD 2.2 |
+| `military.json` | QRA base LHKE (JAS 39 Gripen), OAT formation, fighter performance | **training construct**; LHKE position from eAIP ENR 2.1 (KECSKEMET MCTR, centred on the ARP) |
 | `areas.json` | 39 TRAs with lateral and vertical limits | eAIP ENR 5.2 (AIRAC AMDT 006/2026), parsed by `npm run airac`; "along border" segments follow `borders.json`, so they are **approximated** |
 | `traffic.json` | gates, flow weights, operators, main airport (LHBP), agreed exit levels | modelling choice, not published data; exit levels are **modelled, not from a published Letter of Agreement** |
 | `data/performance.json` (shared) | per-type climb/descent rates by level band, climb/cruise/descent Mach and speeds | converted from [OpenAP](https://github.com/TUDelft-CNS-ATM/openap) WRAP kinematic data (TU Delft, GPL-3.0) at commit [`46753acb`](https://github.com/TUDelft-CNS-ATM/openap/tree/46753acb988c1e8c9d47ec5ae72d6fb75b9cf260/openap/data/wrap) by `scripts/openap-wrap.mjs` |

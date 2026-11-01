@@ -3,7 +3,7 @@
 import { dms, makeProjection, centroid, pip } from './geo.js';
 
 export function loadCountry(raw) {
-  const { meta, sectors: sectorFile, borders, navaids, points, airports, traffic, map, areas } = raw;
+  const { meta, sectors: sectorFile, borders, navaids, points, airports, traffic, map, areas, military } = raw;
   const proj = makeProjection(meta.center[0], meta.center[1]);
   const c = {
     meta, traffic, proj,
@@ -54,6 +54,18 @@ export function loadCountry(raw) {
     c.mainAirports[ap.id] = { ...ap, approach: m.approach, handoffNM: m.handoffNM, arr: m.arr, dep: m.dep };
   }
   for (const a of (areas && areas.areas) || []) c.areas.push(loadArea(a, borders, proj));
+  // civil-military training constructs (military.json): QRA bases, formation, fighter performance
+  c.military = null;
+  if (military) {
+    const qra = military.qra.map(q => {
+      const ap = q.aerodrome ? c.airports[q.aerodrome] : null;
+      if (q.aerodrome && !ap) throw new Error(`QRA base ${q.id}: aerodrome ${q.aerodrome} is not in airports.json`);
+      const xy = ap ? ap.xy : (ll => proj.toNM(ll[0], ll[1]))(dms(q.pos));
+      if (!military.aircraft[q.aircraft]) throw new Error(`QRA base ${q.id}: no performance for ${q.aircraft}`);
+      return { id: q.id, name: q.name, xy, aircraft: q.aircraft, callsign: q.callsign };
+    });
+    c.military = { qra, formation: military.formation, aircraft: military.aircraft };
+  }
   c.coast = map.coast.map(p => proj.toNM(p[0], p[1]));
   c.neigh = map.neighbours.map(n => ({ label: n.label, xy: proj.toNM(n.lat, n.lon) }));
 

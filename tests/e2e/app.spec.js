@@ -345,3 +345,28 @@ test('command line: Tab completes the callsign, Enter sends, the pilot reads bac
   await expect(hint).toHaveText('Heading 400 is outside 001-360');
   await expect(line).toHaveValue(`${b.cs} H400`);
 });
+
+test('COMLOSS: Notify MIL from the priorities, the QRA pair scrambles, its coordination is acknowledged', async ({ page }) => {
+  await page.locator('#pausedStart').click();
+  await page.locator('#playBtn').click(); // freeze
+  const step = s => page.evaluate(s => { for (let i = 0; i < s; i++) window.__sim.step(); }, s);
+  await page.evaluate(() => { const s = window.__sim; s.scenario.injects.unshift({ min: 1, type: 'COMLOSS', text: '' }); s.scenario.injects[0].status = 'pending'; s.fireNow(0); });
+  const { cs, wait } = await page.evaluate(() => { const g = window.__sim.scenario.injects[0].g; return { cs: g.ac.cs, wait: g.declareAt - window.__sim.t }; });
+  await step(wait + 1);
+  const item = page.locator('#prio .pi', { hasText: `${cs} COMLOSS` });
+  await expect(item).toBeVisible();
+  await item.locator('button[data-a="notify"]').click();
+  await expect(page.locator('#log')).toContainText(`Military notified: ${cs} COMLOSS`);
+
+  await step(200);
+  const qra = await page.evaluate(() => { const q = window.__sim.scenario.injects[0].g.qra; return { id: q.id, cs: q.cs }; });
+  const call = page.locator('#prio .pi', { hasText: `${qra.cs} (MIL) QRA pair airborne` });
+  await expect(call).toBeVisible();
+  await call.locator('button[data-a="ok"]').click();
+  await expect(page.locator('#log')).toContainText(`${qra.cs} coordination with the military acknowledged`);
+
+  // the military track: shown for awareness, no clearances
+  await page.evaluate(id => { window.__radar.sel = id; }, qra.id);
+  await expect(page.locator('#acBox')).toContainText('Operational air traffic under military control');
+  await expect(page.locator('#acBox #cFl')).toHaveCount(0);
+});
