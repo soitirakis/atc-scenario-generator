@@ -3,6 +3,8 @@ import { D2R, fmtFL, fmtT } from './geo.js';
 import { endXY, rangeBearing, rblText } from './tools/rbl.js';
 import { sep } from './tools/sep.js';
 
+const MIL_COLOR = '#d08cf0'; // OAT tracks: military traffic, not under your control
+
 const MONO = '"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace';
 const UI = '"Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif';
 
@@ -227,6 +229,7 @@ export class Renderer {
 
   acColor(a) {
     const c = this.col;
+    if (a.oat) return MIL_COLOR;
     if (a.emg) return c.alert;
     if (a.rcf && a.sq === '7600') return c.warn; // a silent pilot without 7600 looks normal on radar
     if (a.ctl === 'ass') return c.assumed;
@@ -371,10 +374,15 @@ export class Renderer {
       ctx.lineTo(X + Math.sin(tr) * vl * V.sc, Y - Math.cos(tr) * vl * V.sc); ctx.stroke();
       const st = stcaIds.get(a.id);
       ctx.strokeStyle = st === 'los' ? col.alert : st === 'pred' ? col.warn : color; ctx.lineWidth = 1.4;
-      ctx.strokeRect(X - 4, Y - 4, 8, 8);
-      if (a.lastIn) { ctx.fillStyle = color; ctx.fillRect(X - 2, Y - 2, 4, 4); }
+      if (a.oat) { // OAT: a diamond, filled for a formation or a pair
+        ctx.beginPath(); ctx.moveTo(X, Y - 6); ctx.lineTo(X + 6, Y); ctx.lineTo(X, Y + 6); ctx.lineTo(X - 6, Y); ctx.closePath(); ctx.stroke();
+        if (a.oat.n > 1) { ctx.fillStyle = color; ctx.globalAlpha = 0.35; ctx.fill(); ctx.globalAlpha = 1; }
+      } else {
+        ctx.strokeRect(X - 4, Y - 4, 8, 8);
+        if (a.lastIn) { ctx.fillStyle = color; ctx.fillRect(X - 2, Y - 2, 4, 4); }
+      }
       if (a.id === this.sel) { ctx.strokeStyle = col.accent; ctx.lineWidth = 1; ctx.strokeRect(X - 8, Y - 8, 16, 16); }
-      if (!layers.labels && a.id !== this.sel && !a.lastIn) continue;
+      if (!layers.labels && a.id !== this.sel && !a.lastIn && !a.oat) continue;
       labelled.push({ id: a.id, X, Y, a, color, st });
     }
     this.layoutLabels(labelled, W, H);
@@ -388,6 +396,14 @@ export class Renderer {
         ctx.moveTo(X + (qx - X) / d * 5, Y + (qy - Y) / d * 5); ctx.lineTo(qx, qy); ctx.stroke(); ctx.globalAlpha = 1;
       }
       const trend = Math.abs(a.sfl - a.fl) > 0.3 ? (a.sfl > a.fl ? '↑' : '↓') : ' ';
+      if (a.oat) { // OAT label: callsign and count, level and non-RVSM, what it is
+        if (st) { ctx.fillStyle = st === 'los' ? 'rgba(255,93,79,0.18)' : 'rgba(240,178,60,0.14)'; ctx.fillRect(bx, by, LW, LH); }
+        ctx.fillStyle = color;
+        ctx.fillText(`${a.cs} OAT${a.oat.n > 1 ? ' x' + a.oat.n : ''}${a.req ? ' REQ' : ''}`, lx, ly + 10);
+        ctx.fillText(`${fmtFL(a.fl)}${trend} ${a.oat.nonRvsm ? 'NRVSM' : ''}`, lx, ly + 23);
+        ctx.globalAlpha = 0.85; ctx.fillText(`${a.oat.kind === 'qra' ? 'QRA ' + a.oat.phase.toUpperCase() : 'MIL'} ${a.type}`, lx, ly + 36); ctx.globalAlpha = 1;
+        continue;
+      }
       const l1 = a.cs + (a.sq === '7700' ? ' EMG' : a.sq === '7600' ? ' RCF' : '') + (a.req ? ' REQ' : '') + (a.popupUntil > sim.t ? ' NEW' : '');
       if (st) { ctx.fillStyle = st === 'los' ? 'rgba(255,93,79,0.18)' : 'rgba(240,178,60,0.14)'; ctx.fillRect(bx, by, LW, LH); }
       ctx.fillStyle = a.req ? col.pend : color; ctx.fillText(l1, lx, ly + 10);

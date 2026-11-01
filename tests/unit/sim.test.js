@@ -648,9 +648,9 @@ describe('robustness', () => {
       sim.ac = [];
       expect(() => sim.fireNow(0), type).not.toThrow();
       expect(sim.scenario.injects[0].status, type).toBe('fired');
-      // the TSA, the two injects that bring their own traffic, and the readback error (armed for the
-      // next clearance) need no aircraft in the sector
-      if (!['MILITARY_TSA', 'POPUP_TRAFFIC', 'LATE_TRANSFER', 'READBACK_ERROR'].includes(type)) expect(sim.logs[0].text, type).toMatch(/no suitable aircraft in sector/);
+      // military areas, the injects that bring their own traffic (popup, late transfer, OAT formation) and the
+      // readback error (armed for the next clearance) need no aircraft in the sector
+      if (!['MILITARY_TSA', 'TSA_EXTENSION', 'POPUP_TRAFFIC', 'LATE_TRANSFER', 'READBACK_ERROR', 'OAT_FORMATION'].includes(type)) expect(sim.logs[0].text, type).toMatch(/no suitable aircraft in sector/);
       expect(() => run(sim, 30), type).not.toThrow();
     }
   });
@@ -683,7 +683,7 @@ describe('countries without a main airport', () => {
     const seen = new Set(sim.ac.map(a => a.cs));
     for (let i = 0; i < 1800; i++) {
       sim.step();
-      for (const a of sim.ac) { expect(a.cat, a.cs).toBe('transit'); seen.add(a.cs); }
+      for (const a of sim.ac.filter(x => !x.oat)) { expect(a.cat, a.cs).toBe('transit'); seen.add(a.cs); } // civil traffic; OAT is military
     }
     expect(seen.size).toBeGreaterThan(DIFF.advanced.count); // new traffic kept spawning
   });

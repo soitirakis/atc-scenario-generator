@@ -31,7 +31,8 @@ En-route ATC radar training simulator. Vanilla JS (ES modules) built with Vite i
 - Controller tools live in `src/tools/` as pure modules. Their on-screen state (`R.tools`: RBL lines, SEP pairs, tool mode) belongs to `main.js`; `render.js` only draws it.
 
 ## Performance and wind
-- Climb/descent rates, speeds and Mach come only from `data/performance.json` (OpenAP WRAP, GPL-3.0), regenerated with `node scripts/openap-wrap.mjs`; do not hand-edit it and do not add BADA data. A new aircraft type in `traffic.json` needs an entry in that script's `TYPE_MAP` with a reason.
+- Military (OAT) tracks are the one exception: their rates and speeds come from `data/<CODE>/military.json` (training construct, labelled in `_note`), because OpenAP has no fighter models. OAT tracks have `a.oat`, `ctl: 'mil'`, are flown by `oatStep` and skip the civil routine; separation with them uses `vMin` (non-RVSM). Military base positions need an official source; otherwise leave the base out.
+- Climb/descent rates, speeds and Mach of civil traffic come only from `data/performance.json` (OpenAP WRAP, GPL-3.0), regenerated with `node scripts/openap-wrap.mjs`; do not hand-edit it and do not add BADA data. A new aircraft type in `traffic.json` needs an entry in that script's `TYPE_MAP` with a reason.
 - `a.gs` and `a.trk` are derived (TAS + wind) every step; change `a.spd` (IAS/Mach clearance), `a.rate` (rate clearance) or `a.hdg`/route instead. `a.vr` is only for scripted overrides (built-in conflicts, level bust).
 - Anything that predicts motion (STCA, look-ahead) must use the same model: `levelProfile`/`flAfter` for levels, track and ground speed for position.
 
