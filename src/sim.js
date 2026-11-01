@@ -118,7 +118,8 @@ export class Sim {
     this.logs = []; this.wx = []; this.tsa = []; this.ended = false; this.csUsed = new Set(); this.timeline = [];
     this.nets = { clam: new Map(), apw: new Map(), ram: new Map(), mtcd: [] };
     this.freq = { busyUntil: 0, cs: null }; this.radio = []; this.radioActs = []; this._tx = null;
-    this.spawnTimer = 30; this.rng = Math.random; this.wind = [];
+    // seeded even before a scenario is loaded (load() reseeds both from the scenario), never Math.random
+    this.spawnTimer = 30; this.rng = mulberry32(1); this.radioRng = mulberry32(2); this.wind = [];
   }
 
   /* ---------------- helpers ---------------- */

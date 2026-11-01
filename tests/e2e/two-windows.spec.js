@@ -1,14 +1,15 @@
 import { test, expect } from '@playwright/test';
+import { open } from './load.js';
 
 // The instructor and trainee windows are two pages in one browser context, the way two
 // windows on one computer share a BroadcastChannel.
 async function openBoth(page, context) {
   const errors = [];
   page.on('pageerror', e => errors.push(`instructor: ${e.message}`));
-  await page.goto('/?role=instructor');
+  await open(page, '/?role=instructor');
   const trainee = await context.newPage();
   trainee.on('pageerror', e => errors.push(`trainee: ${e.message}`));
-  await trainee.goto('/?role=trainee');
+  await open(trainee, '/?role=trainee');
   await expect(trainee.locator('#roleTag')).toHaveText('TRAINEE · linked');
   await expect(page.locator('#roleTag')).toHaveText('INSTRUCTOR · linked');
   return { instructor: page, trainee, errors };
@@ -172,7 +173,7 @@ test('the trainee gives a clearance on the command line; it runs in the instruct
 });
 
 test('solo mode is unchanged: one window, inject list, no link', async ({ page }) => {
-  await page.goto('/');
+  await open(page, '/');
   await expect(page.locator('#roleTag')).toBeHidden();
   await expect(page.locator('#injList .inj-row').first()).toBeVisible();
   await expect(page.locator('#tab-instr')).toBeHidden();

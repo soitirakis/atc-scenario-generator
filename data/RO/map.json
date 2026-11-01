@@ -1,4 +1,5 @@
 {
+  "_note": "Approximate, not official: the Black Sea coastline and the neighbour labels are not from an official source. Display only: they draw the radar background and are not used by the simulation or the grading. Not for navigation.",
   "neighbours": [
     {
       "label": "BUDAPEST FIR · LHCC",

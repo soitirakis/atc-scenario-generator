@@ -33,6 +33,12 @@ describe('session loading', () => {
     expect(a.logs.map(l => l.text)).toEqual(b.logs.map(l => l.text));
   });
 
+  it('before any scenario is loaded, the random generators are already seeded (never Math.random)', () => {
+    const a = new Sim(C), b = new Sim(C);
+    expect(a.rng).not.toBe(Math.random);
+    expect([a.rng(), a.rng(), a.radioRng()]).toEqual([b.rng(), b.rng(), b.radioRng()]);
+  });
+
   it('a different seed produces different traffic', () => {
     expect(fresh({ seed: 1 }).ac.map(a => a.cs)).not.toEqual(fresh({ seed: 2 }).ac.map(a => a.cs));
   });

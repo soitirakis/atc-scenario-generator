@@ -177,6 +177,7 @@ src/
   render.js           canvas radar display
   link.js             instructor/trainee windows: BroadcastChannel protocol, trainee snapshot, read-only view
   main.js             UI wiring
+  fonts/              bundled woff2 fonts (OFL) and their @font-face rules
 scripts/
   airac-update.mjs    pull ENR 4.1 / 4.4 / 5.2 from the eAIP and diff against data/RO or data/HU
   airac-lib.mjs       pure parsing helpers (unit tested), including Hungary's ENR 4.4.1 format and both ENR 5.2 formats
@@ -184,6 +185,7 @@ scripts/
   performance-lib.mjs WRAP table parser and unit conversion (unit tested)
   screenshots.mjs     regenerate docs/img/ (Playwright)
   coverage-badge.mjs  coverage summary -> shields.io badge JSON, published with the site
+  test-counts.mjs     test counts in docs/TEST-STRATEGY.md from the test runners (CI checks them)
 tests/
   unit/  e2e/  fixtures/
 docs/
@@ -226,6 +228,7 @@ One value in OpenAP's own data is kept as published although it lies outside its
 | `navaids.json` | 16 VOR/DME | eAIP ENR 4.1 (AIRAC AMDT 11/26, page 3: 01/25) |
 | `points.json` | 131 significant points with FRA role | eAIP ENR 4.4 (AIRAC AMDT 11/26) |
 | `airports.json` | aerodrome reference points | eAIP AD 2 |
+| `map.json` | Black Sea coastline and neighbour FIR labels for the radar background | **approximate**, not from an official source; display only |
 | `military.json` | QRA base LRCK (F-16), OAT formation, fighter performance | **training construct**; LRCK position from AD 2 (`airports.json`); LRFT and LRCT not in the civil eAIP, left out |
 | `areas.json` | 270 military areas (264 TRA, 6 TSA) with lateral and vertical limits | eAIP ENR 5.2 (edition 2026-10-29), parsed by `npm run airac`; three limits the AIP prints as `L200`/`L280` are kept as published and read as flight levels (an allow-list in `scripts/airac-lib.mjs`; any other unknown format stops the parse) |
 | `traffic.json` | gates, flow weights, operators, main airports (LROP), agreed exit levels | modelling choice, not published data; exit levels are **modelled, not from a published Letter of Agreement** |
@@ -248,7 +251,7 @@ eAIP: https://aisro.ro/aip/2026-10-29/html/ro/aip_toc_enr.html
 - the civil-military injects: which base holds QRA, the aircraft, callsigns, timeline and fighter performance (`military.json`);
 - aircraft performance: WRAP values are statistical models fitted to ADS-B flight data, not manufacturer or BADA data. BADA was not used because it requires a EUROCONTROL licence.
 
-The Ukrainian entry and exit points are kept in the data but carry no traffic (`closed: true`).
+As of 1 November 2026, the Ukrainian entry and exit points are kept in the data but carry no traffic (`closed: true`).
 
 ## Data sources (Hungary)
 
@@ -259,6 +262,7 @@ The Ukrainian entry and exit points are kept in the data but carry no traffic (`
 | `navaids.json` | 9 DVOR/DME | eAIP ENR 4.1 (AIRAC AMDT 006/2026) |
 | `points.json` | 107 FRA significant points with role | eAIP ENR 4.4.1 (AIRAC AMDT 006/2026) |
 | `airports.json` | aerodrome reference points | eAIP AD 2.2 |
+| `map.json` | neighbour FIR labels for the radar background | **approximate**, not from an official source; display only |
 | `military.json` | QRA base LHKE (JAS 39 Gripen), OAT formation, fighter performance | **training construct**; LHKE position from eAIP ENR 2.1 (KECSKEMET MCTR, centred on the ARP) |
 | `areas.json` | 39 TRAs with lateral and vertical limits | eAIP ENR 5.2 (AIRAC AMDT 006/2026), parsed by `npm run airac`; "along border" segments follow `borders.json`, so they are **approximated** |
 | `traffic.json` | gates, flow weights, operators, main airport (LHBP), agreed exit levels | modelling choice, not published data; exit levels are **modelled, not from a published Letter of Agreement** |
@@ -354,3 +358,5 @@ Concept and portfolio project. Not validated against any operational system.
 ## Licence
 
 This project is licensed under GPL-3.0 (see [LICENSE](LICENSE)), because it includes data derived from [OpenAP](https://github.com/TUDelft-CNS-ATM/openap), the open aircraft performance model by Junzi Sun, Jacco M. Hoekstra, Joost Ellerbroek and contributors at TU Delft. The aircraft performance data in `data/performance.json` is converted from OpenAP's WRAP data, which is licensed GPL-3.0 (OpenAP's code is LGPL-3.0); that file keeps the source, commit and licence notice.
+
+**Fonts.** The two typefaces are bundled into the build, so the page loads nothing from other hosts: [Barlow Semi Condensed](https://github.com/jpt/barlow) (Copyright 2017 The Barlow Project Authors) and [IBM Plex Mono](https://github.com/IBM/plex) (Copyright 2017 IBM Corp.). Both are licensed under the [SIL Open Font License 1.1](https://openfontlicense.org); the licence texts are in `src/fonts/OFL-BarlowSemiCondensed.txt` and `src/fonts/OFL-IBMPlexMono.txt`. The woff2 files come from the `@fontsource` packages, version 5.3.0 (latin and latin-ext subsets).
