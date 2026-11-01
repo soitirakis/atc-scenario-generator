@@ -25,7 +25,10 @@ En-route radar training simulator that builds scenarios and injects for a chosen
   - level requests
   - exit level coordination requests from the next sector
   - late transfers from the previous sector
-- **Clearances**: level, heading, direct-to, speed, and approve/unable on requests.
+  - a readback error (wrong level or heading read back)
+  - similar callsigns on frequency, one taking the other's clearance
+- **Clearances**: level, heading, direct-to, speed, and approve/unable on requests, from the panels or a **command line in controller shorthand** (see below).
+- **Readbacks**: every clearance is read back by the pilot 2-6 s later and occupies the frequency; a clearance given while it is busy gets "say again".
 - **Controller tools**: range-bearing lines, a SEP tool and a what-if level probe (see below).
 - **Assume and transfer of control**: traffic about to enter the sector is transferred to you as pending and must be assumed; traffic leaving must be transferred before it crosses the boundary, cleared to its agreed exit level (XFL). Only aircraft on your frequency (pending or assumed) take clearances.
 - **Debrief** at the end of the session, including late assumes, late transfers and wrong exit levels.
@@ -92,6 +95,27 @@ Each is a DOM-free module in `src/nets/` with its own unit tests. The simulator 
 APW, CLAM and RAM alerts appear in the priorities list, for your traffic (assumed or pending).
 
 **These are simplified training versions, not the operational systems:** there is no alert suppression (an alert stays up for as long as its condition holds), and no per-area tuning (one set of parameters for the whole FIR, with no adaptation by area, sector or flight phase).
+
+## Command line and readbacks
+
+The **Command** box on the Live tab takes clearances in controller shorthand, one transmission per line:
+
+| Type | Means |
+|---|---|
+| `ROT123 370` (or `FL370`) | climb or descend FL370 |
+| `WZZ45 H120` | turn heading 120 |
+| `THY1 D NERDI` (or `DNERDI`, `DCT NERDI`) | direct NERDI |
+| `DLH3 M78` / `DLH3 S250` | Mach .78 / 250 kt IAS |
+| `AFR12 R2000+` / `R1500-` | climb or descend at 2000 ft/min or greater / 1500 or less |
+| `ROT123 370 H120` | several items in one transmission, read back together |
+
+**Tab** completes the callsign when one matches, and the matches are listed as you type. The callsign must be complete before a clearance is sent: a partial one is never guessed, because guessing is how similar callsigns get confused. Errors (an unknown callsign, a level outside FL050-FL450, a heading of 400) are shown at once and nothing is sent. The parser is `src/cmdline.js`, pure and unit tested.
+
+**Readbacks.** Every clearance, from the command line or the panels, is one transmission. The pilot reads it back in the log 2-6 s later (in italics), and the frequency is busy from the clearance until the readback ends: the box header says *frequency busy · CALLSIGN*. A clearance given then gets "say again" and is not applied. Clearances take effect when given; the readback is what you hear. Assume and transfer are system actions, not radio calls. Settings: `RADIO` in `src/sim.js`.
+
+Two injects use this:
+- **Readback error**: the next level or heading clearance to one of your aircraft is read back wrong (1000 ft or 30° off). The aircraft does what it read back 10 s after the readback, unless you correct it first; graded on whether you do. A wrong level shows as CLAM SFL once it is set.
+- **Similar callsigns**: a flight with a similar callsign (WZZ4127 and WZZ4172) comes on frequency, and the next clearance to either is taken by the other one: it reads back with its own callsign and acts on it 10 s later unless you stop it.
 
 ## Controller tools
 

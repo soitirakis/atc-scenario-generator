@@ -19,6 +19,12 @@ test('loads Romania with a ready scenario and no horizontal overflow', async ({ 
   await expect(page.locator('#debrief')).toBeHidden();
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow).toBeLessThanOrEqual(0);
+  // the map overlays (layer chips, legend, tool and zoom chips) do not cover each other
+  const boxes = await page.evaluate(() => ['#layerChips', '#legend', '#mapTools'].map(q => { const r = document.querySelector(q).getBoundingClientRect(); return { q, l: r.left, r: r.right, t: r.top, b: r.bottom }; }));
+  for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
+    const [p, q] = [boxes[i], boxes[j]];
+    expect(p.r <= q.l || q.r <= p.l || p.b <= q.t || q.b <= p.t, `${p.q} overlaps ${q.q}`).toBe(true);
+  }
 });
 
 test('start, run, select an aircraft and clear a level', async ({ page }) => {
@@ -231,8 +237,10 @@ test('Mach and rate clearances and the wind editor work from the panels', async 
   await expect(page.locator('#log')).toContainText(`${cs} maintain M.74`);
   expect(await page.evaluate(id => window.__sim.get(id).spd, id)).toEqual({ mode: 'mach', v: 0.74 });
 
+  await page.evaluate(() => { const s = window.__sim; while (s.freqBusy()) s.step(); }); // wait for the readback: a clearance on a busy frequency gets "say again"
   await page.locator('#cFl').selectOption(String(cfl + 20));
   await page.locator('#bFl').click();
+  await page.evaluate(() => { const s = window.__sim; while (s.freqBusy()) s.step(); });
   await page.locator('#cRate').fill('800');
   await page.locator('#cRateKind').selectOption('max');
   await page.locator('#bRate').click();
@@ -269,7 +277,9 @@ test('RBL and SEP tools on the radar, and the level probe on the selected aircra
   const box = await page.locator('#scope').boundingBox();
   // two assumed tracks on screen, well apart
   const pts = await page.evaluate(() => {
-    const R = window.__radar, s = window.__sim, on = a => { const x = R.sx([a.x, a.y]), y = R.sy([a.x, a.y]); return x > 40 && y > 40 && x < R.V.w - 40 && y < R.V.h - 40; };
+    // on screen and clickable: the radar itself is under the point, not a chip or the legend
+    const R = window.__radar, s = window.__sim, cv = document.querySelector('#scope').getBoundingClientRect();
+    const on = a => { const x = R.sx([a.x, a.y]), y = R.sy([a.x, a.y]); return x > 40 && y > 40 && x < R.V.w - 40 && y < R.V.h - 40 && document.elementFromPoint(cv.left + x, cv.top + y).id === 'scope'; };
     const mine = s.ac.filter(a => a.ctl === 'ass' && on(a));
     const a = mine[0], b = mine.find(m => Math.hypot(m.x - a.x, m.y - a.y) > 30);
     return [a, b].map(m => ({ id: m.id, x: R.sx([m.x, m.y]), y: R.sy([m.x, m.y]) }));
@@ -296,4 +306,42 @@ test('RBL and SEP tools on the radar, and the level probe on the selected aircra
   await page.locator('#bProbe').click();
   await expect(page.locator('#probeOut')).toBeVisible();
   await expect(page.locator('#probeOut')).toContainText(/^FL\d{3}/);
+});
+
+test('command line: Tab completes the callsign, Enter sends, the pilot reads back and the frequency is busy', async ({ page }) => {
+  await page.locator('#pausedStart').click();
+  await page.locator('#playBtn').click(); // freeze, so the test drives the clock
+  const [a, b] = await page.evaluate(() => window.__sim.ac.filter(x => x.ctl === 'ass' && !x.rcf).slice(0, 2).map(x => ({ id: x.id, cs: x.cs, cfl: Math.round(x.cfl) })));
+  const line = page.locator('#cmdLine'), hint = page.locator('#cmdHint');
+  const step = s => page.evaluate(s => { for (let i = 0; i < s; i++) window.__sim.step(); }, s);
+
+  // completion: type all but the last character, Tab fills it in when only one callsign matches
+  const others = await page.evaluate(cs => window.__sim.ac.filter(x => x.cs.startsWith(cs)).length, a.cs.slice(0, -1));
+  await line.fill(a.cs.slice(0, -1).toLowerCase());
+  await line.press('Tab');
+  if (others === 1) await expect(line).toHaveValue(a.cs + ' ');
+  else await line.fill(a.cs + ' ');
+
+  const fl = a.cfl + 20;
+  await line.pressSequentially(`${fl} H120`);
+  await line.press('Enter');
+  await expect(line).toHaveValue('');
+  expect(await page.evaluate(id => { const x = window.__sim.get(id); return [x.cfl, x.thdg]; }, a.id)).toEqual([fl, 120]);
+  await expect(page.locator('#freqState')).toHaveText(`frequency busy · ${a.cs}`);
+
+  // a clearance while the frequency is busy gets "say again"
+  await line.fill(`${b.cs} ${b.cfl + 20}`);
+  await line.press('Enter');
+  await expect(hint).toHaveText(`Frequency busy: ${b.cs} say again`);
+  await expect(page.locator('#log')).toContainText(`${b.cs} say again`);
+
+  await step(10);
+  await expect(page.locator('#log .p').first()).toHaveText(new RegExp(`climb FL${fl}, turn heading 120, ${a.cs}$`));
+  await expect(page.locator('#freqState')).toHaveText('frequency free');
+
+  // malformed input is answered at once and nothing is sent
+  await line.fill(`${b.cs} H400`);
+  await line.press('Enter');
+  await expect(hint).toHaveText('Heading 400 is outside 001-360');
+  await expect(line).toHaveValue(`${b.cs} H400`);
 });

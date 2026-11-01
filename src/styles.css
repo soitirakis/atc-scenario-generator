@@ -69,8 +69,11 @@ select { padding-right: 4px; }
 .overlay { position: absolute; display: flex; gap: 6px; flex-wrap: wrap; }
 .ov-tl { top: 8px; left: 8px; right: 8px; pointer-events: none; }
 .ov-tl > * { pointer-events: auto; }
-.ov-br { bottom: 8px; right: 8px; }
-.ov-bl { bottom: 8px; left: 8px; pointer-events: none; }
+/* bottom bar: legend left, tool and zoom chips right; when the row is too narrow they wrap, legend above.
+   Only the chips take clicks, so tracks under the bar's empty space stay clickable. */
+.ov-bottom { bottom: 8px; left: 8px; right: 8px; justify-content: space-between; align-items: flex-end; pointer-events: none; }
+.map-tools { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; margin-left: auto; }
+.map-tools > * { pointer-events: auto; }
 .chip { font-family: var(--f-data); font-size: 11px; background: color-mix(in srgb, var(--panel) 88%, transparent); border: 1px solid var(--line); border-radius: 3px; padding: 3px 7px; cursor: pointer; user-select: none; }
 .chip[aria-pressed=false] { color: var(--muted); opacity: 0.75; }
 .chip[aria-pressed=true] { border-color: var(--map-hi); }
@@ -79,7 +82,7 @@ select { padding-right: 4px; }
 .paused-tag { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: color-mix(in srgb, var(--panel) 92%, transparent); border: 1px solid var(--accent); border-radius: 6px; padding: 14px 18px; text-align: center; max-width: 320px; }
 .paused-tag b { display: block; font-size: 17px; margin-bottom: 4px; }
 .paused-tag span { color: var(--muted); font-size: 14px; display: block; margin-bottom: 10px; }
-.toast { position: absolute; left: 50%; bottom: 44px; transform: translateX(-50%); background: var(--panel-2); border: 1px solid var(--warn); color: var(--warn); font-family: var(--f-data); font-size: 12px; padding: 6px 12px; border-radius: 4px; max-width: 90%; }
+.toast { position: absolute; left: 50%; bottom: 44px; transform: translateX(-50%); background: var(--panel-2); border: 1px solid var(--warn); color: var(--warn); font-family: var(--f-data); font-size: 12px; padding: 6px 12px; border-radius: 4px; max-width: 90%; pointer-events: none; /* a notice never blocks the radar under it */ }
 
 /* ---------- Panel ---------- */
 .panel { min-width: 0; min-height: 0; display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); overflow: hidden; }
@@ -224,3 +227,12 @@ body:not([data-role="solo"]) .solo-only, body[data-role="trainee"] .not-trainee,
 .probe-out.warn { color: var(--warn); }
 .probe-out.err { color: var(--alert); }
 .chip[aria-pressed="true"]#toolRbl, .chip[aria-pressed="true"]#toolSep { border-color: var(--accent); color: var(--accent); }
+
+/* command line and frequency */
+.cmdline { display: flex; gap: 6px; }
+.cmdline input { flex: 1 1 auto; min-width: 0; font-family: var(--f-data); text-transform: uppercase; letter-spacing: 0.5px; }
+.cmd-hint { margin: 6px 0 0; min-height: 1.3em; font-family: var(--f-data); font-size: 12px; overflow-wrap: anywhere; }
+.cmd-hint.err { color: var(--alert); }
+.freq { font-family: var(--f-data); }
+.freq.busy { color: var(--warn); }
+.log .p { color: var(--pend); font-style: italic; }

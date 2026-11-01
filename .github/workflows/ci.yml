@@ -15,7 +15,7 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - name: Unit tests with coverage (85% minimum on src/sim.js and src/scenario.js)
+      - name: "Unit tests with coverage (85% minimum per file: sim, scenario, cmdline, nets, tools)"
         run: npm run test:coverage
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium

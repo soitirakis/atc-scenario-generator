@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import RO from '../../data/RO/index.js';
 import { loadCountry } from '../../src/country.js';
-import { Sim, GRADING } from '../../src/sim.js';
+import { Sim, GRADING, RADIO } from '../../src/sim.js';
 import { buildLocalScenario } from '../../src/scenario.js';
 import { pip } from '../../src/geo.js';
 
@@ -49,7 +49,7 @@ const settle = (sim, inj, max = 1200) => { for (let i = 0; i < max && inj.result
 
 describe('inject grading', () => {
   it('every inject type has an objective and limits in GRADING', () => {
-    for (const t of ['LEVEL_BUST', 'RADIO_FAILURE', 'EMERGENCY_DESCENT', 'WEATHER_CELL', 'MILITARY_TSA', 'POPUP_TRAFFIC', 'CLIMB_REQUEST', 'COORD_REQUEST', 'LATE_TRANSFER']) {
+    for (const t of ['LEVEL_BUST', 'RADIO_FAILURE', 'EMERGENCY_DESCENT', 'WEATHER_CELL', 'MILITARY_TSA', 'POPUP_TRAFFIC', 'CLIMB_REQUEST', 'COORD_REQUEST', 'LATE_TRANSFER', 'READBACK_ERROR', 'SIMILAR_CALLSIGN']) {
       expect(GRADING[t], t).toBeTruthy();
       expect(GRADING[t].text, t).toMatch(/\w/);
     }
@@ -257,6 +257,80 @@ describe('inject grading', () => {
     const r = settle(sim, inj, 40);
     expect(r.state).toBe('not met');
     expect(r.reason).toMatch(/not assumed within 30 s/);
+  });
+
+  /* readback error: the next level or heading clearance is read back wrong */
+  const free = sim => { for (let i = 0; i < 30 && sim.freqBusy(); i++) sim.step(); };
+  const wrongReadback = () => {
+    const { sim, inj } = fired('READBACK_ERROR');
+    const a = sim.ac.find(x => x.ctl === 'ass' && !x.rcf && !x.emg), from = Math.round(a.cfl), fl = from + 20;
+    free(sim);
+    sim.clearLevel(a.id, fl);
+    expect(a.cfl).toBe(from); // the aircraft does nothing yet: it will act on its readback
+    for (let i = 0; i < 20 && inj.g.rbAt === undefined; i++) sim.step();
+    const rb = sim.logs.find(l => l.cls === 'p');
+    expect(rb.text).toMatch(new RegExp(`^climb FL(${fl - 10}|${fl + 10}), ${a.cs}$`)); // read back 1000 ft off
+    return { sim, inj, a, fl, wrong: +rb.text.match(/FL(\d+)/)[1] };
+  };
+  it('READBACK_ERROR met: the wrong readback is corrected before the aircraft acts on it', () => {
+    const { sim, inj, a, fl } = wrongReadback();
+    free(sim);
+    sim.clearLevel(a.id, fl); // "negative, climb FL..." : the correction
+    const r = settle(sim, inj, 5);
+    expect(r.state).toBe('met');
+    expect(r.reason).toMatch(/corrected \d+ s after the readback/);
+    run(sim, RADIO.actS + 5);
+    expect([a.cfl, a.sfl]).toEqual([fl, fl]); // it never set the wrong level
+  });
+  it('READBACK_ERROR not met: nobody corrects it and the aircraft sets the wrong level', () => {
+    const { sim, inj, a, fl, wrong } = wrongReadback();
+    const r = settle(sim, inj, RADIO.actS + 2);
+    expect(r.state).toBe('not met');
+    expect(r.t).toBe(RADIO.actS);
+    expect(r.reason).toMatch(new RegExp(`${a.cs} acted on the wrong readback`));
+    expect([a.cfl, a.sfl]).toEqual([fl, wrong]); // cleared level as given, selected level as read back
+    sim.step();
+    expect(sim.nets.clam.get(a.id).kind).toBe('SFL'); // CLAM sees the mismatch
+  });
+  it('READBACK_ERROR: not graded when no level or heading clearance comes in its window', () => {
+    const { sim, inj } = fired('READBACK_ERROR');
+    run(sim, GRADING.READBACK_ERROR.windowS + 2);
+    expect(inj.result).toBeNull();
+    expect(sim.timeline.some(e => /Readback error: not graded/.test(e.text))).toBe(true);
+  });
+
+  /* similar callsigns: one takes the other's clearance */
+  const takenClearance = () => {
+    const { sim, inj } = fired('SIMILAR_CALLSIGN');
+    const [a, b] = inj.g.pair;
+    expect(b.cs).not.toBe(a.cs);
+    expect(b.cs.slice(0, 3)).toBe(a.cs.slice(0, 3));
+    expect(b.ctl).toBe('pend'); // calling on frequency
+    sim.assume(b.id);
+    free(sim);
+    const fl = Math.round(a.cfl) + 20, bFrom = Math.round(b.cfl);
+    sim.clearLevel(a.id, fl);
+    for (let i = 0; i < 20 && inj.g.rbAt === undefined; i++) sim.step();
+    expect(sim.logs.find(l => l.cls === 'p').text).toBe(`climb FL${fl}, ${b.cs}`); // the wrong one reads back
+    return { sim, inj, a, b, fl, bFrom };
+  };
+  it('SIMILAR_CALLSIGN met: the wrong aircraft is stopped before it acts on the clearance', () => {
+    const { sim, inj, b, bFrom } = takenClearance();
+    free(sim);
+    sim.clearLevel(b.id, bFrom); // "negative, maintain FL..."
+    const r = settle(sim, inj, 5);
+    expect(r.state).toBe('met');
+    run(sim, RADIO.actS + 5);
+    expect(b.cfl).toBe(bFrom);
+  });
+  it('SIMILAR_CALLSIGN not met: the wrong aircraft takes the clearance and nobody stops it', () => {
+    const { sim, inj, a, b, fl } = takenClearance();
+    const aFrom = a.cfl;
+    const r = settle(sim, inj, RADIO.actS + 2);
+    expect(r.state).toBe('not met');
+    expect(r.reason).toMatch(new RegExp(`${b.cs} acted on ${b.cs} taking ${a.cs}'s clearance`));
+    expect(b.cfl).toBe(fl); // the other flight climbs
+    expect(a.cfl).toBe(aFrom); // the one it was meant for does not
   });
 
   it('the debrief lists each inject with its result, and a timeline of key events', () => {

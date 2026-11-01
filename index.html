@@ -48,14 +48,15 @@
     <section class="scope-wrap" id="scopeWrap">
       <canvas id="scope" aria-label="Radar display of the selected airspace with simulated traffic"></canvas>
       <div class="overlay ov-tl" id="layerChips"></div>
-      <div class="overlay ov-bl"><div class="legend" id="legend">
+      <div class="overlay ov-bottom">
+      <div class="legend" id="legend">
         <span><i style="background:var(--assumed)"></i>Assumed</span>
         <span><i style="background:var(--pend)"></i>Pending</span>
         <span><i style="background:var(--unc)"></i>Other</span>
         <span><i style="background:var(--warn)"></i>STCA predicted</span>
         <span><i style="background:var(--alert)"></i>Loss of separation</span>
-      </div></div>
-      <div class="overlay ov-br">
+      </div>
+      <div class="map-tools" id="mapTools">
         <button class="chip" id="toolRbl" aria-pressed="false" title="Range and bearing: click two points or tracks">RBL</button>
         <button class="chip" id="toolSep" aria-pressed="false" title="Separation: click two tracks">SEP</button>
         <button class="chip" id="toolClear" title="Remove range-bearing lines and SEP">Clear</button>
@@ -63,6 +64,7 @@
         <button class="chip" id="zoomOut" aria-label="Zoom out">－</button>
         <button class="chip" id="fitSector">Fit sector</button>
         <button class="chip" id="fitFir">Fit FIR</button>
+      </div>
       </div>
       <div class="paused-tag" id="pausedTag">
         <b id="pausedTitle">Scenario ready</b>
@@ -89,6 +91,11 @@
             <div class="stat"><div class="k">STCA</div><div class="v" id="stStca">0</div></div>
             <div class="stat not-trainee"><div class="k">Next inject</div><div class="v" id="stNext">—</div></div>
           </div>
+        </div>
+        <div class="sec">
+          <h2>Command <small id="freqState" class="freq">frequency free</small></h2>
+          <div class="cmdline"><input id="cmdLine" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ROT123 370 · H120 · D NERDI · M78" aria-label="Clearance in controller shorthand"><button class="btn sm primary" id="cmdSend">Send</button></div>
+          <div class="note cmd-hint" id="cmdHint">Tab completes the callsign. 370 level · H120 heading · D NERDI direct · M78 / S250 speed · R2000+ rate</div>
         </div>
         <div class="sec">
           <h2>Priorities <small>highest first</small></h2>

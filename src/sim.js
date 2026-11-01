@@ -9,6 +9,7 @@ import { apw, APW } from './nets/apw.js';
 import { ram } from './nets/ram.js';
 import { mtcd, MTCD } from './nets/mtcd.js';
 import { levelProbe } from './tools/probe.js';
+import { parseCommand } from './cmdline.js';
 
 export const TYPES = {
   CLIMB_REQUEST: 'Level request',
@@ -19,7 +20,9 @@ export const TYPES = {
   MILITARY_TSA: 'Military area activation',
   POPUP_TRAFFIC: 'Unplanned traffic',
   COORD_REQUEST: 'Exit level coordination',
-  LATE_TRANSFER: 'Late transfer from previous sector'
+  LATE_TRANSFER: 'Late transfer from previous sector',
+  READBACK_ERROR: 'Readback error',
+  SIMILAR_CALLSIGN: 'Similar callsigns'
 };
 
 export const DIFF = {
@@ -38,6 +41,24 @@ function distToSeg(p, a, b) {
   return Math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy);
 }
 
+/**
+ * Radio: every clearance is one transmission, read back by the pilot after readbackMinS-readbackMaxS
+ * seconds. The frequency is busy from the clearance until the readback ends; a clearance given while
+ * it is busy gets "say again". In the readback-error and similar-callsign injects the aircraft acts on
+ * what it read back actS seconds after the readback, unless corrected first.
+ */
+export const RADIO = { readbackMinS: 2, readbackMaxS: 6, readbackS: 2, actS: 10 };
+
+/** A callsign that sounds like cs: same operator, last two digits swapped (or the last one changed). */
+export function similarCallsign(cs, used = new Set()) {
+  const m = /^([A-Z]+)(\d*?)(\d)(\d)$/.exec(cs);
+  if (!m) return null;
+  const [, op, head, d1, d2] = m;
+  const tries = [d1 !== d2 ? head + d2 + d1 : null, ...[1, 2, 3, 7, 8, 9].map(k => head + d1 + ((+d2 + k) % 10))].filter(Boolean);
+  for (const t of tries) if (!/^0/.test(t) && !used.has(op + t)) return op + t;
+  return null;
+}
+
 export const SEPARATION = { lateralNM: 5, verticalFt: 1000, lookaheadS: 180 };
 
 /**
@@ -53,7 +74,9 @@ export const GRADING = {
   POPUP_TRAFFIC: { windowS: 180, text: 'No STCA involving it in its first 3 min' },
   CLIMB_REQUEST: { answerS: 60, text: 'Answered within 60 s' },
   COORD_REQUEST: { answerS: 60, text: 'Answered within 60 s, and the aircraft leaves at the agreed level' },
-  LATE_TRANSFER: { assumeS: 30, text: 'Assumed within 30 s of its first call' }
+  LATE_TRANSFER: { assumeS: 30, text: 'Assumed within 30 s of its first call' },
+  READBACK_ERROR: { windowS: 600, text: 'Wrong readback corrected before the aircraft acts on it' },
+  SIMILAR_CALLSIGN: { windowS: 600, text: 'Clearance taken by the wrong aircraft corrected before it acts on it' }
 };
 const LEVELS_ODD = [290, 310, 330, 350, 370, 390];
 const LEVELS_EVEN = [300, 320, 340, 360, 380, 400];
@@ -76,6 +99,7 @@ export class Sim {
     this.t = 0; this.ac = []; this.nextId = 1; this.stca = []; this.los = new Map();
     this.logs = []; this.wx = []; this.tsa = []; this.ended = false; this.csUsed = new Set(); this.timeline = [];
     this.nets = { clam: new Map(), apw: new Map(), ram: new Map(), mtcd: [] };
+    this.freq = { busyUntil: 0, cs: null }; this.radio = []; this.radioActs = []; this._tx = null;
     this.spawnTimer = 30; this.rng = Math.random; this.wind = [];
   }
 
@@ -371,6 +395,7 @@ export class Sim {
     this.reset();
     const C = this.C;
     this.rng = mulberry32(scenario.seed * 7919 + scenario.sector.length * 31 + scenario.difficulty.length);
+    this.radioRng = mulberry32(scenario.seed * 104729 + 17); // readback timing: its own stream, so clearances do not change the traffic
     this.sector = C.sectors[scenario.sector];
     if (!this.sector) throw new Error(`Unknown sector ${scenario.sector}`);
     this.target = DIFF[scenario.difficulty].count;
@@ -506,6 +531,7 @@ export class Sim {
     if (this.t % RADAR_REFRESH_S === 0) {
       for (const a of this.ac) { a.plots.push([a.px, a.py]); if (a.plots.length > 6) a.plots.shift(); a.px = a.x; a.py = a.y; }
     }
+    this.radioStep();
     this.stcaScan();
     this.netsScan();
     this.gradeInjects();
@@ -711,6 +737,27 @@ export class Sim {
         t2.ctl = 'none'; t2.noXfer = true; t2.pendAt = t2.lastIn ? this.t : null; t2.assumedAt = undefined; inj.target = t2.cs; inj.g = { ac: t2 }; break;
       }
     }
+    if (inj.type === 'READBACK_ERROR') {
+      // armed: the next level or heading clearance to one of your aircraft is read back wrong
+      inj.g = { armed: true }; inj.target = 'next level or heading clearance';
+      this.log('Inject: the next level or heading clearance will be read back wrong', 'w', 'i');
+    }
+    if (inj.type === 'SIMILAR_CALLSIGN') {
+      const cand = this.ac.filter(a => a.ctl === 'ass' && a.lastIn && !a.emg && !a.rcf && /\d\d$/.test(a.cs));
+      const a = cand[Math.floor(this.rng() * cand.length)];
+      const cs = a && similarCallsign(a.cs, this.csUsed);
+      const p = cs && this.planFlight({ mustCross: sec });
+      if (p) {
+        this.csUsed.add(cs);
+        const b = this.spawnFromPlan({ ...p, cs }, 0);
+        for (let k = 0; k < 400 && !inSector([b.x, b.y], sec); k++) { // walk it in, just inside the boundary
+          b.x += Math.sin(b.hdg * D2R); b.y -= Math.cos(b.hdg * D2R); b.hdg = brg([b.x, b.y], b.route[0].xy);
+        }
+        b.px = b.x; b.py = b.y; b.lastIn = b.everIn = b.wasOurs = true; b.ctl = 'pend'; b.pendAt = this.t;
+        inj.target = `${a.cs} / ${b.cs}`; inj.g = { armed: true, pair: [a, b] };
+        this.log(`${b.cs} calling, FL${fmtFL(b.fl)}`);
+      }
+    }
     if (!inj.target) this.log(`Inject ${TYPES[inj.type]}: ${inj.type === 'MILITARY_TSA' ? 'no military area over or near the sector' : 'no suitable aircraft in sector'}`, 'w', 'i');
     // graded only when the inject found something to act on
     if (inj.g) inj.result = { state: 'pending', t: null, reason: GRADING[inj.type].text, at: null };
@@ -809,6 +856,7 @@ export class Sim {
       if (!inj.result || inj.result.state !== 'pending') continue;
       const v = this.judge(inj);
       if (!v) continue;
+      if (v.none) { inj.result = null; this.mark(`${TYPES[inj.type]}: not graded (${v.reason})`); continue; }
       inj.result = { state: v.met ? 'met' : 'not met', t: v.t, reason: v.reason, at: this.t };
       this.mark(`${TYPES[inj.type]}${inj.target ? ' · ' + inj.target : ''}: ${inj.result.state} (${v.reason})`, v.met ? 'ok' : 'w');
     }
@@ -890,6 +938,15 @@ export class Sim {
         const c = gone ? null : stcaWith(a);
         if (c) return fail(el, `STCA with ${other(c, a)} after ${el} s`);
         if (el >= L.windowS || gone) return met(el, `no STCA in its first ${Math.round(L.windowS / 60)} min`);
+        return null;
+      }
+      case 'READBACK_ERROR':
+      case 'SIMILAR_CALLSIGN': {
+        const who = inj.type === 'READBACK_ERROR' ? 'the wrong readback' : `${g.ac ? g.ac.cs : ''} taking ${g.meant ? g.meant.cs : 'the other'}'s clearance`;
+        if (g.correctedAt !== undefined) return met(g.rbAt === undefined ? 0 : Math.max(0, g.correctedAt - g.rbAt), `corrected ${g.rbAt === undefined || g.correctedAt < g.rbAt ? 'before the readback' : `${g.correctedAt - g.rbAt} s after the readback`}`);
+        if (g.actedAt !== undefined) return fail(g.actedAt - g.rbAt, `${g.ac.cs} acted on ${who} (${g.wrong || g.right}) after ${g.actedAt - g.rbAt} s, not corrected`);
+        if (g.armed && el > L.windowS) return { none: true, reason: `no clearance to trigger it in ${Math.round(L.windowS / 60)} min` };
+        if (g.ac && !this.get(g.ac.id) && g.actAt === undefined) return { none: true, reason: `${g.ac.cs} left before the readback` };
         return null;
       }
       case 'LATE_TRANSFER': {
@@ -1005,18 +1062,100 @@ export class Sim {
 
   /* ---------------- clearances ----------------
      Each returns { ok, msg }. A radio-failure aircraft never reads back. */
-  _cmd(id, what, fn) {
+  _cmd(id, what, fn, alt = null) {
     const a = this.get(id);
     if (!a) return { ok: false, msg: 'Aircraft no longer on frequency' };
     if (!this.onFreq(a)) return { ok: false, msg: `${a.cs} is not on your frequency${a.ctl === 'xfer' ? ' (transferred)' : a.noXfer ? ' (not transferred to you yet)' : ''}` };
+    if (!this._tx && this.freqBusy()) return this.sayAgain(a);
     if (a.rcf) { this.log(`${what} to ${a.cs} — no reply`, 'w'); return { ok: false, msg: `${a.cs}: no reply` }; }
     if (a.pilotNext) { // pseudo-pilot: refuse or query this clearance once
       const mode = a.pilotNext; a.pilotNext = null;
       if (mode === 'refuse') { this.log(`${a.cs} unable ${what}`, 'w'); return { ok: false, msg: `${a.cs}: unable ${what}` }; }
       this.log(`${a.cs} say again? (${what})`, 'w'); return { ok: false, msg: `${a.cs} asks you to say again` };
     }
-    fn(a); this.stats.cmds++; this.log(`${a.cs} ${what}`);
+    this.stats.cmds++; this.log(`${a.cs} ${what}`);
+    // a correction cancels what this aircraft was about to do on a wrong readback
+    for (const p of this.radioActs) if (p.a === a && !p.done && (p.kind === 'any' || p.kind === (alt && alt.kind))) { p.done = true; p.inj.g.correctedAt = this.t; this.mark(`${a.cs} corrected`, 'ok'); }
+    const trap = this.radioTrap(a, alt, what, fn);
+    if (trap) { this.queueReadback(trap.who, trap.what, trap.act); return { ok: true }; }
+    fn(a);
+    this.queueReadback(a, what);
     return { ok: true };
+  }
+
+  /* ---------------- radio ---------------- */
+  freqBusy() { return this.t < this.freq.busyUntil; }
+  sayAgain(a) { this.log(`${a.cs} say again`, 'w'); return { ok: false, msg: `Frequency busy: ${a.cs} say again` }; }
+  /**
+   * The pilot's readback: logged readbackMinS-readbackMaxS s later; the frequency is busy until it ends.
+   * Inside transmit() the parts of one transmission are collected and read back together.
+   * act: { apply, kind, inj } makes the aircraft act on the readback RADIO.actS s after it.
+   */
+  queueReadback(a, what, act = null) {
+    if (this._tx) { this._tx.push({ a, what, act }); return; }
+    const at = this.t + RADIO.readbackMinS + Math.floor(this.radioRng() * (RADIO.readbackMaxS - RADIO.readbackMinS + 1));
+    this.radio.push({ at, a, text: `${what}, ${a.cs}`, act });
+    this.freq = { busyUntil: at + RADIO.readbackS, cs: a.cs };
+  }
+  /** One transmission with several clearances to one aircraft, read back together. */
+  transmit(id, actions) {
+    const a = this.get(id);
+    if (!a) return { ok: false, msg: 'Aircraft no longer on frequency' };
+    if (this.freqBusy()) return this.sayAgain(a);
+    this._tx = [];
+    let res = { ok: true };
+    try {
+      for (const { cmd, args } of actions) {
+        if (!this[cmd] || !['clearLevel', 'turn', 'direct', 'speed', 'mach', 'clearRate'].includes(cmd)) { res = { ok: false, msg: `Unknown clearance ${cmd}` }; break; }
+        const r = this[cmd](id, ...args);
+        if (!r.ok) { res = r; break; }
+      }
+    } finally {
+      const parts = this._tx; this._tx = null;
+      if (parts.length) {
+        const who = parts[0].a, act = parts.find(p => p.act);
+        this.queueReadback(who, parts.filter(p => p.a === who).map(p => p.what).join(', '), act ? act.act : null);
+      }
+    }
+    return res;
+  }
+  /** A command line in controller shorthand ("ROT123 370 H120"), as one transmission. */
+  command(text) {
+    const p = parseCommand(text, this.ac.map(a => a.cs));
+    if (!p.ok) return { ok: false, msg: p.error };
+    return this.transmit(this.ac.find(a => a.cs.toUpperCase() === p.cs).id, p.actions);
+  }
+  radioStep() {
+    for (const r of this.radio) if (!r.done && this.t >= r.at) {
+      r.done = true;
+      this.log(r.text, 'p');
+      if (r.act) { const p = { ...r.act, a: r.a, at: this.t + RADIO.actS }; r.act.inj.g.rbAt = this.t; r.act.inj.g.actAt = p.at; this.radioActs.push(p); }
+    }
+    this.radio = this.radio.filter(r => !r.done);
+    for (const p of this.radioActs) if (!p.done && this.t >= p.at) {
+      p.done = true;
+      if (this.get(p.a.id)) { p.apply(p.a); p.inj.g.actedAt = this.t; this.mark(`${p.a.cs} acted on ${p.what}`, 'w'); }
+    }
+    this.radioActs = this.radioActs.filter(p => !p.done);
+  }
+  /**
+   * Inject hooks on a clearance: a wrong readback (READBACK_ERROR, level or heading) or the clearance
+   * taken by the similar callsign (SIMILAR_CALLSIGN). Returns who reads back what, and what they will do.
+   */
+  radioTrap(a, alt, what, fn) {
+    const inj = this.scenario.injects.find(i => i.status === 'fired' && i.g && i.g.armed && (i.type === 'READBACK_ERROR' ? alt && this.ours(a) : i.g.pair && i.g.pair.includes(a)));
+    if (!inj) return null;
+    const g = inj.g;
+    if (inj.type === 'READBACK_ERROR') {
+      const wrong = alt.wrong(this.radioRng() < 0.5 ? -1 : 1);
+      g.armed = false; g.ac = a; inj.target = a.cs; g.kind = alt.kind; g.right = alt.what; g.wrong = wrong.what;
+      return { who: a, what: wrong.what, act: { kind: alt.kind, inj, what: wrong.what, apply: wrong.apply } };
+    }
+    const other = g.pair[0] === a ? g.pair[1] : g.pair[0];
+    if (!this.get(other.id) || !this.onFreq(other)) return null;
+    g.armed = false; g.ac = other; g.meant = a; g.right = what;
+    // the other flight takes it: it reads back with its own callsign and will do it (fn takes the aircraft)
+    return { who: other, what, act: { kind: 'any', inj, what, apply: fn } };
   }
   /** Take control of a flight transferred to us, or of one the previous sector failed to transfer (after coordination). */
   assume(id) {
@@ -1045,13 +1184,20 @@ export class Sim {
   }
   clearLevel(id, fl) {
     const a = this.get(id); const dir = a && fl > a.fl ? 'climb' : 'descend';
-    return this._cmd(id, `${dir} FL${fmtFL(fl)}`, a => { if (a.bust) a.bustFixedAt = this.t; a.cfl = fl; a.sfl = fl; a.bust = false; a.vr = null; this._closeReq(a, ['climb', 'descend']); });
+    const set = (a, v) => { if (a.bust) a.bustFixedAt = this.t; a.cfl = v; a.sfl = v; a.bust = false; a.vr = null; this._closeReq(a, ['climb', 'descend']); };
+    return this._cmd(id, `${dir} FL${fmtFL(fl)}`, a => set(a, fl), {
+      kind: 'level', what: `${dir} FL${fmtFL(fl)}`,
+      // the pilot reads back 1000 ft off and sets that in the Mode S selected level; the clearance stands
+      wrong: d => ({ what: `${dir} FL${fmtFL(fl + 10 * d)}`, apply: a => { set(a, fl); a.sfl = fl + 10 * d; } })
+    });
   }
   turn(id, hdg) {
     const v = ((Math.round(hdg) % 360) + 360) % 360;
-    return this._cmd(id, `turn heading ${String(v || 360).padStart(3, '0')}`, a => {
-      a.mode = 'hdg'; a.thdg = v; a.atcHdg = true;
-      if (this._closeReq(a, ['wx'])) a.wxCleared = a.wxAsked;
+    const hdgText = h => `turn heading ${String(h || 360).padStart(3, '0')}`;
+    const set = (a, h) => { a.mode = 'hdg'; a.thdg = h; a.atcHdg = true; if (this._closeReq(a, ['wx'])) a.wxCleared = a.wxAsked; };
+    return this._cmd(id, hdgText(v), a => set(a, v), {
+      kind: 'heading', what: hdgText(v),
+      wrong: d => { const h = (v + 30 * d + 360) % 360; return { what: hdgText(h), apply: a => set(a, h) }; }
     });
   }
   direct(id, pointId) {
@@ -1100,6 +1246,7 @@ export class Sim {
     const r = a.req, coord = r.kind === 'coord'; // coordination is with the next sector, not with the aircraft
     if (!coord && !this.onFreq(a)) return { ok: false, msg: `${a.cs} is not on your frequency` };
     if (!coord && a.rcf) return { ok: false, msg: `${a.cs}: no reply` };
+    if (!coord && this.freqBusy()) return this.sayAgain(a);
     this.stats.reqAnswered++; this.stats.reqTimeSum += this.t - r.t;
     r.answeredAt = this.t; r.approved = approve;
     if (r.cell) r.cell.answers.push(this.t - r.t);
@@ -1111,8 +1258,10 @@ export class Sim {
       if (r.kind === 'climb' || r.kind === 'descend') { if (a.bust) a.bustFixedAt = this.t; a.cfl = r.value; a.sfl = r.value; a.bust = false; }
       if (r.kind === 'wx') { a.mode = 'hdg'; a.thdg = (a.hdg + r.value + 360) % 360; a.wxCleared = a.wxAsked; a.atcHdg = true; }
       if (r.kind === 'direct') { const p = this.C.points[r.value] || this.C.airports[r.value]; if (p) this._directTo(a, r.value, p.xy); }
-      this.log(`${a.cs} ${r.kind === 'wx' ? 'deviation approved' : r.kind === 'direct' ? 'direct ' + r.value : (r.kind === 'climb' ? 'climb' : 'descend') + ' FL' + fmtFL(r.value)}`);
-    } else this.log(`${a.cs} unable, ${r.text.replace('requests ', '')}`);
+      const what = r.kind === 'wx' ? 'deviation approved' : r.kind === 'direct' ? 'direct ' + r.value : (r.kind === 'climb' ? 'climb' : 'descend') + ' FL' + fmtFL(r.value);
+      this.log(`${a.cs} ${what}`);
+      this.queueReadback(a, what);
+    } else { this.log(`${a.cs} unable, ${r.text.replace('requests ', '')}`); this.queueReadback(a, 'roger'); }
     a.req = null;
     return { ok: true };
   }
