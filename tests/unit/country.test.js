@@ -6,19 +6,20 @@ import { pip } from '../../src/geo.js';
 const C = loadCountry(RO);
 
 describe('Romania data module', () => {
-  it('has the 9 elementary Bucharest ACC sectors and 4 collapsed ones', () => {
-    expect(C.elementary.map(s => s.name).sort()).toEqual(['ARGES', 'BACAU', 'BUDOP', 'DINSI', 'KOMAN', 'LOMOS', 'MOPUG', 'NAPOC', 'NERDI']);
-    expect(C.sectorList.length - C.elementary.length).toBe(4);
-    expect(C.sectors.FIR.polys).toHaveLength(9);
+  it('has the Bucharest ACC sectors of the RAD file: KOMAN as two layers, and 5 collapsed configurations', () => {
+    expect(C.elementary.map(s => s.name).sort()).toEqual(['ARGES', 'BACAU', 'BUDOP', 'DINSI', 'KOMAN 1', 'KOMAN 2', 'LOMOS', 'MOPUG', 'NAPOC', 'NERDI']);
+    expect(C.sectorList.length - C.elementary.length).toBe(5);
+    expect(C.sectors.FIR.polys).toHaveLength(10);
   });
 
   it('every elementary sector polygon contains its own label point', () => {
     for (const s of C.elementary) expect(pip(s.c, s.poly), s.name).toBe(true);
   });
 
-  it('elementary sectors do not overlap (label points sit in exactly one sector)', () => {
+  it('elementary sectors do not overlap (label points sit in exactly one sector at a level inside its band)', () => {
     for (const s of C.elementary) {
-      const owners = C.elementary.filter(o => pip(s.c, o.poly)).map(o => o.name);
+      const fl = s.band ? (s.band[0] === null ? s.band[1] - 10 : s.band[0] + 10) : 300;
+      const owners = C.elementary.filter(o => inSector(s.c, o, fl)).map(o => o.name);
       expect(owners, s.name).toEqual([s.name]);
     }
   });
