@@ -15,7 +15,7 @@ test.afterEach(async ({ page }) => {
 
 test('loads Romania with a ready scenario and no horizontal overflow', async ({ page }) => {
   await expect(page.locator('#firTag')).toContainText('LRBB');
-  await expect(page.locator('#sector option')).toHaveCount(14); // 9 + 4 collapsed + FIR
+  await expect(page.locator('#sector option')).toHaveCount(16); // 10 elementary (KOMAN as two layers) + 5 collapsed + FIR
   await expect(page.locator('#injList .inj-row').first()).toBeVisible();
   await expect(page.locator('#debrief')).toBeHidden();
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
@@ -88,7 +88,7 @@ test('country selector switches to Hungary and back', async ({ page }) => {
   await page.locator('#country').selectOption('RO');
   await expect(page.locator('#firTag')).toContainText('LRBB');
   await expect(page.locator('#sector')).toHaveValue('ARG');
-  await expect(page.locator('#sector option')).toHaveCount(14);
+  await expect(page.locator('#sector option')).toHaveCount(16);
 });
 
 const nextFrame = page => page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));

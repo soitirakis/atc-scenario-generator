@@ -96,10 +96,13 @@
       ]
     },
     {
-      "id": "KOM",
+      "id": "KOM1",
       "rad": "LRBBKOM19",
-      "name": "KOMAN",
-      "vert": "KOMAN 1 FL245 – lower limit; KOMAN 2 above",
+      "name": "KOMAN 1",
+      "group": "KOMAN",
+      "vert": "FL 245 – Lower limit of ATS routes",
+      "lower": "Lower limit of ATS routes",
+      "upper": "FL 245",
       "poly": [
         "445418N 0254515E",
         "442627N 0260924E",
@@ -107,6 +110,35 @@
         {
           "b": "KOMAN_BG"
         },
+        "434153N 0244148E",
+        "435236N 0243420E",
+        "435747N 0243219E",
+        "441155N 0242223E",
+        "442038N 0251212E",
+        "443737N 0250858E",
+        "445212N 0250955E"
+      ]
+    },
+    {
+      "id": "KOM2",
+      "rad": "LRBBKOM19",
+      "name": "KOMAN 2",
+      "group": "KOMAN",
+      "vert": "FL 660 – FL 245",
+      "lower": "FL 245",
+      "upper": "FL 660",
+      "poly": [
+        "445418N 0254515E",
+        "442627N0260924E",
+        "440350N 0263945E",
+        {
+          "b": "KOMAN_BG",
+          "upTo": "435213N 0255833E"
+        },
+        "435213N 0255833E",
+        "435647N 0254432E",
+        "435846N 0252818E",
+        "435824N 0250009E",
         "434153N 0244148E",
         "435236N 0243420E",
         "435747N 0243219E",
@@ -194,6 +226,16 @@
     }
   ],
   "collapsed": [
+    {
+      "id": "KOM",
+      "rad": "LRBBKOM19",
+      "name": "KOMAN",
+      "vert": "KOMAN 1 and KOMAN 2 together",
+      "parts": [
+        "KOM1",
+        "KOM2"
+      ]
+    },
     {
       "id": "BM",
       "rad": "LRBBBM19",
