@@ -159,6 +159,8 @@ What each layer covers, and why, is in [docs/TEST-STRATEGY.md](docs/TEST-STRATEG
 
 CI runs the unit tests with coverage and the end-to-end tests on every push and pull request, and uploads the single-file build. On `main`, once both pass, it deploys that same file to GitHub Pages: https://soitirakis.github.io/atc-scenario-generator/
 
+Dependabot (`.github/dependabot.yml`) checks weekly and opens one grouped pull request for npm packages and one for GitHub Actions; they merge like any other PR, after CI passes.
+
 ## Project layout
 
 ```

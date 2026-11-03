@@ -6,6 +6,9 @@ import { loadCountry } from '../../src/country.js';
 import { Sim, GRADING } from '../../src/sim.js';
 import { buildLocalScenario, exportScenario, validateScenarioFile, SCHEMA_VERSION } from '../../src/scenario.js';
 
+/** Long simulations (whole sessions, many sectors) get more than the default 5 s, which coverage instrumentation can exceed. */
+const LONG_SIM_MS = 60_000;
+
 const countries = { RO: loadCountry(RO), HU: loadCountry(HU) };
 const cfg = { sector: 'ARG', difficulty: 'intermediate', duration: 30, seed: 4127, objective: 'General radar handling.' };
 const file = (o = {}) => ({ ...exportScenario(buildLocalScenario(countries.RO, cfg), 'RO'), ...o });
@@ -134,6 +137,6 @@ describe('scenario library', () => {
         expect(i.status, `${i.type} at ${i.min}`).toBe('fired');
         expect(i.result, `${i.type} at ${i.min}: no suitable aircraft`).not.toBeNull();
       }
-    });
+    }, LONG_SIM_MS);
   });
 });
