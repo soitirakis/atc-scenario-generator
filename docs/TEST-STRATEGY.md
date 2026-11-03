@@ -20,13 +20,14 @@ This document describes what each test layer covers, and why it is there.
 | `tests/unit/performance.test.js` | OpenAP WRAP conversion, ISA airspeeds, wind | 12 |
 | `tests/unit/radio.test.js` | readbacks, the busy frequency, one transmission per command line, similar callsigns | 8 |
 | `tests/unit/scenario-file.test.js` | scenario export and import validation, the sample library | 30 |
+| `tests/unit/sector-volumes.test.js` | sector layers and vertical limits (KOMAN 1/2), collapsed layers, delegated airspace, several source AIPs, upper-airspace-only units | 27 |
 | `tests/unit/scenario.test.js` | local scenario builder and the Claude reply validator | 10 |
 | `tests/unit/sim.test.js` | determinism, traffic and built-in conflicts, injects, clearances, the sector routine, pseudo-pilot, performance and wind in the simulator, robustness | 61 |
 | `tests/unit/tools.test.js` | range-bearing line, SEP, level probe | 15 |
 | `tests/e2e/app.spec.js` | the single window: loading, clearances, injects, data blocks, tools, command line, COMLOSS, no requests to other hosts | 17 × 2 viewports |
 | `tests/e2e/two-windows.spec.js` | instructor and trainee windows: sync, what the trainee sees, commands through the link, grading | 9 × 2 viewports |
 | `tests/e2e/scenario-files.spec.js` | export, reload and import round trip, the library in both windows, invalid files | 3 × 2 viewports |
-| **Total** | 16 unit files, 3 end-to-end files | 326 unit, 29 end-to-end × 2 viewports |
+| **Total** | 17 unit files, 3 end-to-end files | 353 unit, 29 end-to-end × 2 viewports |
 <!-- test-counts:end -->
 
 The counts come from the test runners: `node scripts/test-counts.mjs` rewrites them, and CI fails if they differ (`--check`). The coverage gate (`npm run test:coverage`, `vite.config.js`) requires 85% per file on `src/sim.js`, `src/scenario.js`, `src/cmdline.js`, `src/nets/*.js` and `src/tools/*.js`.

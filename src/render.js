@@ -257,13 +257,21 @@ export class Renderer {
     // sectors
     if (layers.sectors) {
       for (const sec of C.elementary) {
-        const isSel = sel && (sel.id === sec.id || (sel.parts && sel.parts.includes(sec.id)) || sel.id === 'FIR');
+        const isSel = sel && (sel.id === sec.id || (sel.members && sel.members.some(m => m.id === sec.id)) || sel.id === 'FIR');
         this.path(sec.poly);
         if (isSel) { ctx.fillStyle = 'rgba(79,179,217,0.06)'; ctx.fill(); }
         ctx.strokeStyle = isSel ? col['map-hi'] : col.map; ctx.lineWidth = isSel ? 1.6 : 1; ctx.stroke();
+        // airspace delegated to or from a neighbour, with its own level band: dashed
+        if (sec.vol) for (const d of [...sec.vol.include, ...sec.vol.exclude]) { ctx.setLineDash([5, 4]); this.path(d.poly); ctx.stroke(); ctx.setLineDash([]); }
       }
+      // layers of one lateral sector share a label (their group)
       ctx.font = `600 12px ${UI}`; ctx.textAlign = 'center'; ctx.fillStyle = col.map;
-      for (const sec of C.elementary) ctx.fillText(sec.name, sx(sec.c), sy(sec.c));
+      const labelled = new Set();
+      for (const sec of C.elementary) {
+        const name = sec.group || sec.name;
+        if (labelled.has(name)) continue;
+        labelled.add(name); ctx.fillText(name, sx(sec.c), sy(sec.c));
+      }
     }
     ctx.font = `11px ${MONO}`; ctx.fillStyle = col.map; ctx.textAlign = 'center';
     for (const n of C.neigh) ctx.fillText(n.label, sx(n.xy), sy(n.xy));

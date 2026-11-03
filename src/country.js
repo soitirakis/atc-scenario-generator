@@ -12,26 +12,59 @@ export function loadCountry(raw) {
   };
   for (const [k, g] of Object.entries(traffic.gates)) for (const id of g.pts) c.gateOf[id] = k;
 
-  for (const s of sectorFile.sectors) {
+  const toPoly = (list, what) => {
     const ll = [];
-    for (const t of s.poly) {
+    for (const t of list) {
       if (typeof t === 'string') ll.push(dms(t));
       else if (t.b) {
-        if (!borders[t.b]) throw new Error(`Sector ${s.id}: unknown border segment ${t.b}`);
-        ll.push(...borders[t.b]);
+        if (!borders[t.b]) throw new Error(`${what}: unknown border segment ${t.b}`);
+        ll.push(...borderPart(borders[t.b], t.upTo, `${what}: ${t.b}`));
       }
     }
-    const poly = ll.map(p => proj.toNM(p[0], p[1]));
+    return ll.map(p => proj.toNM(p[0], p[1]));
+  };
+  for (const s of sectorFile.sectors) {
+    const poly = toPoly(s.poly, `Sector ${s.id}`);
     const sec = { ...s, poly, polys: [poly], c: centroid(poly) };
+    // vertical limits and delegated airspace; a sector without them is laterally bounded only, as before
+    const lower = sectorLimit(s.lower, `Sector ${s.id} lower`), upper = sectorLimit(s.upper, `Sector ${s.id} upper`);
+    const deleg = (kind, d, i) => {
+      const what = `Sector ${s.id} ${kind} ${i + 1}`, unit = kind === 'include' ? d.from : d.to;
+      if (!unit) throw new Error(`${what}: name the unit it is delegated ${kind === 'include' ? 'from' : 'to'}`);
+      if (!d.lower || !d.upper) throw new Error(`${what}: give the delegation's own lower and upper limits`);
+      return { unit, note: d.note || '', poly: toPoly(d.poly, what), lower: sectorLimit(d.lower, what + ' lower'), upper: sectorLimit(d.upper, what + ' upper') };
+    };
+    const include = (s.include || []).map((d, i) => deleg('include', d, i)), exclude = (s.exclude || []).map((d, i) => deleg('exclude', d, i));
+    if (lower !== null || upper !== null || include.length || exclude.length) {
+      if (lower !== null && upper !== null && lower >= upper) throw new Error(`Sector ${s.id}: lower limit FL${lower} is not below upper limit FL${upper}`);
+      sec.vol = { lower, upper, include, exclude };
+      sec.polys = [poly, ...include.map(d => d.poly)];
+      sec.vert = sec.vert || bandText(lower, upper);
+    }
     c.sectors[s.id] = sec; c.sectorList.push(sec); c.elementary.push(sec);
   }
+  // a collapsed configuration combines elementary sectors, layers or other collapsed configurations
   for (const k of sectorFile.collapsed) {
-    const polys = k.parts.map(p => c.sectors[p].poly);
-    const sec = { ...k, polys, vert: 'Collapsed configuration' };
+    const members = [];
+    for (const p of k.parts) {
+      const m = c.sectors[p];
+      if (!m) throw new Error(`Collapsed ${k.id}: unknown part ${p}`);
+      for (const e of m.members || [m]) if (!members.includes(e)) members.push(e);
+    }
+    const sec = { ...k, members, polys: members.flatMap(m => m.polys), vert: k.vert || 'Collapsed configuration' };
     c.sectors[k.id] = sec; c.sectorList.push(sec);
   }
-  const all = c.elementary.map(s => s.poly);
-  c.sectors.FIR = { id: 'FIR', rad: meta.fir, name: meta.firName, polys: all, vert: 'Whole FIR' };
+  for (const s of c.sectorList) s.band = sectorBand(s);
+  const all = [];
+  for (const s of c.elementary) for (const p of s.polys) if (!all.includes(p)) all.push(p);
+  c.sectors.FIR = { id: 'FIR', rad: meta.fir, name: meta.firName, polys: all, vert: 'Whole FIR', band: null };
+  c.aips = sourceAips(meta);
+  c.upperOnly = null;
+  if (meta.upperOnly) {
+    const lowerFL = sectorLimit(meta.upperOnly.lowerLimit, 'meta.upperOnly.lowerLimit');
+    if (lowerFL === null) throw new Error('meta.upperOnly.lowerLimit: give the unit\'s lower limit, e.g. "FL 245"');
+    c.upperOnly = { lowerFL, lowerUnit: meta.upperOnly.lowerUnit || null };
+  }
 
   for (const p of points) {
     const ll = dms(p.pos);
@@ -51,7 +84,14 @@ export function loadCountry(raw) {
   for (const m of traffic.mainAirports || []) {
     const ap = c.airports[m.icao];
     if (!ap) throw new Error(`Main airport ${m.icao} is not in airports.json`);
-    c.mainAirports[ap.id] = { ...ap, approach: m.approach, handoffNM: m.handoffNM, arr: m.arr, dep: m.dep };
+    if (c.upperOnly) {
+      // upper airspace only: the airport is controlled below, by a named lower unit
+      const L = m.lowerUnit;
+      if (m.approach) throw new Error(`Main airport ${m.icao}: an upper-airspace unit has no approach unit; give lowerUnit instead`);
+      if (!L || !L.name || !(L.handoffNM > 0) || !(L.arrFL >= c.upperOnly.lowerFL) || !(L.depFL > c.upperOnly.lowerFL))
+        throw new Error(`Main airport ${m.icao}: lowerUnit needs name, handoffNM, arrFL (at or above FL${c.upperOnly.lowerFL}) and depFL (above FL${c.upperOnly.lowerFL})`);
+      c.mainAirports[ap.id] = { ...ap, unit: L.name, handoffNM: L.handoffNM, lower: { arrFL: L.arrFL, depFL: L.depFL }, arr: m.arr, dep: m.dep };
+    } else c.mainAirports[ap.id] = { ...ap, approach: m.approach, unit: m.approach, handoffNM: m.handoffNM, lower: null, arr: m.arr, dep: m.dep };
   }
   for (const a of (areas && areas.areas) || []) c.areas.push(loadArea(a, borders, proj));
   // civil-military training constructs (military.json): QRA bases, formation, fighter performance
@@ -117,4 +157,71 @@ export function loadArea(a, borders, proj) {
   return { id: a.id, name: a.name, type: a.type, activation: a.activation, poly: ll.map(p => proj.toNM(p[0], p[1])), lower: limitFL(read('lower')), upper: limitFL(read('upper')) };
 }
 
-export const inSector = (xy, sec) => sec.polys.some(p => pip(xy, p));
+/**
+ * Sector or layer limit as published: "FL 245" -> 245, "GND" -> 0; "Lower limit of ATS routes" and
+ * a missing limit -> null (no limit on that side). Anything else is an error, so a typo never
+ * silently opens a sector.
+ */
+export function sectorLimit(s, what = 'limit') {
+  if (s === undefined || s === null || /^lower limit of ats routes$/i.test(s)) return null;
+  const fl = limitFL(s);
+  if (fl === null || fl === 999) throw new Error(`${what}: "${s}" is not a sector limit (use "FL nnn", "GND" or "Lower limit of ATS routes")`);
+  return fl;
+}
+/** "FL245-FL660", "below FL245", "FL365 and above". */
+export function bandText(lower, upper) {
+  const f = n => `FL${String(n).padStart(3, '0')}`;
+  return lower === null ? (upper === null ? 'all levels' : `below ${f(upper)}`) : upper === null ? `${f(lower)} and above` : `${f(lower)}-${f(upper)}`;
+}
+/** [lower, upper] over a sector's volumes (null on an open side), or null if it has no vertical limits. */
+function sectorBand(sec) {
+  const vols = (sec.members || [sec]).flatMap(m => (m.vol ? [m.vol, ...m.vol.include] : [{ lower: null, upper: null }]));
+  if (!vols.some(v => v.lower !== null || v.upper !== null)) return null;
+  const lo = vols.some(v => v.lower === null) ? null : Math.min(...vols.map(v => v.lower));
+  const hi = vols.some(v => v.upper === null) ? null : Math.max(...vols.map(v => v.upper));
+  return lo === null && hi === null ? null : [lo, hi];
+}
+/** Sector selection label: the band is part of the name of a layer, e.g. "KOMAN 2 FL245-FL660". */
+export const sectorLabel = s => (s.band && !s.members ? `${s.name} ${bandText(s.band[0], s.band[1])}` : s.name);
+
+/**
+ * The border vertices of a segment up to (not including) the one at upTo, a published point on the
+ * border where the sector leaves it (within 0.05°: the border is approximated). Without upTo, all of them.
+ */
+function borderPart(verts, upTo, what) {
+  if (!upTo) return verts;
+  const [lat, lon] = dms(upTo), i = verts.findIndex(v => Math.hypot(v[0] - lat, v[1] - lon) < 0.05);
+  if (i < 0) throw new Error(`${what}: no border vertex near ${upTo}`);
+  return verts.slice(0, i);
+}
+
+/**
+ * The source AIPs of a module: meta.aips [{ state, url, edition, amendment }] for a module built
+ * from several states' AIPs, else the single eAIP of meta.airac and the first source link.
+ */
+function sourceAips(meta) {
+  if (!meta.aips) return [{ state: meta.name, url: (meta.sources && meta.sources[0] && meta.sources[0].url) || '', edition: meta.airac.edition, amendment: meta.airac.enr41 || '' }];
+  if (!Array.isArray(meta.aips) || !meta.aips.length) throw new Error('meta.aips: list at least one source AIP');
+  return meta.aips.map((a, i) => {
+    for (const k of ['state', 'url', 'edition', 'amendment']) if (!a[k]) throw new Error(`meta.aips[${i}]: missing ${k}`);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(a.edition)) throw new Error(`meta.aips[${i}] (${a.state}): edition "${a.edition}" is not a date (YYYY-MM-DD)`);
+    return { state: a.state, url: a.url, edition: a.edition, amendment: a.amendment };
+  });
+}
+
+const inBand = (v, fl) => (v.lower === null || fl >= v.lower) && (v.upper === null || fl < v.upper);
+/**
+ * Inside the sector at level fl. Lower limits are inclusive, upper limits exclusive, so a level on a
+ * layer boundary belongs to the upper layer. A sector without vertical limits or delegations is
+ * checked laterally only. Without fl, the lateral footprint (own polygon and included areas).
+ */
+export function inSector(xy, sec, fl) {
+  if (sec.members) return sec.members.some(m => inSector(xy, m, fl));
+  const v = sec.vol;
+  if (!v) return sec.polys.some(p => pip(xy, p));
+  if (fl === undefined) return sec.polys.some(p => pip(xy, p));
+  if (v.exclude.some(d => inBand(d, fl) && pip(xy, d.poly))) return false;
+  return (inBand(v, fl) && pip(xy, sec.poly)) || v.include.some(d => inBand(d, fl) && pip(xy, d.poly));
+}
+/** True if a sector needs levels to tell inside from outside (vertical limits or delegations). */
+export const isVertical = sec => (sec.members || [sec]).some(m => m.vol);

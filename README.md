@@ -225,7 +225,7 @@ One value in OpenAP's own data is kept as published although it lies outside its
 
 | File | Content | Source |
 |---|---|---|
-| `sectors.json` | 9 elementary + 4 collapsed ACC sectors | EUROCONTROL NM RAD sector file `LR_Sector ID_14-08-25` |
+| `sectors.json` | 10 elementary sectors (KOMAN as its two published layers: KOMAN 1 below FL245, KOMAN 2 FL245-FL660, which leaves out a strip along the Danube) + 5 collapsed (KOMAN = both layers) | EUROCONTROL NM RAD sector file `LR_Sector ID_14-08-25` |
 | `borders.json` | border vertices between published sector corners | **approximated** from the national boundary |
 | `navaids.json` | 16 VOR/DME | eAIP ENR 4.1 (AIRAC AMDT 11/26, page 3: 01/25) |
 | `points.json` | 131 significant points with FRA role | eAIP ENR 4.4 (AIRAC AMDT 11/26) |
@@ -308,7 +308,34 @@ What the script does and doesn't do, for both countries:
 
 ## Adding a country
 
-1. Create `data/<CODE>/` with the same eight files as `data/RO/`. Coordinates stay in AIP notation (`DDMMSSN DDDMMSSE`); `{ "b": "KEY" }` inside a sector polygon splices in a border segment from `borders.json`. In `meta.json`, `defaultSector` picks the sector selected when the country loads, and `simNote` is the traffic note shown in the AIP data tab.
+1. Create `data/<CODE>/` with the same eight files as `data/RO/`. Coordinates stay in AIP notation (`DDMMSSN DDDMMSSE`); `{ "b": "KEY" }` inside a sector polygon splices in a border segment from `borders.json`, and `{ "b": "KEY", "upTo": "DMS" }` only the part before a published point on it. In `meta.json`, `defaultSector` picks the sector selected when the country loads, and `simNote` is the traffic note shown in the AIP data tab.
+
+   **Sectors are volumes.** A sector with no limits is checked laterally only. Give `lower` and `upper` as published (`"FL 245"`, `"GND"`, `"Lower limit of ATS routes"`) to make it a layer. The lower limit is inclusive and the upper exclusive, so a level on a layer boundary belongs to the upper layer. Layers of one lateral sector share a `group`, the label drawn once on the map. The sector selection shows each layer with its band, e.g. "KOMAN 2 FL245-FL660":
+
+   ```json
+   { "id": "KOM2", "rad": "LRBBKOM19", "name": "KOMAN 2", "group": "KOMAN",
+     "lower": "FL 245", "upper": "FL 660", "poly": ["445418N 0254515E", { "b": "KOMAN_BG", "upTo": "435213N 0255833E" }, "…"] }
+   ```
+
+   A collapsed configuration lists its `parts`: elementary sectors, layers or collapsed configurations listed before it (Romania's KNL is KOM + LOM + NER, and KOM is KOM1 + KOM2).
+
+   **Delegated airspace.** A sector can take in an area delegated from a neighbouring unit (`include`) or give one up (`exclude`). Each area has its own band, and an aircraft is inside the sector when it is in the sector's own volume or an included area, and not in an excluded area at its level. The units and levels below only show the format; take real delegations from the AIP or the Letter of Agreement, and cite it in `note`:
+
+   ```json
+   "include": [{ "from": "Sofia ACC", "lower": "FL 245", "upper": "FL 660", "poly": ["…"], "note": "LoA reference" }],
+   "exclude": [{ "to": "Beograd ACC", "lower": "FL 305", "upper": "FL 660", "poly": ["…"] }]
+   ```
+
+   **Several source AIPs.** A module covering airspace of several states (Maastricht UAC: Belgium, Netherlands, Luxembourg, Germany) lists each state's eAIP in `meta.json`; the AIP data tab shows one row and one link per state:
+
+   ```json
+   "aips": [
+     { "state": "Netherlands", "url": "https://…", "edition": "2026-10-29", "amendment": "AIRAC AMDT 11/26" },
+     { "state": "Belgium", "url": "https://…", "edition": "2026-10-29", "amendment": "AIRAC AMDT 11/26" }
+   ]
+   ```
+
+   Without `aips`, the module's single eAIP is `airac.edition` with the first link in `sources`. `npm run airac` handles single-AIP modules only.
 2. Choose real FRA entry/exit points as traffic gates and write the flow table. Each flow is `[from, to, weight]` between two gate groups, or between a gate group and a main airport. Flows are flown in both directions.
 3. Optionally declare one or more main airports in `traffic.json` to get arrivals and departures:
 
@@ -330,6 +357,16 @@ What the script does and doesn't do, for both countries:
 
    Leave `mainAirports` out for a transit-only country.
 
+   **Upper airspace only.** A unit that controls no airports (an upper area control centre) sets `"upperOnly": { "lowerLimit": "FL 245", "lowerUnit": "Amsterdam ACC" }` in `meta.json`. Its main airports have no `approach`. Instead, `lowerUnit` names the unit below, the hand-off boundary (`handoffNM` from the airport) and the agreed levels. The numbers below only show the format: label real ones as modelled unless they come from a Letter of Agreement:
+
+   ```json
+   { "icao": "EHAM", "lowerUnit": { "name": "Amsterdam ACC", "handoffNM": 60, "arrFL": 250, "depFL": 260 }, "arr": { "…": "…" }, "dep": { "…": "…" } }
+   ```
+
+   - **Arrivals** have `arrFL` as their agreed exit level and ask to descend to it. They are handed to the lower unit at the boundary; one more than 500 ft above `arrFL` there is logged as too high.
+   - **Departures** appear at the boundary 1000 ft below the unit's lower limit, climbing to `depFL`, which must be above the lower limit. The lower unit transfers them once the look-ahead sees them climb into the sector.
+   - **Emergencies** descending below the lower limit go to the unit named in `upperOnly.lowerUnit`.
+
    Add `exitLevels` for the assume and transfer routine, and label it as modelled in its `_note` unless it comes from a real Letter of Agreement:
 
    ```json
@@ -345,7 +382,7 @@ What the script does and doesn't do, for both countries:
    - `arrivals`: the level for arrivals leaving the training sector for another en-route sector.
    - `app`: the level for arrivals handed to the approach unit from the training sector. It is also the level arrivals ask to descend to.
 4. Register it in `data/countries.js`.
-5. Copy `tests/unit/country.test.js` for the new module. Its checks catch most data mistakes: sectors that don't contain their own label, overlapping sectors, aerodromes outside the FIR, gates that don't exist, and main airports with missing connection points.
+5. Copy `tests/unit/country.test.js` for the new module. Its checks catch most data mistakes: sectors that don't contain their own label, overlapping sectors (checked at a level inside each layer's band), aerodromes outside the FIR, gates that don't exist, and main airports with missing connection points. The loader itself rejects unknown sector limits, a lower limit not below the upper, delegations without a unit or band, incomplete `aips` entries, and an upper-airspace module with an approach unit. `tests/unit/sector-volumes.test.js` shows each of these on a variant of the Romanian module.
 
 ## Claude integration
 

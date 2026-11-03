@@ -5,7 +5,7 @@
 // inject timeline, pseudo-pilot and live grading) and trainee (no Sim: shows the
 // instructor's snapshots and sends clearances back over src/link.js).
 import { COUNTRIES } from '../data/countries.js';
-import { loadCountry } from './country.js';
+import { loadCountry, sectorLabel } from './country.js';
 import { fmtFL, fmtT, dist } from './geo.js';
 import { Sim, TYPES, DIFF } from './sim.js';
 import { buildLocalScenario, buildClaudePrompt, parseClaudeScenario, exportScenario, validateScenarioFile } from './scenario.js';
@@ -422,29 +422,33 @@ export function nextAirac(d, ref = Date.UTC(2026, 9, 1)) {
   return new Date(t);
 }
 function renderDataTab() {
-  const m = C.meta;
-  $('airacTag').textContent = `eAIP ${m.airac.edition}`;
+  const m = C.meta, A = m.airac || {}, aips = C.aips;
+  $('airacTag').textContent = aips.length > 1 ? `${aips.length} eAIPs` : `eAIP ${aips[0].edition}`;
+  const layered = C.elementary.filter(s => s.vol).length;
   const rows = [
-    ['FIR', `${m.firName} (${m.fir}) · ${m.unit}`],
-    ['Sectors', `${C.elementary.length} elementary + ${C.sectorList.length - C.elementary.length} collapsed · ${m.airac.sectors}`],
-    ['Navaids', `${C.navaids.length} VOR/DME · ENR 4.1, ${m.airac.enr41}`],
-    ['FRA points', `${C.pointList.length} of the ENR 4.4 list, with entry/exit roles · ${m.airac.enr44}`],
+    ['FIR', `${m.firName} (${m.fir}) · ${m.unit}${C.upperOnly ? ` · upper airspace only, from FL${C.upperOnly.lowerFL}` : ''}`],
+    ['Sectors', `${C.elementary.length} elementary${layered ? ` (${layered} with vertical limits)` : ''} + ${C.sectorList.length - C.elementary.length} collapsed${A.sectors ? ' · ' + A.sectors : ''}`],
+    ['Navaids', `${C.navaids.length} VOR/DME · ENR 4.1${A.enr41 ? ', ' + A.enr41 : ''}`],
+    ['FRA points', `${C.pointList.length} of the ENR 4.4 list, with entry/exit roles${A.enr44 ? ' · ' + A.enr44 : ''}`],
     ['Aerodromes', `${C.airportList.length} reference points`],
     ['Performance', `OpenAP WRAP, ${Object.keys(PERF.types).length} aircraft types (GPL-3.0, commit ${PERF._source.commit.slice(0, 7)}). ISA atmosphere; wind per scenario.`],
     ['Next AIRAC', `${nextAirac(new Date()).toISOString().slice(0, 10)}. Re-check the eAIP for amendments on or after this date.`]
   ];
+  // one row per source AIP: a module can be built from several states' AIPs
+  rows.unshift(...aips.map(a => [aips.length > 1 ? `AIP ${a.state}` : 'AIP', `eAIP ${a.edition} · ${a.amendment}`]));
   $('dataList').innerHTML = rows.map(d => `<div><span>${esc(d[0])}</span><span>${esc(d[1])}</span></div>`).join('') +
+    (aips.length > 1 ? `<div><span>eAIPs</span><span>${aips.map(a => `<a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.state)}</a>`).join('<br>')}</span></div>` : '') +
     `<div><span>Links</span><span>${m.sources.map(s => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a>`).join('<br>')}</span></div>`;
   $('simNote').textContent = m.simNote || '';
   $('roadmap').innerHTML = COUNTRIES.map(c => `<div><span>${esc(c.name)}</span><span class="tag ${c.planned ? '' : 'on'}">${c.planned ? 'planned' : 'available'}</span></div>`).join('');
   $('schema').textContent = `data/<CODE>/
-  meta.json      fir, center, defaultSector, airac, simNote, sources
-  sectors.json   sectors[{id, rad, name, vert, poly:["DMS", {b:"KEY"}]}], collapsed[]
+  meta.json      fir, center, defaultSector, airac, simNote, sources, aips?[{state, url, edition, amendment}], upperOnly?{lowerLimit, lowerUnit}
+  sectors.json   sectors[{id, rad, name, vert, lower?, upper?, group?, poly:["DMS", {b:"KEY", upTo?}], include?[], exclude?[]}], collapsed[{id, parts}]
   borders.json   KEY: [[lat, lon], ...]   (border vertices)
   navaids.json   [{id, name, freq, pos:"DMS"}]   ENR 4.1
   points.json    [{id, pos:"DMS", role:E|X|EX|L|I}]   ENR 4.4
   airports.json  [{icao, name, pos:"DMS"}]
-  traffic.json   gates, flows, operators, mainAirports[{icao, approach, handoffNM, arr, dep}], exitLevels{gates, arrivals, app}
+  traffic.json   gates, flows, operators, mainAirports[{icao, approach, handoffNM | lowerUnit{name, handoffNM, arrFL, depFL}, arr, dep}], exitLevels{gates, arrivals, app}
   map.json       neighbours, coast`;
 }
 
@@ -679,7 +683,7 @@ function setCountry(code) {
   if (ROLE !== 'trainee') sim.C = C; // the trainee view takes its country from the snapshots
   $('country').value = code;
   $('firTag').textContent = `${C.meta.fir} · ${C.meta.unit}`;
-  const opts = [...C.sectorList.map(s => [s.id, `${s.name} (${s.rad})`]), ['FIR', 'Whole FIR']];
+  const opts = [...C.sectorList.map(s => [s.id, `${sectorLabel(s)} (${s.rad})`]), ['FIR', 'Whole FIR']];
   $('sector').innerHTML = opts.map(o => `<option value="${o[0]}">${esc(o[1])}</option>`).join('');
   $('sector').value = C.meta.defaultSector || C.sectorList[0].id;
   renderDataTab();
