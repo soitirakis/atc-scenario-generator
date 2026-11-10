@@ -212,6 +212,14 @@ body:not([data-role="solo"]) .solo-only, body[data-role="trainee"] .not-trainee,
 
 /* scenario library and files */
 .io-msg { margin: 8px 0 0; }
+.paused-tag .names { margin: 0 0 10px; text-align: left; }
+.hist { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.hist-row { border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+.hist-row .hist-head { display: flex; gap: 8px; flex-wrap: wrap; align-items: baseline; }
+.hist-row .hist-head b { font-family: var(--f-data); font-variant-numeric: tabular-nums; font-weight: 500; }
+.hist-row .hist-sum { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.hist-row [data-h="del"][data-armed] { border-color: var(--alert); color: var(--alert); }
+.deb-tl .clr-r { color: var(--muted); }
 .io-msg.err { color: var(--alert); }
 
 /* MTCD list */

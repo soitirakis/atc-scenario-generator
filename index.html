@@ -69,6 +69,10 @@
       <div class="paused-tag" id="pausedTag">
         <b id="pausedTitle">Scenario ready</b>
         <span id="pausedSub">Traffic is loaded. Start the session when you have read the scenario.</span>
+        <div class="form names not-trainee">
+          <div><label for="traineeName">Trainee</label><input type="text" id="traineeName" maxlength="60" autocomplete="off" placeholder="optional"></div>
+          <div><label for="instructorName">Instructor</label><input type="text" id="instructorName" maxlength="60" autocomplete="off" placeholder="optional"></div>
+        </div>
         <button class="btn primary not-trainee" id="pausedStart">Start session</button>
       </div>
       <div class="toast" id="toast" hidden></div>
@@ -78,6 +82,7 @@
       <div class="tabs" role="tablist">
         <button role="tab" aria-selected="true" data-tab="live" id="tab-live">Live</button>
         <button role="tab" aria-selected="false" data-tab="scenario" id="tab-scenario">Scenario</button>
+        <button role="tab" aria-selected="false" data-tab="history" id="tab-history" class="not-trainee">History</button>
         <button role="tab" aria-selected="false" data-tab="data" id="tab-data">AIP data</button>
         <button role="tab" aria-selected="false" data-tab="instr" id="tab-instr" class="instructor-only">Instructor</button>
       </div>
@@ -199,6 +204,20 @@
         </div>
       </div>
 
+      <div class="tab-body not-trainee" id="pane-history" role="tabpanel" hidden>
+        <div class="sec">
+          <h2>Session history <small id="histCount"></small></h2>
+          <p class="note" id="histStore" role="status"></p>
+          <div class="row-btns">
+            <button class="btn sm" id="histExportAll">Export all</button>
+            <button class="btn sm" id="histImport">Import</button>
+            <input type="file" id="histFile" accept=".json,application/json" aria-label="Session records to import" hidden>
+          </div>
+          <div class="note io-msg" id="histMsg" role="status" hidden></div>
+          <div class="hist" id="histList"></div>
+        </div>
+      </div>
+
       <div class="tab-body" id="pane-data" role="tabpanel" hidden>
         <div class="sec">
           <h2>Source data <small id="airacTag"></small></h2>
@@ -224,14 +243,17 @@
 
 <div class="modal" id="debrief" hidden>
   <div class="modal-card">
-    <h3>Session debrief</h3>
+    <h3 id="debTitle">Session debrief</h3>
     <div class="deb" id="debStats"></div>
     <div id="debInjects"></div>
     <div id="debTimeline"></div>
+    <div id="debClearances"></div>
     <div id="debNotes" class="note"></div>
     <div class="row-btns">
       <button class="btn primary not-trainee" id="debRestart">Run again (same seed)</button>
       <button class="btn not-trainee" id="debNew">New seed</button>
+      <button class="btn primary not-trainee" id="debReplay" hidden>Replay (same scenario and seed)</button>
+      <button class="btn not-trainee" id="debExport">Export record</button>
       <button class="btn" id="debClose">Close</button>
     </div>
   </div>

@@ -118,7 +118,7 @@ export class Sim {
 
   reset() {
     this.t = 0; this.ac = []; this.nextId = 1; this.stca = []; this.los = new Map();
-    this.logs = []; this.wx = []; this.tsa = []; this.ended = false; this.csUsed = new Set(); this.timeline = [];
+    this.logs = []; this.wx = []; this.tsa = []; this.ended = false; this.csUsed = new Set(); this.timeline = []; this.clearances = [];
     this.nets = { clam: new Map(), apw: new Map(), ram: new Map(), mtcd: [] };
     this.freq = { busyUntil: 0, cs: null }; this.radio = []; this.radioActs = []; this._tx = null;
     // seeded even before a scenario is loaded (load() reseeds both from the scenario), never Math.random
@@ -135,6 +135,8 @@ export class Sim {
   }
   /** who: 'i' for instructor-only lines (not sent to a trainee window). */
   log(text, cls = '', who = '') { this.logs.unshift({ t: this.t, text, cls, who }); if (this.logs.length > 120) this.logs.pop(); }
+  /** Clearance log for the session record: every controller transmission or action and how it ended (never trimmed, no rng). */
+  clr(a, text, result = 'ok') { this.clearances.push({ t: this.t, cs: a.cs, text, result }); }
   get(id) { return this.ac.find(a => a.id === id) || null; }
 
   callsign() {
@@ -1176,14 +1178,15 @@ export class Sim {
     if (!a) return { ok: false, msg: 'Aircraft no longer on frequency' };
     if (a.oat) return { ok: false, msg: `${a.cs} is OAT under military control` };
     if (!this.onFreq(a)) return { ok: false, msg: `${a.cs} is not on your frequency${a.ctl === 'xfer' ? ' (transferred)' : a.noXfer ? ' (not transferred to you yet)' : ''}` };
-    if (!this._tx && this.freqBusy()) return this.sayAgain(a);
-    if (a.rcf) { this.log(`${what} to ${a.cs} — no reply`, 'w'); return { ok: false, msg: `${a.cs}: no reply` }; }
+    if (!this._tx && this.freqBusy()) { this.clr(a, what, 'blocked'); return this.sayAgain(a); }
+    if (a.rcf) { this.clr(a, what, 'no reply'); this.log(`${what} to ${a.cs} — no reply`, 'w'); return { ok: false, msg: `${a.cs}: no reply` }; }
     if (a.pilotNext) { // pseudo-pilot: refuse or query this clearance once
       const mode = a.pilotNext; a.pilotNext = null;
+      this.clr(a, what, mode === 'refuse' ? 'unable' : 'say again');
       if (mode === 'refuse') { this.log(`${a.cs} unable ${what}`, 'w'); return { ok: false, msg: `${a.cs}: unable ${what}` }; }
       this.log(`${a.cs} say again? (${what})`, 'w'); return { ok: false, msg: `${a.cs} asks you to say again` };
     }
-    this.stats.cmds++; this.log(`${a.cs} ${what}`);
+    this.stats.cmds++; this.log(`${a.cs} ${what}`); this.clr(a, what);
     // a correction cancels what this aircraft was about to do on a wrong readback
     for (const p of this.radioActs) if (p.a === a && !p.done && (p.kind === 'any' || p.kind === (alt && alt.kind))) { p.done = true; p.inj.g.correctedAt = this.t; this.mark(`${a.cs} corrected`, 'ok'); }
     const trap = this.radioTrap(a, alt, what, fn);
@@ -1211,7 +1214,7 @@ export class Sim {
     if (!a.comloss) return { ok: false, msg: `${a.cs} is in contact: nothing to notify` };
     const g = a.comloss.inj.g;
     if (g.notifiedAt !== undefined) return { ok: false, msg: `Military already notified about ${a.cs}` };
-    g.notifiedAt = this.t;
+    g.notifiedAt = this.t; this.clr(a, 'military notified (COMLOSS)');
     this.log(`Military notified: ${a.cs} COMLOSS, FL${fmtFL(a.fl)}`);
     this.mark(`Military notified about ${a.cs}`, 'ok');
     if (!this.C.military) this.log('No QRA base configured for this country: no scramble', 'w', 'i');
@@ -1353,7 +1356,7 @@ export class Sim {
     if (!a) return { ok: false, msg: 'Aircraft no longer on frequency' };
     if (a.ctl === 'ass') return { ok: false, msg: `${a.cs} is already assumed` };
     if (a.ctl !== 'pend' && !a.noXfer) return { ok: false, msg: `${a.cs} has not been transferred to you` };
-    a.ctl = 'ass'; a.noXfer = false; a.assumedAt = this.t;
+    a.ctl = 'ass'; a.noXfer = false; a.assumedAt = this.t; this.clr(a, 'assume');
     this.log(`${a.cs} assumed${a.lastIn ? '' : `, entering ${this.sector.name} in ${fmtT(a.tEntry || 0)}`}`);
     return { ok: true };
   }
@@ -1365,7 +1368,7 @@ export class Sim {
     this.checkXfl(a);
     a.leftAt = this.t; a.leftCfl = Math.round(a.cfl);
     a.ctl = 'xfer'; this.stats.cmds++;
-    this.log(`${a.cs} transferred${a.xfl !== null ? ` at FL${fmtFL(a.cfl)}` : ''}`);
+    this.log(`${a.cs} transferred${a.xfl !== null ? ` at FL${fmtFL(a.cfl)}` : ''}`); this.clr(a, `transfer at FL${fmtFL(a.cfl)}`);
     return { ok: true };
   }
   _closeReq(a, kinds) {
@@ -1439,6 +1442,7 @@ export class Sim {
     if (!coord && this.freqBusy()) return this.sayAgain(a);
     this.stats.reqAnswered++; this.stats.reqTimeSum += this.t - r.t;
     r.answeredAt = this.t; r.approved = approve;
+    this.clr(a, `${r.kind === 'mil' ? 'acknowledged' : approve ? 'approved' : 'refused'}: ${r.text}`);
     if (r.cell) r.cell.answers.push(this.t - r.t);
     if (!coord) this.stats.cmds++;
     if (r.kind === 'mil') this.log(`${a.cs} coordination with the military acknowledged`);
@@ -1462,7 +1466,7 @@ export class Sim {
     a.emgAck = true;
     if (a.emgAckAt === undefined) { a.emgAckAt = this.t; this.mark(`Emergency acknowledged ${a.cs}`); }
     if (this.stats.emgAckT === null) this.stats.emgAckT = this.t;
-    this.log(`${a.cs} emergency acknowledged, descent approved`);
+    this.log(`${a.cs} emergency acknowledged, descent approved`); this.clr(a, 'emergency acknowledged');
     return { ok: true };
   }
 

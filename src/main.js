@@ -14,6 +14,8 @@ import { parseCommand, completeCallsign } from './cmdline.js';
 import { Renderer } from './render.js';
 import { Link, SimView, makeSnapshot, CHANNEL_NAME } from './link.js';
 import { tasToMach, machToCas } from './atmos.js';
+import { buildRecord, readImport, summary, debriefOf, bundle, recordFileName } from './records.js';
+import { openRecords } from './store.js';
 import PERF from '../data/performance.json';
 
 const $ = id => document.getElementById(id);
@@ -28,7 +30,10 @@ let C = countryData(COUNTRIES.find(c => !c.planned).code);
 const link = ROLE === 'solo' ? null : new Link(new BroadcastChannel(CHANNEL_NAME), ROLE);
 const sim = ROLE === 'trainee' ? new SimView(link, countryData) : new Sim(C);
 const R = new Renderer($('scope'), sim);
-const ui = { running: false, speed: 1, debriefShown: false, acBoxFor: null, acBoxSig: '', lastPanel: 0, toastT: 0, session: 0, lastPub: 0, editInj: null, ppFor: null, ppSig: '' };
+const ui = { lastRecord: null, viewRecord: null, running: false, speed: 1, debriefShown: false, acBoxFor: null, acBoxSig: '', lastPanel: 0, toastT: 0, session: 0, lastPub: 0, editInj: null, ppFor: null, ppSig: '' };
+// session records (src/records.js) in IndexedDB (src/store.js); the trainee window has no Sim, so it keeps none
+let records = null;
+const recordsReady = ROLE === 'trainee' ? Promise.resolve(null) : openRecords().then(s => { records = s; return s; });
 window.__sim = sim; // handy for e2e tests and console debugging
 window.__radar = R;
 window.__link = link;
@@ -48,7 +53,7 @@ function applyScenario(scn) {
 }
 function startSession(scn = sim.scenario) {
   sim.load(scn);
-  ui.session++; ui.editInj = null;
+  ui.session++; ui.editInj = null; ui.lastRecord = null;
   ui.debriefShown = false; R.sel = null; ui.acBoxFor = -1; R.resetLabels();
   setRunning(false);
   $('pausedTag').hidden = false;
@@ -369,8 +374,7 @@ function ioMessage(lines, error = false) {
 }
 /** Validate a scenario file, switch country if needed, and load it (the link sends it to the trainee window). */
 function loadScenarioFile(j, source) {
-  const countries = Object.fromEntries(COUNTRIES.filter(c => !c.planned).map(c => [c.code, countryData(c.code)]));
-  const r = validateScenarioFile(j, countries);
+  const r = validateScenarioFile(j, availableCountries());
   if (!r.ok) { ioMessage(['This scenario was not loaded:', ...r.errors], true); return false; }
   if (r.country !== C.meta.code) setCountry(r.country);
   r.scenario.source = source;
@@ -380,14 +384,19 @@ function loadScenarioFile(j, source) {
   toast(`Loaded: ${r.scenario.title}`);
   return true;
 }
-function exportCurrent() {
-  const j = exportScenario(sim.scenario, C.meta.code);
-  const blob = new Blob([JSON.stringify(j, null, 2) + '\n'], { type: 'application/json' });
+/** Save a JSON file through the browser's download. */
+function download(obj, filename) {
+  const blob = new Blob([JSON.stringify(obj, null, 2) + '\n'], { type: 'application/json' });
   const url = URL.createObjectURL(blob), a = document.createElement('a');
-  a.href = url; a.download = `scenario-${j.country}-${j.sector}-${j.seed}.json`.toLowerCase();
+  a.href = url; a.download = filename;
   document.body.append(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
-  ioMessage([`Exported ${a.download}`]);
+}
+const availableCountries = () => Object.fromEntries(COUNTRIES.filter(c => !c.planned).map(c => [c.code, countryData(c.code)]));
+function exportCurrent() {
+  const j = exportScenario(sim.scenario, C.meta.code), name = `scenario-${j.country}-${j.sector}-${j.seed}.json`.toLowerCase();
+  download(j, name);
+  ioMessage([`Exported ${name}`]);
 }
 async function importFile(f) {
   let j;
@@ -405,7 +414,7 @@ function renderScenarioCard() {
       <p>${esc(s.objective)}</p></div>`;
     return;
   }
-  $('scnSource').textContent = { claude: 'written by Claude', library: 'from the library', file: 'imported from a file' }[s.source] || 'built locally';
+  $('scnSource').textContent = { claude: 'written by Claude', library: 'from the library', file: 'imported from a file', record: 'replayed from a saved session' }[s.source] || 'built locally';
   $('scnCard').innerHTML = `<div class="scn">
     <h3>${esc(s.title)}</h3>
     <div class="meta"><span class="tag">${esc(C.sectors[s.sector].name)}</span><span class="tag">${esc(DIFF[s.difficulty].label)}</span><span class="tag">${s.duration} min</span><span class="tag">seed ${s.seed}</span><span class="tag">${s.conflicts} built-in conflicts</span></div>
@@ -454,7 +463,66 @@ function renderDataTab() {
 
 function switchTab(t) {
   for (const b of document.querySelectorAll('.tabs button')) b.setAttribute('aria-selected', b.dataset.tab === t);
-  for (const p of ['live', 'scenario', 'data', 'instr']) $('pane-' + p).hidden = p !== t;
+  for (const p of ['live', 'scenario', 'history', 'data', 'instr']) $('pane-' + p).hidden = p !== t;
+  if (t === 'history') renderHistory();
+}
+
+/* ---------- session records and history ---------- */
+const fmtDate = iso => { const d = new Date(iso), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; };
+function histMessage(lines, error = false) {
+  const m = $('histMsg');
+  m.hidden = !lines.length; m.classList.toggle('err', error);
+  m.innerHTML = lines.map(l => `<div>${esc(l)}</div>`).join('');
+}
+/** At the end of a session: build its record, keep it for the debrief's Export, and save it. */
+async function saveRecord() {
+  const rec = buildRecord(sim, { country: sim.C.meta.code, trainee: $('traineeName').value, instructor: $('instructorName').value });
+  ui.lastRecord = rec;
+  try { await (await recordsReady).put(rec); } catch (e) { histMessage([`This session was not saved (${e.message}). Export it from the debrief to keep it.`], true); }
+  renderHistory();
+}
+async function renderHistory() {
+  if (ROLE === 'trainee') return;
+  const store = await recordsReady, list = await store.list();
+  $('histStore').textContent = store.available
+    ? 'Saved in this browser only, with no login or server. Export to keep a copy or to move sessions to another computer.'
+    : `Session history is not available: ${store.reason} Sessions are kept only until this page closes. Use Export record in the debrief, or Export all, to keep them.`;
+  $('histStore').classList.toggle('warn', !store.available);
+  $('histCount').textContent = list.length ? `${list.length} session${list.length > 1 ? 's' : ''}` : '';
+  $('histList').innerHTML = list.length ? list.map(r => `<div class="hist-row" data-id="${esc(r.id)}">
+      <div class="hist-head"><b>${fmtDate(r.savedAt)}</b><span>${esc(r.trainee || 'No trainee name')}${r.instructor ? ' · instructor ' + esc(r.instructor) : ''}</span></div>
+      <div>${esc(r.scenario.title)}</div>
+      <div class="hist-sum">${esc(r.country)} ${esc(r.sectorName)} · seed ${r.seed} · ${esc(summary(r).text)}</div>
+      <div class="row-btns"><button class="btn sm" data-h="open">Open</button><button class="btn sm" data-h="export">Export</button><button class="btn sm" data-h="del">Delete</button></div>
+    </div>`).join('') : '<div class="empty">No sessions yet. A session is saved here when it ends.</div>';
+}
+async function historyClick(e) {
+  const b = e.target.closest('button[data-h]'), row = b && b.closest('.hist-row');
+  if (!row) return;
+  const store = await recordsReady, rec = await store.get(row.dataset.id);
+  if (!rec) { renderHistory(); return; }
+  if (b.dataset.h === 'open') showDebrief(rec);
+  if (b.dataset.h === 'export') { download(rec, recordFileName(rec)); histMessage([`Exported ${recordFileName(rec)}`]); }
+  if (b.dataset.h === 'del') {
+    // two clicks: the first arms the button, the second deletes
+    if (!b.dataset.armed) { b.dataset.armed = '1'; b.textContent = 'Confirm delete'; setTimeout(() => { if (b.isConnected) { delete b.dataset.armed; b.textContent = 'Delete'; } }, 4000); return; }
+    await store.remove(rec.id); histMessage([`Deleted the session of ${fmtDate(rec.savedAt)}.`]); renderHistory();
+  }
+}
+async function exportAll() {
+  const list = await (await recordsReady).list();
+  if (!list.length) { histMessage(['No sessions to export.']); return; }
+  const name = `sessions-${new Date().toISOString().slice(0, 10)}.json`;
+  download(bundle(list), name);
+  histMessage([`Exported ${list.length} session${list.length > 1 ? 's' : ''} to ${name}`]);
+}
+async function importRecords(f) {
+  let j;
+  try { j = JSON.parse(await f.text()); } catch { histMessage([`${f.name} is not a JSON file.`], true); return; }
+  const { records: ok, errors } = readImport(j, availableCountries()), store = await recordsReady;
+  for (const r of ok) await store.put(r);
+  histMessage([ok.length ? `Imported ${ok.length} session${ok.length > 1 ? 's' : ''} from ${f.name}.` : `Nothing was imported from ${f.name}:`, ...errors], !ok.length);
+  renderHistory();
 }
 
 function gradeItems(d) {
@@ -496,13 +564,26 @@ function debriefTimeline(d) {
   return `<h4>Timeline</h4><div class="deb-tl">${d.timeline.map(e => `<div class="${e.cls}"><b>${fmtT(e.t)}</b> ${esc(e.text)}</div>`).join('')}</div>`;
 }
 const statHtml = i => `<div class="stat"><div class="k">${esc(i[0])}</div><div class="v" style="color:${i[2] === 'a' ? 'var(--alert)' : i[2] === 'w' ? 'var(--warn)' : 'var(--text)'}">${esc(String(i[1]))}</div></div>`;
-function showDebrief() {
-  const d = sim.debrief(), scn = sim.scenario;
+function debriefClearances(list) {
+  if (!list || !list.length) return '';
+  return `<h4>Clearances (${list.length})</h4><div class="deb-tl">${list.map(c => `<div class="${c.result === 'ok' ? '' : 'w'}"><b>${fmtT(c.t)}</b> ${esc(c.cs)} ${esc(c.text)}${c.result === 'ok' ? '' : ` <span class="clr-r">(${esc(c.result)})</span>`}</div>`).join('')}</div>`;
+}
+/** The debrief of the session that just ended, or of a saved record (Replay instead of Run again). */
+function showDebrief(rec = null) {
+  const d = rec ? debriefOf(rec) : sim.debrief(), scn = rec ? rec.scenario : sim.scenario;
   if (!d) return;
+  ui.viewRecord = rec;
+  $('debTitle').textContent = rec ? `Session debrief · ${fmtDate(rec.savedAt)}` : 'Session debrief';
   $('debStats').innerHTML = gradeItems(d).map(statHtml).join('');
   $('debInjects').innerHTML = debriefInjects(d);
   $('debTimeline').innerHTML = debriefTimeline(d);
-  $('debNotes').textContent = ROLE === 'trainee' ? `Seed ${scn.seed}. Your instructor has the full scenario and the injects.` : `Scenario "${scn.title}", seed ${scn.seed}. Success criteria: ${scn.criteria.join('; ')}.`;
+  $('debClearances').innerHTML = debriefClearances(rec ? rec.clearances : sim.clearances);
+  const who = rec ? [rec.trainee && `trainee ${rec.trainee}`, rec.instructor && `instructor ${rec.instructor}`].filter(Boolean).join(', ') : '';
+  $('debNotes').textContent = ROLE === 'trainee' ? `Seed ${scn.seed}. Your instructor has the full scenario and the injects.`
+    : `Scenario "${scn.title}"${rec ? `, ${rec.country} ${rec.sectorName}` : ''}, seed ${scn.seed}${who ? `, ${who}` : ''}. Success criteria: ${scn.criteria.join('; ')}.`;
+  $('debRestart').hidden = $('debNew').hidden = !!rec;
+  $('debReplay').hidden = !rec;
+  $('debExport').hidden = !rec && !ui.lastRecord;
   $('debrief').hidden = false;
 }
 
@@ -668,6 +749,17 @@ function bindInput() {
   $('debRestart').onclick = () => { $('debrief').hidden = true; startSession(); };
   $('debNew').onclick = () => { $('debrief').hidden = true; $('seed').value = 1000 + Math.floor(Math.random() * 9000); applyScenario(buildLocalScenario(C, readCfg())); };
   $('debClose').onclick = () => { $('debrief').hidden = true; };
+  $('debReplay').onclick = () => {
+    const rec = ui.viewRecord; if (!rec) return;
+    $('debrief').hidden = true;
+    $('traineeName').value = rec.trainee; $('instructorName').value = rec.instructor;
+    loadScenarioFile(rec.scenario, 'record');
+  };
+  $('debExport').onclick = () => { const rec = ui.viewRecord || ui.lastRecord; if (rec) { download(rec, recordFileName(rec)); toast(`Exported ${recordFileName(rec)}`); } };
+  $('histList').onclick = historyClick;
+  $('histExportAll').onclick = exportAll;
+  $('histImport').onclick = () => $('histFile').click();
+  $('histFile').onchange = () => { const f = $('histFile').files[0]; $('histFile').value = ''; if (f) importRecords(f); };
   $('windApply').onclick = () => applyWind(false);
   $('windCalm').onclick = () => applyWind(true);
   $('openTwo').onclick = () => { openTrainee(); location.href = roleUrl('instructor'); };
@@ -709,7 +801,7 @@ function boot() {
       let n = 0;
       while (acc >= 1 && n < 40) { sim.step(); acc -= 1; n++; }
     }
-    if (sim.ended && !ui.debriefShown) { ui.debriefShown = true; setRunning(false); updatePanel(true); showDebrief(); }
+    if (sim.ended && !ui.debriefShown) { ui.debriefShown = true; setRunning(false); updatePanel(true); if (ROLE !== 'trainee') saveRecord(); showDebrief(); }
     if (ROLE === 'instructor' && now - ui.lastPub >= 1000) publish();
     R.draw();
     updatePanel(false);
