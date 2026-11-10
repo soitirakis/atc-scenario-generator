@@ -147,21 +147,34 @@ On the Scenario tab (solo or instructor window):
 
 Every session that runs to its end is saved as a **session record** in the solo or instructor window. The trainee window keeps none, because it has no simulator. Trainee and instructor names are optional and are asked on the start overlay.
 
-A record (`schemaVersion: 1`, defined and checked in `src/records.js`) holds:
-- the scenario file, which includes the seed, country and sector;
+A record (`schemaVersion: 2`, defined and checked in `src/records.js`; version 1 files still import) holds:
+- the scenario file, which includes the seed, country and sector, plus the band of a sector layer;
 - the trainee and instructor names;
 - the per-inject grading results;
 - the timeline;
 - the debrief statistics;
-- the full clearance log: every transmission, assume, transfer and answer, with how it ended (`ok`, `blocked` on a busy frequency, `no reply`, `unable`, `say again`).
+- the full clearance log: every transmission, assume, transfer and answer, with how it ended (`ok`, `blocked` on a busy frequency, `no reply`, `unable`, `say again`);
+- **radar snapshots** taken during the session at each inject and each loss of separation: the radar as drawn at that moment, at most 800 px wide as JPEG, up to 24 per session;
+- **instructor remarks**, typed in the debrief and saved as you type.
 
 Records stay in the browser's IndexedDB (`src/store.js`): no login, no server, nothing leaves the computer unless you export it. On the **History** tab:
 - **Open** shows the saved debrief, and **Replay** reloads the same scenario and seed.
+- **Download PDF** saves the PDF debrief (also in the debrief itself).
 - **Export** saves one record as JSON, and **Export all** saves every record in one file.
 - **Import** reads either kind of file. Each record is checked on its own, and a record with an existing id replaces it.
 - **Delete** takes two clicks.
 
-If the browser gives the page no storage (a private window, blocked site data), the History tab says so. Records are then kept only until the page closes, and **Export record** in the debrief still works.
+If the browser gives the page no storage (a private window, blocked site data), the History tab says so. Records are then kept only until the page closes; **Export record** and **Download PDF** in the debrief still work.
+
+**PDF debrief.** Built in the browser, offline, by `src/pdf.js` with [jsPDF](https://github.com/parallax/jsPDF) (bundled, nothing is fetched). The file is named `<date>_<trainee>_<sector>.pdf`, e.g. `2026-11-10_Ana-Pop_ARG.pdf`. It is A4, and every page is marked **"Training aid, not an official assessment"**. It contains:
+- a header with the scenario title, country, sector and layer, date (UTC), seed, trainee and instructor;
+- the objective and success criteria;
+- a table of every inject with its objective, met or not met, measured time and reason;
+- the debrief statistics and the event timeline;
+- the radar snapshots;
+- the instructor remarks, and signature lines for trainee and instructor.
+
+The PDF uses the standard PDF fonts, which cover Western European letters only. Other letters lose their accents in the PDF (Ș becomes S, ă becomes a); the app and the record keep them.
 
 ## Tests
 
@@ -193,6 +206,8 @@ src/
   scenario.js         local scenario builder, Claude prompt and validator
   records.js          session records: builder, validator, import of one record or a bundle (no DOM)
   store.js            session records in IndexedDB, with a memory fallback when storage is unavailable
+  pdf.js              PDF debrief from a session record, with jsPDF (no DOM)
+  vendor/             stand-in for jsPDF's optional dependencies, which the build leaves out
   render.js           canvas radar display
   link.js             instructor/trainee windows: BroadcastChannel protocol, trainee snapshot, read-only view
   main.js             UI wiring
@@ -390,4 +405,8 @@ Concept and portfolio project. Not validated against any operational system.
 
 This project is licensed under GPL-3.0 (see [LICENSE](LICENSE)), because it includes data derived from [OpenAP](https://github.com/TUDelft-CNS-ATM/openap), the open aircraft performance model by Junzi Sun, Jacco M. Hoekstra, Joost Ellerbroek and contributors at TU Delft. The aircraft performance data in `data/performance.json` is converted from OpenAP's WRAP data, which is licensed GPL-3.0 (OpenAP's code is LGPL-3.0); that file keeps the source, commit and licence notice.
 
+**jsPDF.** The PDF debrief uses [jsPDF](https://github.com/parallax/jsPDF) 4.2.1 (Copyright 2010-2025 James Hall, 2015-2025 yWorks GmbH; MIT licence), bundled into the build. Its optional dependencies (html2canvas, DOMPurify, canvg) serve features this project does not use and are not included.
+
 **Fonts.** The two typefaces are bundled into the build, so the page loads nothing from other hosts: [Barlow Semi Condensed](https://github.com/jpt/barlow) (Copyright 2017 The Barlow Project Authors) and [IBM Plex Mono](https://github.com/IBM/plex) (Copyright 2017 IBM Corp.). Both are licensed under the [SIL Open Font License 1.1](https://openfontlicense.org); the licence texts are in `src/fonts/OFL-BarlowSemiCondensed.txt` and `src/fonts/OFL-IBMPlexMono.txt`. The woff2 files come from the `@fontsource` packages, version 5.3.0 (latin and latin-ext subsets).
+
+The minifier drops licence comments, so the copyright and licence texts of jsPDF and both fonts are in a comment in `index.html`, which the built page keeps; a unit test checks them against the installed jsPDF version and the font licence files.

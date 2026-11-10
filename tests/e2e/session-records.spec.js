@@ -66,7 +66,7 @@ test('export one and all, delete, then import them back; a bad file is refused',
   expect(one.suggestedFilename()).toMatch(/^session-ro-arg-\d+-\d{4}-\d\d-\d\d-\d{4}\.json$/);
   const oneFile = info.outputPath('one.json'); await one.saveAs(oneFile);
   const rec = JSON.parse(fs.readFileSync(oneFile, 'utf8'));
-  expect(rec).toMatchObject({ kind: 'atc-session-record', schemaVersion: 1, trainee: 'Ana Pop', country: 'RO', sector: 'ARG', completed: true });
+  expect(rec).toMatchObject({ kind: 'atc-session-record', schemaVersion: 2, trainee: 'Ana Pop', country: 'RO', sector: 'ARG', completed: true });
   for (const k of ['scenario', 'stats', 'injects', 'timeline', 'clearances']) expect(rec, k).toHaveProperty(k);
   expect(rec.clearances[0]).toMatchObject({ cs, text: expect.stringMatching(/^descend FL\d{3}$/), result: 'ok' });
 
@@ -108,4 +108,39 @@ test('without storage (private mode) the history says so, and the record can sti
   await expect(page.locator('#histStore')).toContainText('Session history is not available');
   await expect(page.locator('#histStore')).toContainText('only until this page closes');
   await expect(page.locator('#histList .hist-row')).toHaveCount(1); // kept for this page
+});
+
+test('Download PDF from the debrief and from History; remarks and radar snapshots are kept with the session', async ({ page }, info) => {
+  const errors = [];
+  page.on('pageerror', e => errors.push(e.message));
+  await open(page, '/');
+  await endSession(page);
+  await page.locator('#debRemarks').fill('Good scan. Review the level bust.');
+  await page.waitForTimeout(600); // remarks are saved shortly after typing
+
+  const name = /^\d{4}-\d\d-\d\d_Ana-Pop_ARG\.pdf$/;
+  const [a] = await Promise.all([page.waitForEvent('download'), page.locator('#debPdf').click()]);
+  expect(a.suggestedFilename()).toMatch(name);
+  const fa = info.outputPath('debrief.pdf'); await a.saveAs(fa);
+  const pdf = fs.readFileSync(fa);
+  expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
+  expect(pdf.length).toBeGreaterThan(20_000); // with radar snapshots
+  await page.locator('#debClose').click();
+
+  await page.reload();
+  await fontsReady(page);
+  const rows = await history(page);
+  const [b] = await Promise.all([page.waitForEvent('download'), rows.first().locator('[data-h="pdf"]').click()]);
+  expect(b.suggestedFilename()).toBe(a.suggestedFilename());
+  await expect(page.locator('#histMsg')).toContainText(`Downloaded ${a.suggestedFilename()}`);
+
+  await rows.first().locator('[data-h="open"]').click();
+  await expect(page.locator('#debRemarks')).toHaveValue('Good scan. Review the level bust.');
+  const [j] = await Promise.all([page.waitForEvent('download'), page.locator('#debExport').click()]);
+  const fj = info.outputPath('record.json'); await j.saveAs(fj);
+  const rec = JSON.parse(fs.readFileSync(fj, 'utf8'));
+  expect(rec).toMatchObject({ schemaVersion: 2, remarks: 'Good scan. Review the level bust.' });
+  expect(rec.snapshots.length).toBeGreaterThan(0);
+  expect(rec.snapshots[0]).toMatchObject({ kind: expect.stringMatching(/^(inject|los)$/), image: expect.stringMatching(/^data:image\/jpeg;base64,/) });
+  expect(errors).toEqual([]);
 });

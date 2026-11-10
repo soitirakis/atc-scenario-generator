@@ -18,7 +18,8 @@ This document describes what each test layer covers, and why it is there.
 | `tests/unit/nets.test.js` | APW, CLAM, RAM and MTCD on plain data and in the simulator | 21 |
 | `tests/unit/performance.test.js` | OpenAP WRAP conversion, ISA airspeeds, wind | 12 |
 | `tests/unit/radio.test.js` | readbacks, the busy frequency, one transmission per command line, similar callsigns | 8 |
-| `tests/unit/records.test.js` | session record builder and validator, the clearance log, import of single records and bundles, storage unavailable | 17 |
+| `tests/unit/records.test.js` | session record builder and validator, the clearance log, import of single records and bundles, storage unavailable | 22 |
+| `tests/unit/pdf.test.js` | PDF debrief from a fixture record: page count, header, objective and criteria, injects, stats, timeline, snapshots, remarks, signatures, the training mark on every page, page breaks, text for the PDF fonts | 16 |
 | `tests/unit/scenario-file.test.js` | scenario export and import validation, the sample library | 24 |
 | `tests/unit/sector-volumes.test.js` | sector layers and vertical limits (KOMAN 1/2), collapsed layers, delegated airspace, several source AIPs, upper-airspace-only units | 27 |
 | `tests/unit/scenario.test.js` | local scenario builder and the Claude reply validator | 10 |
@@ -26,12 +27,12 @@ This document describes what each test layer covers, and why it is there.
 | `tests/unit/tools.test.js` | range-bearing line, SEP, level probe | 15 |
 | `tests/e2e/app.spec.js` | the single window: loading, clearances, injects, data blocks, tools, command line, COMLOSS, no requests to other hosts | 17 × 2 viewports |
 | `tests/e2e/two-windows.spec.js` | instructor and trainee windows: sync, what the trainee sees, commands through the link, grading | 9 × 2 viewports |
-| `tests/e2e/session-records.spec.js` | session history: save, reload, list, open, replay, export one and all, delete, import, no storage | 3 × 2 viewports |
+| `tests/e2e/session-records.spec.js` | session history: save, reload, list, open, replay, export one and all, delete, import, no storage | 4 × 2 viewports |
 | `tests/e2e/scenario-files.spec.js` | export, reload and import round trip, the library in both windows, invalid files | 3 × 2 viewports |
-| **Total** | 17 unit files, 4 end-to-end files | 340 unit, 32 end-to-end × 2 viewports |
+| **Total** | 18 unit files, 4 end-to-end files | 361 unit, 33 end-to-end × 2 viewports |
 <!-- test-counts:end -->
 
-The counts come from the test runners: `node scripts/test-counts.mjs` rewrites them, and CI fails if they differ (`--check`). The coverage gate (`npm run test:coverage`, `vite.config.js`) requires 85% per file on `src/sim.js`, `src/scenario.js`, `src/cmdline.js`, `src/records.js`, `src/nets/*.js` and `src/tools/*.js`.
+The counts come from the test runners: `node scripts/test-counts.mjs` rewrites them, and CI fails if they differ (`--check`). The coverage gate (`npm run test:coverage`, `vite.config.js`) requires 85% per file on `src/sim.js`, `src/scenario.js`, `src/cmdline.js`, `src/records.js`, `src/pdf.js`, `src/nets/*.js` and `src/tools/*.js`.
 
 The unit tests run in Node in a few seconds and need no browser or network. The end-to-end tests run against the production build, on a desktop and a phone viewport. CI (`.github/workflows/ci.yml`) runs the unit tests with coverage, checks these counts, then runs the end-to-end tests, on every push and pull request. A push to `main` deploys to GitHub Pages only if all of that passes.
 

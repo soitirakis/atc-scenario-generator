@@ -1,0 +1,281 @@
+{
+ "schemaVersion": 2,
+ "kind": "atc-session-record",
+ "id": "fixture-1",
+ "savedAt": "2026-11-10T14:32:05.000Z",
+ "trainee": "Ana Pop",
+ "instructor": "I. Ionescu",
+ "country": "RO",
+ "sector": "ARG",
+ "sectorName": "ARGES",
+ "seed": 4127,
+ "sectorBand": null,
+ "completed": true,
+ "elapsedS": 1200,
+ "scenario": {
+  "schemaVersion": 1,
+  "title": "ARGES: weather deviations with intermediate traffic",
+  "country": "RO",
+  "sector": "ARG",
+  "difficulty": "intermediate",
+  "duration": 20,
+  "seed": 4127,
+  "objective": "Trainee loses the picture when a level bust and weather deviations happen close together in a busy sector.",
+  "conflicts": 2,
+  "challenges": [
+   "2 built-in crossing conflicts inside ARGES that must be solved before STCA triggers",
+   "CB cell and deviations while normal traffic keeps calling",
+   "Level bust overlapping with the first event"
+  ],
+  "criteria": [
+   "No loss of separation (5 NM / 1000 ft)",
+   "Every request answered within 60 s",
+   "Correct priority order: emergencies and STCA before routine requests",
+   "Every flight assumed before it enters and transferred at its agreed exit level"
+  ],
+  "wind": [
+   {
+    "fl": 50,
+    "dir": 211,
+    "kt": 17
+   },
+   {
+    "fl": 180,
+    "dir": 231,
+    "kt": 48
+   },
+   {
+    "fl": 340,
+    "dir": 241,
+    "kt": 95
+   },
+   {
+    "fl": 420,
+    "dir": 251,
+    "kt": 76
+   }
+  ],
+  "injects": [
+   {
+    "min": 3,
+    "type": "WEATHER_CELL",
+    "text": "A CB cell builds on a main flow. Aircraft ask for deviations.",
+    "objective": "Every deviation request answered before the aircraft deviates on its own (10 min)"
+   },
+   {
+    "min": 10,
+    "type": "LEVEL_BUST",
+    "text": "An aircraft passes its cleared level. Mode S selected level disagrees with the clearance.",
+    "objective": "Level re-cleared within 60 s"
+   },
+   {
+    "min": 17,
+    "type": "CLIMB_REQUEST",
+    "text": "An aircraft in sector requests a higher cruising level.",
+    "objective": "Answered within 60 s"
+   }
+  ]
+ },
+ "stats": {
+  "losCount": 2,
+  "losSec": 163,
+  "minSep": 0.07822157670747638,
+  "reqs": 4,
+  "reqAnswered": 0,
+  "reqMissed": 4,
+  "avgResponse": null,
+  "selfDev": 0,
+  "tsaInf": 0,
+  "emgAckT": null,
+  "lateAssume": 7,
+  "lateXfer": 5,
+  "wrongXfl": 2,
+  "cmds": 0,
+  "injectsFired": 3,
+  "injectsTotal": 3
+ },
+ "injects": [
+  {
+   "min": 3,
+   "type": "WEATHER_CELL",
+   "label": "CB cell and deviations",
+   "target": "THY2605",
+   "status": "fired",
+   "firedAt": 180,
+   "objective": "Every deviation request answered before the aircraft deviates on its own (10 min)",
+   "result": {
+    "state": "not met",
+    "t": 122,
+    "reason": "ROT344 deviation request not answered, 05:02"
+   }
+  },
+  {
+   "min": 10,
+   "type": "LEVEL_BUST",
+   "label": "Level bust",
+   "target": "UAE1839",
+   "status": "fired",
+   "firedAt": 600,
+   "objective": "Level re-cleared within 60 s",
+   "result": {
+    "state": "not met",
+    "t": null,
+    "reason": "not re-cleared within 60 s"
+   }
+  },
+  {
+   "min": 17,
+   "type": "CLIMB_REQUEST",
+   "label": "Level request",
+   "target": "THY2536",
+   "status": "fired",
+   "firedAt": 1020,
+   "objective": "Answered within 60 s",
+   "result": {
+    "state": "not met",
+    "t": null,
+    "reason": "not answered within 60 s"
+   }
+  }
+ ],
+ "timeline": [
+  {
+   "t": 61,
+   "text": "Late assume THY2799",
+   "cls": "w"
+  },
+  {
+   "t": 77,
+   "text": "Late assume WZZ777",
+   "cls": "w"
+  },
+  {
+   "t": 94,
+   "text": "Late assume WZZ206",
+   "cls": "w"
+  },
+  {
+   "t": 110,
+   "text": "Late assume THY2536",
+   "cls": "w"
+  },
+  {
+   "t": 144,
+   "text": "Late transfer RYR2145",
+   "cls": "w"
+  },
+  {
+   "t": 154,
+   "text": "Late assume WZZ605",
+   "cls": "w"
+  },
+  {
+   "t": 180,
+   "text": "CB cell and deviations · THY2605 fired",
+   "cls": ""
+  },
+  {
+   "t": 181,
+   "text": "Loss of separation ROT344 / UAE1839",
+   "cls": "a"
+  },
+  {
+   "t": 192,
+   "text": "Late transfer THY2605",
+   "cls": "w"
+  },
+  {
+   "t": 192,
+   "text": "Wrong exit level THY2605: FL340, agreed FL110",
+   "cls": "w"
+  },
+  {
+   "t": 206,
+   "text": "Late assume PGT112",
+   "cls": "w"
+  },
+  {
+   "t": 302,
+   "text": "CB cell and deviations · THY2605: not met (ROT344 deviation request not answered, 05:02)",
+   "cls": "w"
+  },
+  {
+   "t": 334,
+   "text": "Late assume WZZ1118",
+   "cls": "w"
+  },
+  {
+   "t": 392,
+   "text": "Late transfer THY1146",
+   "cls": "w"
+  },
+  {
+   "t": 392,
+   "text": "Wrong exit level THY1146: FL240, agreed FL350",
+   "cls": "w"
+  },
+  {
+   "t": 483,
+   "text": "Late transfer ROT344",
+   "cls": "w"
+  },
+  {
+   "t": 572,
+   "text": "Loss of separation THY2536 / WZZ605",
+   "cls": "a"
+  },
+  {
+   "t": 600,
+   "text": "Level bust · UAE1839 fired",
+   "cls": ""
+  },
+  {
+   "t": 661,
+   "text": "Level bust · UAE1839: not met (not re-cleared within 60 s)",
+   "cls": "w"
+  },
+  {
+   "t": 746,
+   "text": "Late transfer UAE1839",
+   "cls": "w"
+  },
+  {
+   "t": 1020,
+   "text": "Level request · THY2536 fired",
+   "cls": ""
+  },
+  {
+   "t": 1081,
+   "text": "Level request · THY2536: not met (not answered within 60 s)",
+   "cls": "w"
+  }
+ ],
+ "clearances": [],
+ "snapshots": [
+  {
+   "t": 180,
+   "kind": "inject",
+   "label": "CB cell and deviations · THY2605 fired",
+   "image": "data:image/jpeg;base64,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",
+   "w": 240,
+   "h": 186
+  },
+  {
+   "t": 181,
+   "kind": "los",
+   "label": "Loss of separation ROT344 / UAE1839",
+   "image": "data:image/jpeg;base64,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",
+   "w": 240,
+   "h": 186
+  },
+  {
+   "t": 600,
+   "kind": "inject",
+   "label": "Level bust · UAE1839 fired",
+   "image": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAC6APADASIAAhEBAxEB/8QAGgABAQEBAQEBAAAAAAAAAAAAAAECAwQFBv/EADIQAAICAQMCBQMDAwQDAAAAAAABAhEDEiExQVEEEzJhcSKBkUJSsRShwQUjYtFy8PH/xAAWAQEBAQAAAAAAAAAAAAAAAAAAAQL/xAAaEQEBAQADAQAAAAAAAAAAAAAAARECITES/9oADAMBAAIRAxEAPwD8YDUJRjalHVa29jfkZGtUY2qs2y5Gp8/ZfwSUXB1Ln5ssuV8IIyAAoa0T/a/wZLql+5/kIgAChVumiBbOwAK+duCAAAAANLRW+q/YDIK6va69yADcMkoemu+6swANym5+qvYwC8r4Aqi2r2Dg0rtGQEVxaV7F0Or2MgKAADTUKdTv7GtUdKVxXd6d0Y0vTqrbuQI6TlHQox0y99NMw+hCvhfAVDpieJP/AHIye3Q5gDplyubaTbj7pWcwAAAAAAC8x+CFXO/BOGAAAAAAAdcXhsuVNwg2k0jnKMo+qLXygIAABVyQLZgAV7NogAAAAABuDtqEm9Le5qWNQaUozVv2OS54s28ltvTHf2CGTG4PdNLjczyqEnqd0l8ECgLyt9uw0vpv8BEAAVuM4pK8ab72SclKVqKiuyMgACxhKXC+/Q2oRXqd+yCOZuUJKOpp+5pSr0pR+Am07XIHIHVxjPioy7dGcmmnTVMAAArSyTTtSaEpyn6pN13MgAAAABVyAfLIAAAAAAAAAAL7s1jxyySpKyTi4yqVX7OwM8gAC6n13+Rs/Ygp1dAbjjtW5JKzS0x4VvuzEJaX3T5Xc21W6dp8MINt8s6+GwrM5ate1elWcTpjyaIzVO5cNSqipXSHh45YS8tZZSjWyjtZyjhyT9MG962OnnxUZKOPTa2ak9jnGbSrXJdqKnbDTTaaprktpqpK10fVHX+myPDPNGpY4unJP/HJxIrMoOO63j3RcUYzyKMm0vZWaTaex38ieB48zhSmnpSnWr4a+eAaxPw+ONx8160vS4vfb4OPk5dWny5XzVHVeIisjlkxynK3u8juuxzlmyPI5qc03/yd12sHbEoyg6kmn7kNTnPI7nJyfduzJFCrhk5K60qu4VAAAAKnT4sCA05X+mP4I5X0S+EA2fHPYgLffcCuT0qPTkyWVbU72IAAAFi0pJtWk913PT/VY1DR5LcOzl7/AAeVU2rdLublGCW07fwEYNwkl9MvS/7Hp8Hlljwz3yKCkm3Ctvv+CxlKOGa8R5iT2pVxfX7lxNedqnTOkceOWBy82st7Y3Hld7Lhfh5RUckp37fwcXVuuAKk266m3hkoarjX/luZUrpT479UaenRSxW/3WwOYLpl+1/g1VrfG/lBXfwMYylPUovb9UW6/B6PpnqisWOMOVJQe558nl4VGXhM83Jr61VNf9o4rxGVcZJKtuSL49bxeHm2pZUktk9LPH4rGsc1palHpJKrJ5ku/wDYa23vv7ExbycQlZqcVGT326e5luyorfRcHTBCM9SkpOt1TRyR3eOXh5SjON2n8APLxOUlHXaT2bX8nFpxbT5RvzFv9G7VPfn3Obdu3uEAAFAAAAAGttCt1uyU/n4D4XwQAC3fO426OvkCArTRABdcqrU6+SHt/wBP8NDPCcp4smTQ0vodc3/0B4jvGUckKkvrXMly0d8mLw+mWOGGfmpJXrTSb+PseXyckfqpJpXyNX5tdv6XK8E88I6sMGlKa4TfFntwSyLwuOpZe0dlpuzwx8RlWGWPHlnHFP144yaTfuupz1PuwzK+jkk3hrM5t8rZcnN+Rp2eTVXZVZ4tT7v8ljOUet/JManJLqVrkSae9U+olLU+EvghpgOsvDZ4whJ4p1P07cnI7Y5yyyx4ss5yxxT0xc6Ufi+AVJ+GzvGpeTk266XweY9rxY45vLaX1L96aX3OEvDTjleNuGqr2kmua5FhK5xcU7km+xXkblaUY+0VQy43iaUnF2r2dmCK3KEtKenZ7p9zLTXJE64LHS5JN6VfPIENRgnFtzUa6PlioriX9jIGmoriVmaoFQVAAlbAr5+wVN7uhJ3JvuyAbcoKDioW+krf8GAAFtcOi3fK/BABaT4f5OmPK8cJQ8uElPrJbrlbfk5FTaA7y8XqU15GBalW0ePde55y2nyvwVRTjetL5sCQlplfK6rudGuqdp8GYY5ZHUE2ywlFKm3T9uAgDUai3rX/ANE8ksjubvcqMgAKFhJwlar7kAHVeIkr2ju2/T3OWZ6pKdJOXNKgJ+iPy/8AARzABGg1DTqWrgyAOrlB46vf44o5AAAABa7bh9kRch8gAAAANRUX6pNfCAyCyST2dogAAADVtRXyzJ6IpY8cWvW+vbtQg5vHllHzHCbXOqn/ACbisaxKThFvr9TvnsTU9WrU75u9zrGTyxWqtUeJVd97+1lwZlGM8anBKKS9LlbORrJkpxqan1e1fY9EPDxlVQyPUrVV/wC9wy8pVFvhN/Ys46JuLVU+CvLKmo/TF8pAYAAULJXhb6qS/wAkGR0lH7sDmACKAAADTcGtoU+9mQAAAsU3aSb2Di1yn+BGUou4tp8bMNtrlhEAAUAAHWGCUnv9Kq7ZznHTJx7Oi+ZNJLXKlwr4M8u2EAWkkrb37C10X5Ah6Mmze1XTS9qOGp1V7djpCcXFRm6riX+GWKG8O2WL6J2/gsY49NykmvaS/jkxlnCNxxO75k1/BfBPOVp+Vj2VcDzFOVSSinxS4OQJo6NU6YJCVpRl9n2K006fIQAAFjW7fC3ObbbbfLN5HUVH7v8AwcyAAddKyyrHHS64CuaVtLudf6aXlPI5RUURYMqdqF/G5zbbbb5YRAAFAAAAAB/2AujShqjKSaVdG/4CMg04NLlP4dmQoAAKt1X3RAnTTK1TAnPBdMv2v8DjYgF0S/a/wQFt9wIC0uu3wLrhUAp9dvk2siSScdTXDbo5gI28s6qL0r/jt/cqyv8AWta9+fycwBqVyk3y2ZBb77hUN4mlJ6tPH6lfUzXYgHeEoa9bcFf6XG0tzlKWpt0lfRGR0AAAAAAAAAAAAahOUHcJNP2MgDWuXcl+yIAKpVJOk66NG3kT30pP2RzARtrGntKT+xmlez/JABVGTV0670Ha6NDVLTp1PTzV7Ebb5bYGpTtt6Iq+iRl7sAAAAoAAAAAFvvuQAWvcbdiAC7dxt2IVJtWA+ns/ybvDXpndd+pIxTvU622oZIxjGLi22+b7hGAAFAAAAAAqrrf2IAL9PuHV7XXuQAV6a2uyAAAAAAAAAAAAAAAAAAAAAAAAAAf/2Q==",
+   "w": 240,
+   "h": 186
+  }
+ ],
+ "remarks": "Good scan of the sector. Late on the descent for the arrival; review the STCA at 07:00. Ștefan to repeat with the same seed."
+}

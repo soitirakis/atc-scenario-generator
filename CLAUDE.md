@@ -3,7 +3,7 @@
 Guidance for Claude Code working in this repository.
 
 ## What this is
-En-route ATC radar training simulator. Vanilla JS (ES modules) built with Vite into one self-contained HTML file. No framework, no runtime dependencies.
+En-route ATC radar training simulator. Vanilla JS (ES modules) built with Vite into one self-contained HTML file. No framework; the only library in the build is jsPDF (MIT), for the PDF debrief. Its optional dependencies are aliased to `src/vendor/no-optional.js` in `vite.config.js`: keep them out of the bundle. The minifier drops licence comments, so every bundled library or font needs its licence notice in the comment in `index.html` (tested in `tests/unit/pdf.test.js`).
 
 ## Commands
 - `npm run dev` — dev server
@@ -25,6 +25,8 @@ En-route ATC radar training simulator. Vanilla JS (ES modules) built with Vite i
 - Clearances go through `_cmd`, which is the radio: a clearance on a busy frequency gets "say again", and every clearance queues a readback (`RADIO`, timing from `this.radioRng`, never `this.rng`). Several clearances in one transmission go through `transmit`; the command line goes through `command`. Tests that give two clearances in a row must wait for `freqBusy()` to clear.
 - Every inject type is graded: give it an objective and limits in `GRADING`, set `inj.g` in `fireInject` to what it acts on, judge it in `judge()`, and add a pass and a fail case in `tests/unit/grading.test.js`. Grading only reads state; it never calls `this.rng`.
 - Session records: `buildRecord` and `validateRecord` in `src/records.js` (DOM-free) define the format, with their own `SCHEMA_VERSION`; a change to its shape bumps it. A record embeds a scenario file, so it must also pass `validateScenarioFile`. Storage is `src/store.js` (IndexedDB, with a memory fallback when it is unavailable); nothing is sent anywhere. The clearance log is `sim.clearances`, filled by `clr()`: give every new controller action an entry there. It never calls `this.rng`.
+- Version 2 records add `sectorBand`, `snapshots` (JPEG data URLs of the radar, taken by `captureEvents` in `main.js` at inject and loss-of-separation timeline marks) and `remarks`; `upgradeRecord` reads version 1. Read stored or imported records through it.
+- The PDF debrief is `buildDebriefPdf` in `src/pdf.js`, DOM-free so it is unit tested in Node. Pass all text through `pdfText` (standard PDF fonts are WinAnsi only), and keep "Training aid, not an official assessment" on every page.
 - Scenario files: `exportScenario` and `validateScenarioFile` in `scenario.js` define the format. A change to its shape bumps `SCHEMA_VERSION`. Files in `data/scenarios/` must pass validation and every inject in them must find an aircraft when the session runs (`tests/unit/scenario-file.test.js` checks both).
 
 ## Two windows

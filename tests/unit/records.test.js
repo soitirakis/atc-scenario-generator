@@ -3,7 +3,7 @@ import RO from '../../data/RO/index.js';
 import { loadCountry } from '../../src/country.js';
 import { Sim } from '../../src/sim.js';
 import { buildLocalScenario, exportScenario, validateScenarioFile } from '../../src/scenario.js';
-import { SCHEMA_VERSION, KIND, NAME_MAX, STAT_KEYS, buildRecord, validateRecord, readImport, summary, debriefOf, bundle, recordFileName } from '../../src/records.js';
+import { SCHEMA_VERSION, KIND, NAME_MAX, STAT_KEYS, SNAPSHOT_MAX, REMARKS_MAX, buildRecord, validateRecord, readImport, summary, debriefOf, bundle, recordFileName, pdfFileName, upgradeRecord, statRows } from '../../src/records.js';
 import { openRecords } from '../../src/store.js';
 
 const C = loadCountry(RO), countries = { RO: C };
@@ -88,6 +88,17 @@ describe('summary and file names', () => {
   it('file name from country, sector, seed and save time', () => {
     expect(recordFileName(base.rec)).toBe('session-ro-arg-4127-2026-11-10-1432.json');
   });
+  it('PDF file name: <date>_<trainee>_<sector>.pdf, letters without accents, no spaces', () => {
+    expect(pdfFileName(base.rec)).toBe('2026-11-10_Ana-Pop_ARG.pdf');
+    expect(pdfFileName({ ...copy(), trainee: 'Ștefan Ăla / Țoc', sector: 'KOM2' })).toBe('2026-11-10_Stefan-Ala-Toc_KOM2.pdf');
+    expect(pdfFileName({ ...copy(), trainee: '' })).toBe('2026-11-10_no-trainee_ARG.pdf');
+  });
+  it('stat rows for the debrief and the PDF, with alert and warning levels', () => {
+    const rows = statRows(debriefOf(base.rec));
+    expect(rows.map(r => r[0])).toEqual(['Losses of separation', 'Time below minima', 'Closest pair', 'Requests answered', 'Avg. response', 'Weather self-deviations', 'Military area infringements', 'Late assumes', 'Late transfers', 'Wrong exit levels', 'Clearances issued', 'Injects fired']);
+    expect(statRows({ ...base.rec.stats, losCount: 1, minSep: 2.04, avgResponse: 75 }).filter(r => r[2]).map(r => r[0])).toEqual(expect.arrayContaining(['Losses of separation', 'Closest pair', 'Avg. response']));
+    expect(statRows({ ...base.rec.stats, injectsTotal: undefined })).toHaveLength(11);
+  });
 });
 
 describe('validating a record', () => {
@@ -98,7 +109,7 @@ describe('validating a record', () => {
   it('rejects what is not a record, another kind, or another schema version', () => {
     expect(validateRecord([], countries).errors).toEqual(['This is not a session record: expected a JSON object.']);
     expect(validateRecord(base.rec.scenario, countries).errors[0]).toMatch(/This is not a session record: kind is undefined/);
-    expect(validateRecord({ ...copy(), schemaVersion: 2 }, countries).errors).toEqual([`Record schema version 2 is not supported. This simulator reads schemaVersion ${SCHEMA_VERSION}.`]);
+    expect(validateRecord({ ...copy(), schemaVersion: 3 }, countries).errors).toEqual([`Record schema version 3 is not supported. This simulator reads schemaVersion 1 and ${SCHEMA_VERSION}.`]);
   });
   it('lists every problem in plain words', () => {
     const r = copy();
@@ -162,5 +173,36 @@ describe('storage unavailable', () => {
     const s = await openRecords(idb);
     expect(s.available).toBe(false);
     expect(s.reason).toMatch(/refused storage \(SecurityError\)/);
+  });
+});
+
+describe('version 2: layer band, radar snapshots and remarks', () => {
+  const JPEG = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ==';
+  const snap = (o = {}) => ({ t: 120, kind: 'inject', label: 'Level bust · ROT1 fired', image: JPEG, w: 800, h: 500, ...o });
+
+  it('the record keeps snapshots (at most SNAPSHOT_MAX), remarks (cut to REMARKS_MAX) and the band of a layer', () => {
+    const r = buildRecord(base.sim, { country: 'RO', savedAt: SAVED, snapshots: Array.from({ length: SNAPSHOT_MAX + 3 }, (_, i) => snap({ t: i })), remarks: 'x'.repeat(REMARKS_MAX + 9) });
+    expect([r.schemaVersion, r.snapshots.length, r.remarks.length, r.sectorBand]).toEqual([2, SNAPSHOT_MAX, REMARKS_MAX, null]);
+    expect(validateRecord(r, countries).ok).toBe(true);
+    const sim = new Sim(C);
+    sim.load(buildLocalScenario(C, { sector: 'KOM2', difficulty: 'foundational', duration: 20, seed: 5, objective: 'x' }));
+    expect(buildRecord(sim, { country: 'RO', savedAt: SAVED })).toMatchObject({ sectorName: 'KOMAN 2', sectorBand: 'FL245-FL660', snapshots: [], remarks: '' });
+  });
+  it('a version 1 record still imports and opens: no band, no snapshots, no remarks', () => {
+    const v1 = copy(); v1.schemaVersion = 1; delete v1.sectorBand; delete v1.snapshots; delete v1.remarks;
+    const v = validateRecord(v1, countries);
+    expect(v.ok).toBe(true);
+    expect(v.record).toMatchObject({ schemaVersion: 2, sectorBand: null, snapshots: [], remarks: '' });
+    expect(readImport(bundle([v1]), countries).records[0].schemaVersion).toBe(2);
+    expect(upgradeRecord(base.rec)).toBe(base.rec);
+  });
+  it('rejects a bad snapshot, too many snapshots, or remarks that are not text', () => {
+    const e = rec => validateRecord(rec, countries).errors || [];
+    expect(e({ ...copy(), snapshots: [snap({ image: 'data:image/png;base64,AAAA' })] })).toEqual([expect.stringMatching(/^Snapshot 1 must be .*a JPEG data URL/)]);
+    expect(e({ ...copy(), snapshots: [snap({ kind: 'other' })] })[0]).toMatch(/^Snapshot 1/);
+    expect(e({ ...copy(), snapshots: [snap({ w: 0 })] })[0]).toMatch(/^Snapshot 1/);
+    expect(e({ ...copy(), snapshots: Array(SNAPSHOT_MAX + 1).fill(snap()) })).toEqual([`snapshots must be a list of at most ${SNAPSHOT_MAX}.`]);
+    expect(e({ ...copy(), remarks: null })).toEqual([`remarks must be text of at most ${REMARKS_MAX} characters.`]);
+    expect(e({ ...copy(), sectorBand: 245 })).toEqual(['sectorBand must be text or null.']);
   });
 });
