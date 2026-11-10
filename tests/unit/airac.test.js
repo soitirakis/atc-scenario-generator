@@ -3,9 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { classifyRole, parseEnr44, parseEnr41, parseLhEnr441, parseLhEnr41, lhRelevance, lhEditionOn, htmlText, diffPoints, diffNavaids, airacDates } from '../../scripts/airac-lib.mjs';
-import huNavaids from '../../data/HU/navaids.json';
 import points from '../../data/RO/points.json';
-import huPoints from '../../data/HU/points.json';
 import navaids from '../../data/RO/navaids.json';
 
 const fx = f => fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'fixtures', f), 'utf8');
@@ -46,12 +44,14 @@ describe('ENR 4.4 parsing', () => {
   });
 });
 
-describe('Hungary ENR 4.4.1 parsing', () => {
+// The lh-* fixtures are synthetic (invented names and coordinates) in the layout of the HungaroControl
+// eAIP tables: the parsers are kept, the Hungarian data is withdrawn pending HungaroControl's consent.
+describe('ENR 4.4.1 parsing (letter-code format)', () => {
   const parsed = Object.fromEntries(parseLhEnr441(fx('lh-enr441-excerpt.txt')).map(p => [p.id, p]));
 
   it('finds every point in the excerpt', () => {
-    expect(Object.keys(parsed)).toEqual(['ABETI', 'ABULI', 'ALAMU', 'ANIWE', 'ARSIN', 'BABIT', 'BABOX', 'BADOR', 'BAREB', 'DEGET', 'KOPRY', 'ODCIH', 'PARAK', 'VEBAL']);
-    expect(parsed.KOPRY.pos).toBe('461425N 0165746E');
+    expect(Object.keys(parsed)).toEqual(['TSTAA', 'TSTAB', 'TSTAC', 'TSTAD', 'TSTAE', 'TSTAF', 'TSTAG', 'TSTAH', 'TSTAI', 'TSTAJ', 'TSTAK', 'TSTAL', 'TSTAM', 'TSTAN']);
+    expect(parsed.TSTAK.pos).toBe('011100N 0011100E');
   });
 
   it('rewrites level-banded codes for classifyRole, 9500 FT AMSL as FL095', () => {
@@ -60,46 +60,33 @@ describe('Hungary ENR 4.4.1 parsing', () => {
   });
 
   it('classifies FRA relevance with the same rule as Romania', () => {
-    expect(parsed.ABETI.role).toBe('I');
-    expect(parsed.BABIT.role).toBe('EX');
-    expect(parsed.PARAK.role).toBe('EX');
-    expect(parsed.ABULI.role).toBe('X');   // exit only up to FL245: above FL175, so not L
-    expect(parsed.ALAMU.role).toBe('E');
-    expect(parsed.BAREB.role).toBe('EX');  // (EXD) up to FL205
-    expect(parsed.BADOR.role).toBe('L');   // exit only up to FL105
-    expect(parsed.DEGET.role).toBe('L');   // entry only up to FL175
-    expect(parsed.ODCIH.role).toBe('L');
-    expect(parsed.ARSIN.role).toBe('I');   // (ID)
-    expect(parsed.BABOX.role).toBeNull();  // departure connection only
-    expect(parsed.ANIWE.role).toBeNull();  // no FRA relevance
+    expect(parsed.TSTAA.role).toBe('I');
+    expect(parsed.TSTAF.role).toBe('EX');
+    expect(parsed.TSTAM.role).toBe('EX');
+    expect(parsed.TSTAB.role).toBe('X');   // exit only up to FL245: above FL175, so not L
+    expect(parsed.TSTAC.role).toBe('E');
+    expect(parsed.TSTAI.role).toBe('EX');  // (EXD) up to FL205
+    expect(parsed.TSTAH.role).toBe('L');   // exit only up to FL105
+    expect(parsed.TSTAJ.role).toBe('L');   // entry only up to FL175
+    expect(parsed.TSTAL.role).toBe('L');
+    expect(parsed.TSTAE.role).toBe('I');   // (ID)
+    expect(parsed.TSTAG.role).toBeNull();  // departure connection only
+    expect(parsed.TSTAD.role).toBeNull();  // no FRA relevance
   });
 
   it('reads four-letter codes such as (EXAD)', () => {
-    // a {1,3} letter limit once read KOPRY and VEBAL as intermediate only
-    expect(parsed.KOPRY.role).toBe('EX');
-    expect(parsed.VEBAL.role).toBe('EX');
-  });
-
-  it('the committed Hungary data agrees with the parser for every point in the excerpt', () => {
-    for (const p of huPoints) if (parsed[p.id]) {
-      expect(p.pos, p.id).toBe(parsed[p.id].pos);
-      expect(p.role, p.id).toBe(parsed[p.id].role);
-    }
-    for (const id of ['ANIWE', 'BABOX']) expect(huPoints.find(p => p.id === id), id).toBeUndefined();
+    // a {1,3} letter limit once read these as intermediate only
+    expect(parsed.TSTAK.role).toBe('EX');
+    expect(parsed.TSTAN.role).toBe('EX');
   });
 });
 
-describe('Hungary ENR 4.1 and eAIP index', () => {
-  it('reads DVOR/DME stations, frequency to three decimals', () => {
+describe('ENR 4.1 (DVOR/DME table format) and eAIP index', () => {
+  it('reads DVOR/DME stations, frequency to three decimals, accented names', () => {
     const v = parseLhEnr41(fx('lh-enr41-excerpt.txt'));
-    expect(v.map(n => n.id)).toEqual(['BKS', 'BUD', 'BUG']);
-    expect(v[1]).toEqual({ id: 'BUD', name: 'BUDAPEST', freq: '117.300', pos: '472702N 0191458E' }); // not the DME COORD 472701N
-  });
-  it('the committed Hungary navaids agree with the excerpt', () => {
-    for (const n of parseLhEnr41(fx('lh-enr41-excerpt.txt'))) {
-      const c = huNavaids.find(x => x.id === n.id);
-      expect(c, n.id).toEqual(n);
-    }
+    expect(v.map(n => n.id)).toEqual(['KSR', 'MNT', 'PRB']);
+    expect(v[0].name).toBe('KÍSÉRLET');
+    expect(v[1]).toEqual({ id: 'MNT', name: 'MINTAVÁR', freq: '117.300', pos: '010502N 0010458E' }); // not the DME COORD 010501N
   });
 
   const index = `Currently effective and future AIP amendments with related AIRAC dates AMDT identifier Cut-off date Publication date Effective date Download
@@ -113,8 +100,8 @@ describe('Hungary ENR 4.1 and eAIP index', () => {
   });
 
   it('turns eAIP HTML into text', () => {
-    expect(htmlText('<td class="x">BÉKÉS&nbsp;DVOR/DME</td><td>&#40;decl.: +6&#xB0;&#41;</td><script>var a = "<b>";</script>').replace(/\s+/g, ' ').trim())
-      .toBe('BÉKÉS DVOR/DME (decl.: +6°)');
+    expect(htmlText('<td class="x">KÍSÉRLET&nbsp;DVOR/DME</td><td>&#40;decl.: +6&#xB0;&#41;</td><script>var a = "<b>";</script>').replace(/\s+/g, ' ').trim())
+      .toBe('KÍSÉRLET DVOR/DME (decl.: +6°)');
   });
 });
 
@@ -140,7 +127,7 @@ describe('diffs', () => {
     expect(d.changed).toEqual([{ id: 'AAAAA', pos: ['450000N 0250000E', '450001N 0250000E'] }]);
     expect(d.removed.map(r => r.id)).toEqual(['BBBBB']);
     expect(d.added.map(r => r.id)).toEqual(['CCCCC']); // intermediate points are not auto-added
-    // Hungary keeps every FRA-relevant point, so it passes all roles
+    // a module that keeps every FRA-relevant point passes all roles
     expect(diffPoints(cur, par, ['E', 'X', 'EX', 'L', 'I']).added.map(r => r.id)).toEqual(['CCCCC', 'DDDDD']);
   });
   it('reports role changes, including a point that loses its FRA role', () => {

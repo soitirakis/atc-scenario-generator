@@ -449,7 +449,7 @@ function renderDataTab() {
     (aips.length > 1 ? `<div><span>eAIPs</span><span>${aips.map(a => `<a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.state)}</a>`).join('<br>')}</span></div>` : '') +
     `<div><span>Links</span><span>${m.sources.map(s => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a>`).join('<br>')}</span></div>`;
   $('simNote').textContent = m.simNote || '';
-  $('roadmap').innerHTML = COUNTRIES.map(c => `<div><span>${esc(c.name)}</span><span class="tag ${c.planned ? '' : 'on'}">${c.planned ? 'planned' : 'available'}</span></div>`).join('');
+  $('roadmap').innerHTML = COUNTRIES.map(c => `<div><span>${esc(c.name)}${c.note ? ` <small>${esc(c.note)}</small>` : ''}</span><span class="tag ${c.planned ? '' : 'on'}">${c.planned ? 'planned' : 'available'}</span></div>`).join('');
   $('schema').textContent = `data/<CODE>/
   meta.json      fir, center, defaultSector, airac, simNote, sources, aips?[{state, url, edition, amendment}], upperOnly?{lowerLimit, lowerUnit}
   sectors.json   sectors[{id, rad, name, vert, lower?, upper?, group?, poly:["DMS", {b:"KEY", upTo?}], include?[], exclude?[]}], collapsed[{id, parts}]
@@ -783,7 +783,7 @@ function setCountry(code) {
 
 /* ---------- boot ---------- */
 function boot() {
-  $('country').innerHTML = COUNTRIES.map(c => `<option value="${c.code}" ${c.planned ? 'disabled' : ''}>${esc(c.name)}${c.planned ? ' — planned' : ''}</option>`).join('');
+  $('country').innerHTML = COUNTRIES.map(c => `<option value="${c.code}" ${c.planned ? 'disabled' : ''}>${esc(c.name)}${c.planned ? ` — ${esc(c.note || 'planned')}` : ''}</option>`).join('');
   $('country').onchange = () => { setCountry($('country').value); applyScenario(buildLocalScenario(C, readCfg())); };
   setCountry(C.meta.code);
   bindInput();

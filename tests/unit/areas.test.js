@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import RO from '../../data/RO/index.js';
-import HU from '../../data/HU/index.js';
 import { parseLrEnr52, parseLhEnr52, limitToFL, diffAreas, checkLimit, KNOWN_LIMIT_TYPOS } from '../../scripts/airac-lib.mjs';
 import { loadCountry, loadArea, limitFL, inSector } from '../../src/country.js';
 import { dist, centroid } from '../../src/geo.js';
@@ -40,8 +39,8 @@ describe('ENR 5.2 parser: unrecognised limits fail', () => {
     expect(() => parseLrEnr52(ro.replace('FL350\nFL280', 'FL350\n2500 M AMSL'))).toThrow(/unrecognised lower limit "2500 M AMSL" for LRTRA100U/);
     expect(() => parseLrEnr52(ro.replace('4500 FT AMSL', '4500FT'))).toThrow(/unrecognised upper limit "4500FT" for LRTRA1G/);
   });
-  it('Hungary: an area whose limits are in a new format is not dropped silently', () => {
-    expect(() => parseLhEnr52(hu.replace('FL 285 / FL 245', 'FL 285 / 7500 M'))).toThrow(/could not read LHTRA31A/);
+  it('letter-code format: an area whose limits are in a new format is not dropped silently', () => {
+    expect(() => parseLhEnr52(hu.replace('FL 285 / FL 245', 'FL 285 / 7500 M'))).toThrow(/could not read LHTRA92T/);
   });
   it('the three known AIP misprints are allowed, by area and side only', () => {
     expect(Object.keys(KNOWN_LIMIT_TYPOS)).toEqual(['LRTRA27L upper L200', 'LRTRA41 lower L280', 'LRTRA113B lower L280']);
@@ -56,19 +55,20 @@ describe('ENR 5.2 parser: unrecognised limits fail', () => {
   });
 });
 
-describe('ENR 5.2 parser: Hungary (HTML text)', () => {
+// lh-enr-5-2-excerpt.txt is synthetic (invented areas) in the layout of the HungaroControl eAIP table
+describe('ENR 5.2 parser: HTML table text', () => {
   const areas = parseLhEnr52(fixture('lh-enr-5-2-excerpt.txt'));
   it('reads id, name, vertices, limits and activation', () => {
     expect(areas[0]).toEqual({
-      id: 'LHTRA11A', name: 'PAPA ALPHA', type: 'TRA',
-      lateral: ['472959N 0175015E', '472959N 0181529E', '471331N 0181507E', '471259N 0175900E'],
+      id: 'LHTRA91T', name: 'TEST ALPHA', type: 'TRA',
+      lateral: ['010000N 0010000E', '010000N 0012000E', '005000N 0012000E', '005000N 0010500E'],
       upper: 'FL 125', lower: 'GND', activation: 'HX'
     });
-    expect(areas[1]).toMatchObject({ id: 'LHTRA31A', name: 'UPPER WEST ALPHA', upper: 'FL 285', lower: 'FL 245' });
+    expect(areas[1]).toMatchObject({ id: 'LHTRA92T', name: 'TEST UPPER BRAVO', upper: 'FL 285', lower: 'FL 245' });
   });
   it('keeps an "along border" segment as written, even without a dash before it', () => {
-    expect(areas[2].name).toBe('BVR EAST HIGH');
-    expect(areas[2].lateral).toEqual(['470506N 0212808E', '471210N 0213301E', '472201N 0214313E', '474559N 0213339E', '473630N 0215230E', '472226N 0215659E', 'along border HUNGARY_ROMANIA', '465441N 0213704E', '465250N 0211310E']);
+    expect(areas[2].name).toBe('TEST BORDER HIGH');
+    expect(areas[2].lateral).toEqual(['030000N 0030000E', '030500N 0030500E', '031000N 0031500E', '032000N 0031000E', '031500N 0032000E', '030800N 0032500E', 'along border HUNGARY_ROMANIA', '025500N 0032000E', '025000N 0030500E']);
   });
 });
 
@@ -89,7 +89,7 @@ describe('AIRAC diff for areas', () => {
 });
 
 describe('areas in the country data', () => {
-  for (const [raw, n] of [[RO, 270], [HU, 39]]) describe(raw.meta.code, () => {
+  for (const [raw, n] of [[RO, 270]]) describe(raw.meta.code, () => {
     const C = loadCountry(raw);
 
     it(`loads all ${n} areas from areas.json, each a polygon inside the FIR`, () => {
@@ -118,9 +118,10 @@ describe('areas in the country data', () => {
     for (const p of z.poly) expect(dist(p, c)).toBeCloseTo(6, 0);
   });
   it('an "along border" segment follows the border vertices between its published points', () => {
-    const C = loadCountry(HU), raw = HU.areas.areas.find(a => a.id === 'LHTRA53EH');
-    const z = C.areas.find(a => a.id === 'LHTRA53EH');
-    expect(z.poly.length).toBeGreaterThan(raw.lateral.length - 1);
+    // a test area along Romania's (approximated) border with Bulgaria, from a KOMAN corner to another
+    const C = loadCountry(RO), raw = { id: 'TEST', name: 'TEST', type: 'TRA', lateral: ['440350N 0263945E', 'along border ROMANIA_BULGARIA', '434153N 0244148E', '441000N 0250000E'], upper: 'FL 300', lower: 'FL 100' };
+    const z = loadArea(raw, RO.borders, C.proj);
+    expect(z.poly.length).toBe(raw.lateral.length - 1 + RO.borders.KOMAN_BG.length);
     // without the border data the segment is just the straight line between its two points
     const straight = loadArea(raw, {}, C.proj);
     expect(straight.poly).toHaveLength(raw.lateral.length - 1);

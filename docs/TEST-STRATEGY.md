@@ -7,11 +7,10 @@ This document describes what each test layer covers, and why it is there.
 <!-- test-counts:start -->
 | File | What it covers | Tests |
 |---|---|---|
-| `tests/unit/airac.test.js` | ENR 4.1 and 4.4 parsers against fixtures, the FRA role rule, AIRAC diffs and edition dates | 19 |
-| `tests/unit/areas.test.js` | ENR 5.2 parsers (Romania PDF, Hungary HTML), strict vertical limits and the known AIP misprints, loading the areas | 23 |
-| `tests/unit/civmil.test.js` | military data (training constructs), OAT tracks and non-RVSM minima, the COMLOSS chain, short-notice extensions | 14 |
+| `tests/unit/airac.test.js` | ENR 4.1 and 4.4 parsers against fixtures, the FRA role rule, AIRAC diffs and edition dates | 17 |
+| `tests/unit/areas.test.js` | ENR 5.2 parsers (PDF text, HTML table text), strict vertical limits and the known AIP misprints, loading the areas | 20 |
+| `tests/unit/civmil.test.js` | military data (training constructs), OAT tracks and non-RVSM minima, the COMLOSS chain, short-notice extensions | 12 |
 | `tests/unit/cmdline.test.js` | command line shorthand, malformed input, callsign completion | 17 |
-| `tests/unit/country-hu.test.js` | Hungary data integrity: sectors, borders, points, roles, traffic | 17 |
 | `tests/unit/country.test.js` | Romania data integrity and the country loader | 14 |
 | `tests/unit/geo.test.js` | projection, AIP coordinate parsing, plane geometry, the seeded RNG | 12 |
 | `tests/unit/grading.test.js` | per-inject objectives: a pass and a fail case for every inject type, the debrief data | 39 |
@@ -20,7 +19,7 @@ This document describes what each test layer covers, and why it is there.
 | `tests/unit/performance.test.js` | OpenAP WRAP conversion, ISA airspeeds, wind | 12 |
 | `tests/unit/radio.test.js` | readbacks, the busy frequency, one transmission per command line, similar callsigns | 8 |
 | `tests/unit/records.test.js` | session record builder and validator, the clearance log, import of single records and bundles, storage unavailable | 17 |
-| `tests/unit/scenario-file.test.js` | scenario export and import validation, the sample library | 30 |
+| `tests/unit/scenario-file.test.js` | scenario export and import validation, the sample library | 24 |
 | `tests/unit/sector-volumes.test.js` | sector layers and vertical limits (KOMAN 1/2), collapsed layers, delegated airspace, several source AIPs, upper-airspace-only units | 27 |
 | `tests/unit/scenario.test.js` | local scenario builder and the Claude reply validator | 10 |
 | `tests/unit/sim.test.js` | determinism, traffic and built-in conflicts, injects, clearances, the sector routine, pseudo-pilot, performance and wind in the simulator, robustness | 61 |
@@ -29,7 +28,7 @@ This document describes what each test layer covers, and why it is there.
 | `tests/e2e/two-windows.spec.js` | instructor and trainee windows: sync, what the trainee sees, commands through the link, grading | 9 × 2 viewports |
 | `tests/e2e/session-records.spec.js` | session history: save, reload, list, open, replay, export one and all, delete, import, no storage | 3 × 2 viewports |
 | `tests/e2e/scenario-files.spec.js` | export, reload and import round trip, the library in both windows, invalid files | 3 × 2 viewports |
-| **Total** | 18 unit files, 4 end-to-end files | 370 unit, 32 end-to-end × 2 viewports |
+| **Total** | 17 unit files, 4 end-to-end files | 340 unit, 32 end-to-end × 2 viewports |
 <!-- test-counts:end -->
 
 The counts come from the test runners: `node scripts/test-counts.mjs` rewrites them, and CI fails if they differ (`--check`). The coverage gate (`npm run test:coverage`, `vite.config.js`) requires 85% per file on `src/sim.js`, `src/scenario.js`, `src/cmdline.js`, `src/records.js`, `src/nets/*.js` and `src/tools/*.js`.
@@ -49,14 +48,8 @@ The unit tests run in Node in a few seconds and need no browser or network. The 
   - closed gates carry no flows.
 - **Main airports:** each has an approach unit, a hand-off distance and both connection points for every flow that uses it.
 - **Exit levels:** every open gate and main airport has an agreed level, and the `_note` states that the levels are modelled, not taken from a Letter of Agreement.
-- **Hungary only:**
-  - the sector outlines use the published ENR 2.1 FIR corners;
-  - approximated geometry is labelled in `_note`;
-  - the HU–RO border reuses Romania's vertices;
-  - the Romania gate uses the same points as the Hungarian side of Romania's west gate, with identical coordinates;
-  - points published by both AIPs have the same coordinates in both modules.
 
-**Why.** The data is hand-assembled from PDFs, HTML pages and, for Hungary, a traced chart. Most mistakes in that process (a swapped coordinate, a misnamed border segment, a gate that lost its last exit point) do not crash anything. They produce traffic that spawns in the wrong place, or a sector that is silently wrong. These checks turn that kind of mistake into a failing test with the point or sector named in the message. The README asks anyone adding a country to copy this file.
+**Why.** The data is hand-assembled from PDFs and HTML pages. Most mistakes in that process (a swapped coordinate, a misnamed border segment, a gate that lost its last exit point) do not crash anything. They produce traffic that spawns in the wrong place, or a sector that is silently wrong. These checks turn that kind of mistake into a failing test with the point or sector named in the message. The README asks anyone adding a country to copy this file.
 
 ## Determinism
 
@@ -145,23 +138,23 @@ During refactors that should not change behaviour, the same idea is applied more
 
 ## Parser fixtures
 
-**What.** The AIRAC parsers are tested against excerpts of the real AIP text in `tests/fixtures/`:
+**What.** The AIRAC parsers are tested against text fixtures in `tests/fixtures/`:
 
 | Fixture | Source |
 |---|---|
-| `enr44-excerpt.txt`, `enr41-excerpt.txt` | ROMATSA PDF text |
-| `lh-enr441-excerpt.txt`, `lh-enr41-excerpt.txt` | HungaroControl HTML text |
+| `enr44-excerpt.txt`, `enr41-excerpt.txt`, `lr-enr-5-2-excerpt.txt` | excerpts of the ROMATSA PDF text |
+| `lh-enr441-excerpt.txt`, `lh-enr41-excerpt.txt`, `lh-enr-5-2-excerpt.txt` | **synthetic**: invented names, coordinates and limits in the layout of the HungaroControl eAIP HTML tables. The Hungarian AIP text was removed while Hungary is withdrawn (see the README); the parsers stay. |
 
 The tests check:
 - that every point in an excerpt is found;
 - the role assigned to each FRA relevance pattern;
-- the committed data agrees with the parser for every point in an excerpt;
+- the committed Romanian data agrees with the parser for every point in an excerpt;
 - the eAIP index selects the edition in force on a date;
 - the change report (`diffPoints`, `diffNavaids`).
 
 **Why.** The AIPs have no data API, and their layout varies (PDF text runs, HTML tables, level bands, combined codes). Fixtures keep the tests fast and offline, and pin the exact text that once caused a misread:
-- Hungarian four-letter relevance codes such as `(EXAD)` were first read as intermediate only. Both affected rows are in the fixture, and the test fails with the old three-letter regex.
-- For Hungarian navaids, the parser must take the VOR position, not the DME antenna position next to it.
+- Four-letter relevance codes such as `(EXAD)` in the letter-code format were first read as intermediate only. The synthetic fixture keeps two such rows, and the test fails with the old three-letter regex.
+- In the DVOR/DME table format, the parser must take the VOR position, not the DME antenna position next to it.
 
 The live download (`npm run airac`) is not run in CI, because it depends on third-party sites.
 
@@ -220,7 +213,6 @@ Branch coverage is the binding metric: it reached the threshold only after addin
 
 - **Generate with Claude:** this path needs the claude.ai artifact runtime, so CI tests the prompt and the validator, not a live model call.
 - **AIRAC downloads:** the eAIP downloads run by hand each cycle (see the README); only the parsing is in CI.
-- **Hungarian sector accuracy:** the traced sector boundaries are checked for consistency, not against a ground truth, because none is published.
 - **Rendering:** checked through label geometry and the screenshots in `docs/img/` (`npm run screenshots`), not pixel by pixel.
 - **Performance:** not measured.
 
