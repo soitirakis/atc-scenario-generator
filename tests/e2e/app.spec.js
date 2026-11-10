@@ -79,6 +79,8 @@ test('Hungary is listed as withdrawn, pending permission from HungaroControl, an
   await expect(page.locator('#country option:not([disabled])')).toHaveText(['Romania · LRBB']);
   await page.locator('#tab-data').click();
   await expect(page.locator('#roadmap')).toContainText('Hungary · LHCC pending permission from HungaroControl');
+  await expect(page.locator('#dataList')).toContainText('Source: AIP Romania © ROMATSA. The AIP-derived files in data/RO');
+  await expect(page.locator('#dataList')).toContainText('will be removed on request');
   await page.locator('#pausedStart').click();
   await page.evaluate(() => { for (let i = 0; i < 300; i++) window.__sim.step(); });
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);

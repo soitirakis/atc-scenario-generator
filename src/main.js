@@ -446,13 +446,15 @@ function renderDataTab() {
   ];
   // one row per source AIP: a module can be built from several states' AIPs
   rows.unshift(...aips.map(a => [aips.length > 1 ? `AIP ${a.state}` : 'AIP', `eAIP ${a.edition} · ${a.amendment}`]));
+  // whose rights the data is under, and on what terms it is reproduced (meta.rights)
+  if (m.rights) rows.splice(aips.length, 0, ['Rights', `Source: ${m.rights.source}. ${m.rights.note}`]);
   $('dataList').innerHTML = rows.map(d => `<div><span>${esc(d[0])}</span><span>${esc(d[1])}</span></div>`).join('') +
     (aips.length > 1 ? `<div><span>eAIPs</span><span>${aips.map(a => `<a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.state)}</a>`).join('<br>')}</span></div>` : '') +
     `<div><span>Links</span><span>${m.sources.map(s => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a>`).join('<br>')}</span></div>`;
   $('simNote').textContent = m.simNote || '';
   $('roadmap').innerHTML = COUNTRIES.map(c => `<div><span>${esc(c.name)}${c.note ? ` <small>${esc(c.note)}</small>` : ''}</span><span class="tag ${c.planned ? '' : 'on'}">${c.planned ? 'planned' : 'available'}</span></div>`).join('');
   $('schema').textContent = `data/<CODE>/
-  meta.json      fir, center, defaultSector, airac, simNote, sources, aips?[{state, url, edition, amendment}], upperOnly?{lowerLimit, lowerUnit}
+  meta.json      fir, center, defaultSector, airac, simNote, sources, rights{source, note}, aips?[{state, url, edition, amendment}], upperOnly?{lowerLimit, lowerUnit}
   sectors.json   sectors[{id, rad, name, vert, lower?, upper?, group?, poly:["DMS", {b:"KEY", upTo?}], include?[], exclude?[]}], collapsed[{id, parts}]
   borders.json   KEY: [[lat, lon], ...]   (border vertices)
   navaids.json   [{id, name, freq, pos:"DMS"}]   ENR 4.1

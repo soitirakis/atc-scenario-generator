@@ -11,7 +11,7 @@ This document describes what each test layer covers, and why it is there.
 | `tests/unit/areas.test.js` | ENR 5.2 parsers (PDF text, HTML table text), strict vertical limits and the known AIP misprints, loading the areas | 20 |
 | `tests/unit/civmil.test.js` | military data (training constructs), OAT tracks and non-RVSM minima, the COMLOSS chain, short-notice extensions | 12 |
 | `tests/unit/cmdline.test.js` | command line shorthand, malformed input, callsign completion | 17 |
-| `tests/unit/country.test.js` | Romania data integrity and the country loader | 14 |
+| `tests/unit/country.test.js` | Romania data integrity and the country loader | 15 |
 | `tests/unit/geo.test.js` | projection, AIP coordinate parsing, plane geometry, the seeded RNG | 12 |
 | `tests/unit/grading.test.js` | per-inject objectives: a pass and a fail case for every inject type, the debrief data | 39 |
 | `tests/unit/link.test.js` | two-window protocol, what the trainee snapshot contains, trainee commands | 14 |
@@ -29,7 +29,7 @@ This document describes what each test layer covers, and why it is there.
 | `tests/e2e/two-windows.spec.js` | instructor and trainee windows: sync, what the trainee sees, commands through the link, grading | 9 × 2 viewports |
 | `tests/e2e/session-records.spec.js` | session history: save, reload, list, open, replay, export one and all, delete, import, no storage | 4 × 2 viewports |
 | `tests/e2e/scenario-files.spec.js` | export, reload and import round trip, the library in both windows, invalid files | 3 × 2 viewports |
-| **Total** | 18 unit files, 4 end-to-end files | 361 unit, 33 end-to-end × 2 viewports |
+| **Total** | 18 unit files, 4 end-to-end files | 362 unit, 33 end-to-end × 2 viewports |
 <!-- test-counts:end -->
 
 The counts come from the test runners: `node scripts/test-counts.mjs` rewrites them, and CI fails if they differ (`--check`). The coverage gate (`npm run test:coverage`, `vite.config.js`) requires 85% per file on `src/sim.js`, `src/scenario.js`, `src/cmdline.js`, `src/records.js`, `src/pdf.js`, `src/nets/*.js` and `src/tools/*.js`.
