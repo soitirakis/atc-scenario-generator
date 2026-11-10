@@ -247,6 +247,14 @@ g:hover > .ch-hit { fill: color-mix(in srgb, var(--text) 6%, transparent); }
 .ch-val { fill: var(--text); font-size: 10px; text-anchor: middle; font-family: var(--f-data); }
 .ch-lab { fill: var(--muted); font-size: 9px; text-anchor: middle; font-family: var(--f-data); }
 .ch-sqs { display: block; }
+.sugg { border: 1px solid var(--accent); border-radius: 6px; padding: 10px 12px; margin-top: 10px; }
+.sugg h4 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); }
+.sugg-why { margin: 0 0 10px; padding-left: 18px; font-size: 13px; line-height: 1.45; }
+.sugg-why li + li { margin-top: 4px; }
+.sugg-inj { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 8px; }
+.sugg-inj > div { display: flex; gap: 6px; align-items: center; }
+.sugg-inj input { width: 64px; }
+.sugg-inj select { flex: 1; min-width: 0; }
 .ch-met { fill: var(--ok); } .ch-part { fill: var(--warn); } .ch-miss { fill: var(--alert); }
 .io-msg.err { color: var(--alert); }
 

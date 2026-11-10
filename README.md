@@ -183,6 +183,14 @@ If the browser gives the page no storage (a private window, blocked site data), 
 
 A trend is the least-squares slope of the per-session met rate: 'improving' or 'getting worse' at 0.1 or more per session, and only from 3 sessions on. An objective needs at least 2 sessions to be called weak. The statistics are in `src/progress.js` (no DOM). The charts are plain inline SVG from `src/charts.js`, one measure per chart, with the value on each mark and a hover title.
 
+**Suggest next scenario** (Progress view) proposes the trainee's next session from their records, with a written reason for each choice. It is built by `src/recommend.js` (no DOM, deterministic: the same records give the same suggestion):
+- **Repeat:** the weakest objectives, up to three. Their injects go into the scenario and their objectives into the criteria. Every-session objectives are trained by the nearest inject: a late transfer from the previous sector for assume on time, an exit level change for agreed exit levels, and one more built-in conflict for separation. Transfer on time keeps its criterion.
+- **Traffic level:** one step up after 3 sessions in a row meeting at least 80% of their objectives (graded injects plus the four every-session ones), and one step down after 2 in a row under 50%. Otherwise, and at either end, it stays the same.
+- **Sector:** one never flown (in the module's order), or else the one flown longest ago, never the last session's.
+- **Overlapping injects:** when prioritisation is the weakness, an emergency, a routine request and the weak inject come within 2 minutes of each other. Prioritisation counts as weak when, over the last 5 sessions, injects that came within 3 minutes of another were met 50% of the time or less, and 20 points below those on their own.
+
+The rest of the session comes from the local builder for that traffic level. Injects the country module has no data for are left out, with a reason. The instructor can edit everything: title, sector, traffic, length, seed, objective, and each inject's minute and type. **Accept and load** checks the edited file like any import and shows what is wrong; nothing loads before that. The suggestion is a scenario file, and a unit test checks over 400 generated histories that it always passes `validateScenarioFile`.
+
 **Add progress page to PDFs** (History tab, or "with progress page" in the debrief) appends the trainee's progress to the PDF, as it stood at that session: their sessions up to it, this one included.
 
 The PDF uses the standard PDF fonts, which cover Western European letters only. Other letters lose their accents in the PDF (Ș becomes S, ă becomes a); the app and the record keep them.
@@ -220,6 +228,7 @@ src/
   pdf.js              PDF debrief from a session record, with jsPDF (no DOM)
   progress.js         a trainee's progress over their session records (no DOM)
   charts.js           small inline SVG charts for the Progress view, as strings (no DOM)
+  recommend.js        suggest the next scenario from a trainee's records, with reasons (no DOM)
   vendor/             stand-in for jsPDF's optional dependencies, which the build leaves out
   render.js           canvas radar display
   link.js             instructor/trainee windows: BroadcastChannel protocol, trainee snapshot, read-only view

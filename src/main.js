@@ -8,7 +8,8 @@ import { COUNTRIES } from '../data/countries.js';
 import { loadCountry, sectorLabel } from './country.js';
 import { fmtFL, fmtT, dist } from './geo.js';
 import { Sim, TYPES, DIFF } from './sim.js';
-import { buildLocalScenario, buildClaudePrompt, parseClaudeScenario, exportScenario, validateScenarioFile } from './scenario.js';
+import { buildLocalScenario, buildClaudePrompt, parseClaudeScenario, exportScenario, validateScenarioFile, DURATIONS, INJECT_TEXT } from './scenario.js';
+import { suggestScenario } from './recommend.js';
 import { LIBRARY } from '../data/scenarios/index.js';
 import { parseCommand, completeCallsign } from './cmdline.js';
 import { Renderer } from './render.js';
@@ -417,7 +418,7 @@ function renderScenarioCard() {
       <p>${esc(s.objective)}</p></div>`;
     return;
   }
-  $('scnSource').textContent = { claude: 'written by Claude', library: 'from the library', file: 'imported from a file', record: 'replayed from a saved session' }[s.source] || 'built locally';
+  $('scnSource').textContent = { claude: 'written by Claude', library: 'from the library', file: 'imported from a file', record: 'replayed from a saved session', suggested: 'suggested from progress' }[s.source] || 'built locally';
   $('scnCard').innerHTML = `<div class="scn">
     <h3>${esc(s.title)}</h3>
     <div class="meta"><span class="tag">${esc(C.sectors[s.sector].name)}</span><span class="tag">${esc(DIFF[s.difficulty].label)}</span><span class="tag">${s.duration} min</span><span class="tag">seed ${s.seed}</span><span class="tag">${s.conflicts} built-in conflicts</span></div>
@@ -593,6 +594,59 @@ function renderProgress(list) {
     ${p.series.length > recent.length ? `<p class="note">Charts show the last ${recent.length} of ${p.series.length} sessions.</p>` : ''}
   </div>`;
 }
+/* ---------- suggest next scenario (src/recommend.js): shown, editable, loaded only on Accept ---------- */
+const RULE_LABEL = { repeat: 'Repeat', difficulty: 'Traffic level', sector: 'Sector', overlap: 'Overlapping injects', country: 'Country', fallback: 'Fallback' };
+async function showSuggestion() {
+  const list = (await (await recordsReady).list()).map(upgradeRecord), cs = availableCountries();
+  const s = suggestScenario(list, ui.progKey || '', cs);
+  if (!s.ok) { $('suggestBox').innerHTML = `<p class="note err">${esc(s.reasons[0].text)}</p>`; $('suggestBox').hidden = false; return; }
+  ui.suggest = s;
+  const t = trainees(list).find(x => x.key === ui.progKey);
+  ui.suggestName = t && t.key ? t.name : '';
+  const f = s.file, Cs = cs[f.country], opt = (v, label, sel) => `<option value="${esc(v)}"${v === sel ? ' selected' : ''}>${esc(label)}</option>`;
+  const typeOpts = sel => Object.keys(TYPES).map(t => opt(t, TYPES[t], sel)).join('');
+  $('suggestBox').innerHTML = `<h4>Suggested next scenario</h4>
+    <ul class="sugg-why" id="sgWhy">${s.reasons.map(r => `<li data-rule="${r.rule}"><b>${RULE_LABEL[r.rule] || r.rule}.</b> ${esc(r.text)}</li>`).join('')}</ul>
+    <div class="form">
+      <div class="full"><label for="sgTitle">Title</label><input type="text" id="sgTitle" maxlength="90" value="${esc(f.title)}"></div>
+      <div><label for="sgSector">Sector</label><select id="sgSector">${[...Cs.sectorList.map(x => [x.id, `${sectorLabel(x)} (${x.rad})`]), ['FIR', 'Whole FIR']].map(([v, l]) => opt(v, l, f.sector)).join('')}</select></div>
+      <div><label for="sgDiff">Traffic</label><select id="sgDiff">${Object.keys(DIFF).map(d => opt(d, DIFF[d].label, f.difficulty)).join('')}</select></div>
+      <div><label for="sgDur">Session length</label><select id="sgDur">${DURATIONS.map(d => opt(String(d), `${d} minutes`, String(f.duration))).join('')}</select></div>
+      <div><label for="sgSeed">Seed</label><input type="number" id="sgSeed" value="${f.seed}"></div>
+      <div class="full"><label for="sgObj">Objective</label><textarea id="sgObj">${esc(f.objective)}</textarea></div>
+    </div>
+    <h4 style="margin-top:10px">Injects <small>minute and type</small></h4>
+    <div class="sugg-inj" id="sgInj">${f.injects.map(i => `<div><input type="number" class="sg-min" min="1" value="${i.min}" aria-label="Minute"><select class="sg-type" aria-label="Inject type">${typeOpts(i.type)}</select><button class="btn sm" data-sg="del" aria-label="Remove inject">Remove</button></div>`).join('')}</div>
+    <button class="btn sm" id="sgAdd">Add inject</button>
+    <div class="note io-msg err" id="sgErr" role="alert" hidden></div>
+    <div class="row-btns" style="margin-top:10px"><button class="btn primary" id="sgAccept">Accept and load</button><button class="btn" id="sgDiscard">Discard</button></div>
+    <p class="note" style="margin:6px 0 0">Nothing is loaded until you accept. The current session is replaced when you do.</p>`;
+  $('suggestBox').hidden = false;
+  ui.sgTypeOpts = typeOpts;
+}
+/** The suggestion as edited: a scenario file, checked like any import before it loads. */
+function acceptSuggestion() {
+  const f = ui.suggest && ui.suggest.file;
+  if (!f) return;
+  const injects = [...$('sgInj').children].map(row => {
+    const type = row.querySelector('.sg-type').value;
+    return { min: Number(row.querySelector('.sg-min').value), type, text: INJECT_TEXT[type] };
+  });
+  const file = { ...f, title: $('sgTitle').value.trim() || f.title, sector: $('sgSector').value, difficulty: $('sgDiff').value, duration: Number($('sgDur').value), seed: Number($('sgSeed').value), objective: $('sgObj').value.trim() || f.objective, injects };
+  const v = validateScenarioFile(file, availableCountries());
+  if (!v.ok) { $('sgErr').innerHTML = ['This scenario cannot be loaded yet:', ...v.errors].map(l => `<div>${esc(l)}</div>`).join(''); $('sgErr').hidden = false; return; }
+  $('traineeName').value = ui.suggestName; // the session is the trainee's
+  $('suggestBox').hidden = true; ui.suggest = null;
+  loadScenarioFile(file, 'suggested');
+}
+function suggestClick(e) {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.id === 'sgAccept') acceptSuggestion();
+  if (b.id === 'sgDiscard') { $('suggestBox').hidden = true; ui.suggest = null; }
+  if (b.id === 'sgAdd') $('sgInj').insertAdjacentHTML('beforeend', `<div><input type="number" class="sg-min" min="1" value="${Math.max(1, Number($('sgDur').value) - 5)}" aria-label="Minute"><select class="sg-type" aria-label="Inject type">${ui.sgTypeOpts('CLIMB_REQUEST')}</select><button class="btn sm" data-sg="del" aria-label="Remove inject">Remove</button></div>`);
+  if (b.dataset.sg === 'del') b.parentElement.remove();
+}
+
 function setHistView(v) {
   ui.histView = v;
   for (const b of $('histSeg').children) b.setAttribute('aria-pressed', b.dataset.v === v);
@@ -839,7 +893,9 @@ function bindInput() {
   $('debExport').onclick = () => { const rec = ui.viewRecord || ui.lastRecord; if (rec) { download(rec, recordFileName(rec)); toast(`Exported ${recordFileName(rec)}`); } };
   $('histList').onclick = historyClick;
   $('histSeg').onclick = e => { const b = e.target.closest('button'); if (b) setHistView(b.dataset.v); };
-  $('progTrainee').onchange = () => { ui.progKey = $('progTrainee').value; renderHistory(); };
+  $('progTrainee').onchange = () => { ui.progKey = $('progTrainee').value; $('suggestBox').hidden = true; ui.suggest = null; renderHistory(); };
+  $('progSuggest').onclick = showSuggestion;
+  $('suggestBox').onclick = suggestClick;
   $('pdfProgress').onchange = () => setPdfProgress($('pdfProgress').checked);
   $('debPdfProgress').onchange = () => setPdfProgress($('debPdfProgress').checked);
   $('histExportAll').onclick = exportAll;
