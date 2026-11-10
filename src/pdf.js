@@ -160,6 +160,94 @@ export function buildDebriefPdf(rec, o = {}) {
     font(8.5, 'normal', MUTED); doc.text('Signature and date', x, y + 21.5);
   });
 
+  /** Optional progress summary (src/progress.js) for the trainee, on its own page. */
+  function progressPages(p) {
+    const RECENT = 12, recent = p.series.slice(-RECENT), day = iso => iso.slice(5, 10);
+    newPage();
+    font(16, 'bold'); doc.text(pdfText(`Progress: ${p.trainee || 'no trainee name'}`), M, y + 6);
+    y += 10;
+    para(`${p.sessions} session${p.sessions > 1 ? 's' : ''}, ${p.from.slice(0, 10)} to ${p.to.slice(0, 10)}. A trend compares the met rate over the last 5 sessions.`, 9.5, 'normal', MUTED);
+
+    heading('Weakest objectives');
+    if (!p.weakest.length) para('None yet: each objective needs at least two sessions, and those met every time are not listed.', 10, 'italic', MUTED);
+    p.weakest.forEach((w, k) => para(`${k + 1}.  ${w.text}`, 10, 'normal', INK, M + 2, CW - 2));
+
+    // one row per objective: sessions, met, median, trend, and the last 5 sessions as squares
+    const squares = (last, x) => last.forEach((s, k) => {
+      doc.setFillColor(...(s.met === s.graded ? OK : s.met ? WARN : ALERT));
+      doc.rect(x + k * 4.5, y + 0.6, 3.4, 3.4, 'F');
+    });
+    const table = (title, rows) => {
+      heading(title);
+      const cols = [['Objective', 74], ['Sessions', 18], ['Met', 22], ['Median', 18], ['Trend', 24], ['Last 5', 24]];
+      font(8, 'bold', MUTED); let x = M; for (const [t, w] of cols) { doc.text(t.toUpperCase(), x, y + 3); x += w; }
+      y += 5.5;
+      for (const r of rows) {
+        room(6);
+        font(8.5); x = M;
+        [r.label, String(r.sessions), r.rate === null ? '—' : `${r.met}/${r.graded} (${Math.round(r.rate * 100)}%)`, r.medianS === null || r.medianS === undefined ? '—' : `${Math.round(r.medianS)} s`, r.trend || '—']
+          .forEach((t, k) => { doc.text(pdfText(t), x, y + 3.5); x += cols[k][1]; });
+        squares(r.last, x);
+        y += 5.5;
+      }
+      font(7.5, 'normal', MUTED); doc.text('Squares: green met, amber partly met, red not met; oldest on the left.', M, y + 3); y += 5;
+    };
+    if (p.injects.length) table('Injects', p.injects.map(i => ({ ...i, sessions: i.seen })));
+    table('Every session', p.standing.map(s => ({ ...s, medianS: null })));
+
+    // separation and routine: small bar charts over the last sessions, one measure each (one axis)
+    const TOP = 9; // title, then room for the value above the tallest mark
+    const bars = (title, values, x, w, h) => {
+      const max = Math.max(1, ...values), bw = Math.min(8, (w - 2) / values.length - 1.5), base = y + TOP + h;
+      font(8.5, 'bold'); doc.text(pdfText(title), x, y + 3);
+      doc.setDrawColor(...LINE); doc.setLineWidth(0.2); doc.line(x, base, x + w, base);
+      values.forEach((v, k) => {
+        const bx = x + 1 + k * (bw + 1.5), bh = (v / max) * h;
+        if (v > 0) { doc.setFillColor(...INK); doc.rect(bx, base - bh, bw, bh, 'F'); }
+        font(6.5, 'normal', MUTED); doc.text(String(v), bx + bw / 2, base - bh - 1, { align: 'center' });
+      });
+    };
+    // closest pair: a point per session where separation was lost, against the 5 NM minimum;
+    // sessions without a loss sit on the 5 NM line as open circles (the pair stayed at 5 NM or more)
+    const closest = (title, values, x, w, h) => {
+      const max = Math.max(5, ...values.filter(v => v !== null)), base = y + TOP + h, step = (w - 4) / Math.max(1, values.length);
+      const py = v => base - (v / max) * h;
+      font(8.5, 'bold'); doc.text(pdfText(title), x, y + 3);
+      doc.setDrawColor(...LINE); doc.setLineWidth(0.2); doc.line(x, base, x + w, base);
+      doc.setLineDashPattern([1, 1], 0); doc.line(x, py(5), x + w, py(5)); doc.setLineDashPattern([], 0);
+      font(6.5, 'normal', MUTED); doc.text('5 NM', x + w, py(5) - 1, { align: 'right' });
+      values.forEach((v, k) => {
+        const cx = x + 2 + step * (k + 0.5);
+        doc.setDrawColor(...INK); doc.setFillColor(...INK); doc.setLineWidth(0.3);
+        if (v === null) { doc.circle(cx, py(5), 1, 'S'); return; }
+        doc.circle(cx, py(v), 1, 'F');
+        font(6.5, 'normal', MUTED); doc.text(v.toFixed(1), cx, py(v) - 2, { align: 'center' });
+      });
+    };
+    const chartRow = (charts, h = 22) => {
+      room(h + TOP + 10);
+      const w = (CW - (charts.length - 1) * 6) / charts.length;
+      charts.forEach((c, k) => (c[2] || bars)(c[0], c[1], M + k * (w + 6), w, h));
+      y += h + TOP + 3;
+      font(6.5, 'normal', MUTED);
+      doc.text(`Sessions ${day(recent[0].savedAt)} to ${day(recent[recent.length - 1].savedAt)}, oldest on the left${p.series.length > RECENT ? ` (last ${RECENT})` : ''}.`, M, y + 2);
+      y += 5;
+    };
+    heading('Separation');
+    chartRow([
+      ['Losses of separation per session', recent.map(s => s.los)],
+      ['Closest pair (NM); open circle: no loss of separation', recent.map(s => s.minSep), closest]
+    ]);
+    heading('Sector routine');
+    chartRow([
+      ['Late assumes', recent.map(s => s.lateAssume)],
+      ['Late transfers', recent.map(s => s.lateXfer)],
+      ['Wrong exit levels', recent.map(s => s.wrongXfl)]
+    ]);
+  }
+
+  if (o.progress && o.progress.sessions) progressPages(o.progress);
+
   // every page: the training mark and the page number
   const n = doc.getNumberOfPages();
   for (let p = 1; p <= n; p++) {

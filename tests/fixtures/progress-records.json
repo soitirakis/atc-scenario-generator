@@ -1,0 +1,2050 @@
+[
+ {
+  "schemaVersion": 2,
+  "kind": "atc-session-record",
+  "id": "progress-1",
+  "savedAt": "2026-11-01T10:00:00.000Z",
+  "trainee": "Ana Pop",
+  "instructor": "I. Ionescu",
+  "country": "RO",
+  "sector": "ARG",
+  "sectorName": "ARGES",
+  "seed": 4127,
+  "sectorBand": null,
+  "completed": true,
+  "elapsedS": 1200,
+  "scenario": {
+   "schemaVersion": 1,
+   "title": "ARGES: weather deviations with intermediate traffic",
+   "country": "RO",
+   "sector": "ARG",
+   "difficulty": "intermediate",
+   "duration": 20,
+   "seed": 4127,
+   "objective": "Trainee loses the picture when a level bust and weather deviations happen close together in a busy sector.",
+   "conflicts": 2,
+   "challenges": [
+    "2 built-in crossing conflicts inside ARGES that must be solved before STCA triggers",
+    "CB cell and deviations while normal traffic keeps calling",
+    "Level bust overlapping with the first event"
+   ],
+   "criteria": [
+    "No loss of separation (5 NM / 1000 ft)",
+    "Every request answered within 60 s",
+    "Correct priority order: emergencies and STCA before routine requests",
+    "Every flight assumed before it enters and transferred at its agreed exit level"
+   ],
+   "wind": [
+    {
+     "fl": 50,
+     "dir": 211,
+     "kt": 17
+    },
+    {
+     "fl": 180,
+     "dir": 231,
+     "kt": 48
+    },
+    {
+     "fl": 340,
+     "dir": 241,
+     "kt": 95
+    },
+    {
+     "fl": 420,
+     "dir": 251,
+     "kt": 76
+    }
+   ],
+   "injects": [
+    {
+     "min": 3,
+     "type": "WEATHER_CELL",
+     "text": "A CB cell builds on a main flow. Aircraft ask for deviations.",
+     "objective": "Every deviation request answered before the aircraft deviates on its own (10 min)"
+    },
+    {
+     "min": 10,
+     "type": "LEVEL_BUST",
+     "text": "An aircraft passes its cleared level. Mode S selected level disagrees with the clearance.",
+     "objective": "Level re-cleared within 60 s"
+    },
+    {
+     "min": 17,
+     "type": "CLIMB_REQUEST",
+     "text": "An aircraft in sector requests a higher cruising level.",
+     "objective": "Answered within 60 s"
+    }
+   ]
+  },
+  "stats": {
+   "losCount": 2,
+   "losSec": 120,
+   "minSep": 0.08,
+   "reqs": 4,
+   "reqAnswered": 0,
+   "reqMissed": 4,
+   "avgResponse": null,
+   "selfDev": 0,
+   "tsaInf": 0,
+   "emgAckT": null,
+   "lateAssume": 7,
+   "lateXfer": 5,
+   "wrongXfl": 2,
+   "cmds": 0,
+   "injectsFired": 3,
+   "injectsTotal": 3
+  },
+  "injects": [
+   {
+    "min": 3,
+    "type": "WEATHER_CELL",
+    "label": "CB cell and deviations",
+    "target": "THY2605",
+    "status": "fired",
+    "firedAt": 180,
+    "objective": "Every deviation request answered before the aircraft deviates on its own (10 min)",
+    "result": {
+     "state": "not met",
+     "t": 122,
+     "reason": "objective not met"
+    }
+   },
+   {
+    "min": 10,
+    "type": "LEVEL_BUST",
+    "label": "Level bust",
+    "target": "UAE1839",
+    "status": "fired",
+    "firedAt": 600,
+    "objective": "Level re-cleared within 60 s",
+    "result": {
+     "state": "not met",
+     "t": null,
+     "reason": "objective not met"
+    }
+   },
+   {
+    "min": 17,
+    "type": "CLIMB_REQUEST",
+    "label": "Level request",
+    "target": "THY2536",
+    "status": "fired",
+    "firedAt": 1020,
+    "objective": "Answered within 60 s",
+    "result": {
+     "state": "not met",
+     "t": null,
+     "reason": "objective not met"
+    }
+   }
+  ],
+  "timeline": [
+   {
+    "t": 61,
+    "text": "Late assume THY2799",
+    "cls": "w"
+   },
+   {
+    "t": 77,
+    "text": "Late assume WZZ777",
+    "cls": "w"
+   },
+   {
+    "t": 94,
+    "text": "Late assume WZZ206",
+    "cls": "w"
+   },
+   {
+    "t": 110,
+    "text": "Late assume THY2536",
+    "cls": "w"
+   },
+   {
+    "t": 144,
+    "text": "Late transfer RYR2145",
+    "cls": "w"
+   },
+   {
+    "t": 154,
+    "text": "Late assume WZZ605",
+    "cls": "w"
+   },
+   {
+    "t": 180,
+    "text": "CB cell and deviations · THY2605 fired",
+    "cls": ""
+   },
+   {
+    "t": 181,
+    "text": "Loss of separation ROT344 / UAE1839",
+    "cls": "a"
+   },
+   {
+    "t": 192,
+    "text": "Late transfer THY2605",
+    "cls": "w"
+   },
+   {
+    "t": 192,
+    "text": "Wrong exit level THY2605: FL340, agreed FL110",
+    "cls": "w"
+   },
+   {
+    "t": 206,
+    "text": "Late assume PGT112",
+    "cls": "w"
+   },
+   {
+    "t": 302,
+    "text": "CB cell and deviations · THY2605: not met (ROT344 deviation request not answered, 05:02)",
+    "cls": "w"
+   },
+   {
+    "t": 334,
+    "text": "Late assume WZZ1118",
+    "cls": "w"
+   },
+   {
+    "t": 392,
+    "text": "Late transfer THY1146",
+    "cls": "w"
+   },
+   {
+    "t": 392,
+    "text": "Wrong exit level THY1146: FL240, agreed FL350",
+    "cls": "w"
+   },
+   {
+    "t": 483,
+    "text": "Late transfer ROT344",
+    "cls": "w"
+   },
+   {
+    "t": 572,
+    "text": "Loss of separation THY2536 / WZZ605",
+    "cls": "a"
+   },
+   {
+    "t": 600,
+    "text": "Level bust · UAE1839 fired",
+    "cls": ""
+   },
+   {
+    "t": 661,
+    "text": "Level bust · UAE1839: not met (not re-cleared within 60 s)",
+    "cls": "w"
+   },
+   {
+    "t": 746,
+    "text": "Late transfer UAE1839",
+    "cls": "w"
+   },
+   {
+    "t": 1020,
+    "text": "Level request · THY2536 fired",
+    "cls": ""
+   },
+   {
+    "t": 1081,
+    "text": "Level request · THY2536: not met (not answered within 60 s)",
+    "cls": "w"
+   }
+  ],
+  "clearances": [],
+  "snapshots": [],
+  "remarks": ""
+ },
+ {
+  "schemaVersion": 2,
+  "kind": "atc-session-record",
+  "id": "progress-2",
+  "savedAt": "2026-11-02T10:00:00.000Z",
+  "trainee": "Ana Pop",
+  "instructor": "I. Ionescu",
+  "country": "RO",
+  "sector": "ARG",
+  "sectorName": "ARGES",
+  "seed": 4127,
+  "sectorBand": null,
+  "completed": true,
+  "elapsedS": 1200,
+  "scenario": {
+   "schemaVersion": 1,
+   "title": "ARGES: weather deviations with intermediate traffic",
+   "country": "RO",
+   "sector": "ARG",
+   "difficulty": "intermediate",
+   "duration": 20,
+   "seed": 4127,
+   "objective": "Trainee loses the picture when a level bust and weather deviations happen close together in a busy sector.",
+   "conflicts": 2,
+   "challenges": [
+    "2 built-in crossing conflicts inside ARGES that must be solved before STCA triggers",
+    "CB cell and deviations while normal traffic keeps calling",
+    "Level bust overlapping with the first event"
+   ],
+   "criteria": [
+    "No loss of separation (5 NM / 1000 ft)",
+    "Every request answered within 60 s",
+    "Correct priority order: emergencies and STCA before routine requests",
+    "Every flight assumed before it enters and transferred at its agreed exit level"
+   ],
+   "wind": [
+    {
+     "fl": 50,
+     "dir": 211,
+     "kt": 17
+    },
+    {
+     "fl": 180,
+     "dir": 231,
+     "kt": 48
+    },
+    {
+     "fl": 340,
+     "dir": 241,
+     "kt": 95
+    },
+    {
+     "fl": 420,
+     "dir": 251,
+     "kt": 76
+    }
+   ],
+   "injects": [
+    {
+     "min": 3,
+     "type": "WEATHER_CELL",
+     "text": "A CB cell builds on a main flow. Aircraft ask for deviations.",
+     "objective": "Every deviation request answered before the aircraft deviates on its own (10 min)"
+    },
+    {
+     "min": 10,
+     "type": "LEVEL_BUST",
+     "text": "An aircraft passes its cleared level. Mode S selected level disagrees with the clearance.",
+     "objective": "Level re-cleared within 60 s"
+    },
+    {
+     "min": 17,
+     "type": "CLIMB_REQUEST",
+     "text": "An aircraft in sector requests a higher cruising level.",
+     "objective": "Answered within 60 s"
+    }
+   ]
+  },
+  "stats": {
+   "losCount": 1,
+   "losSec": 60,
+   "minSep": 3.2,
+   "reqs": 4,
+   "reqAnswered": 0,
+   "reqMissed": 4,
+   "avgResponse": null,
+   "selfDev": 0,
+   "tsaInf": 0,
+   "emgAckT": null,
+   "lateAssume": 4,
+   "lateXfer": 3,
+   "wrongXfl": 1,
+   "cmds": 0,
+   "injectsFired": 3,
+   "injectsTotal": 3
+  },
+  "injects": [
+   {
+    "min": 3,
+    "type": "WEATHER_CELL",
+    "label": "CB cell and deviations",
+    "target": "THY2605",
+    "status": "fired",
+    "firedAt": 180,
+    "objective": "Every deviation request answered before the aircraft deviates on its own (10 min)",
+    "result": {
+     "state": "not met",
+     "t": 90,
+     "reason": "objective not met"
+    }
+   },
+   {
+    "min": 10,
+    "type": "LEVEL_BUST",
+    "label": "Level bust",
+    "target": "UAE1839",
+    "status": "fired",
+    "firedAt": 600,
+    "objective": "Level re-cleared within 60 s",
+    "result": {
+     "state": "met",
+     "t": 45,
+     "reason": "objective met"
+    }
+   },
+   {
+    "min": 17,
+    "type": "CLIMB_REQUEST",
+    "label": "Level request",
+    "target": "THY2536",
+    "status": "fired",
+    "firedAt": 1020,
+    "objective": "Answered within 60 s",
+    "result": {
+     "state": "not met",
+     "t": null,
+     "reason": "objective not met"
+    }
+   }
+  ],
+  "timeline": [
+   {
+    "t": 61,
+    "text": "Late assume THY2799",
+    "cls": "w"
+   },
+   {
+    "t": 77,
+    "text": "Late assume WZZ777",
+    "cls": "w"
+   },
+   {
+    "t": 94,
+    "text": "Late assume WZZ206",
+    "cls": "w"
+   },
+   {
+    "t": 110,
+    "text": "Late assume THY2536",
+    "cls": "w"
+   },
+   {
+    "t": 144,
+    "text": "Late transfer RYR2145",
+    "cls": "w"
+   },
+   {
+    "t": 154,
+    "text": "Late assume WZZ605",
+    "cls": "w"
+   },
+   {
+    "t": 180,
+    "text": "CB cell and deviations · THY2605 fired",
+    "cls": ""
+   },
+   {
+    "t": 181,
+    "text": "Loss of separation ROT344 / UAE1839",
+    "cls": "a"
+   },
+   {
+    "t": 192,
+    "text": "Late transfer THY2605",
+    "cls": "w"
+   },
+   {
+    "t": 192,
+    "text": "Wrong exit level THY2605: FL340, agreed FL110",
+    "cls": "w"
+   },
+   {
+    "t": 206,
+    "text": "Late assume PGT112",
+    "cls": "w"
+   },
+   {
+    "t": 302,
+    "text": "CB cell and deviations · THY2605: not met (ROT344 deviation request not answered, 05:02)",
+    "cls": "w"
+   },
+   {
+    "t": 334,
+    "text": "Late assume WZZ1118",
+    "cls": "w"
+   },
+   {
+    "t": 392,
+    "text": "Late transfer THY1146",
+    "cls": "w"
+   },
+   {
+    "t": 392,
+    "text": "Wrong exit level THY1146: FL240, agreed FL350",
+    "cls": "w"
+   },
+   {
+    "t": 483,
+    "text": "Late transfer ROT344",
+    "cls": "w"
+   },
+   {
+    "t": 572,
+    "text": "Loss of separation THY2536 / WZZ605",
+    "cls": "a"
+   },
+   {
+    "t": 600,
+    "text": "Level bust · UAE1839 fired",
+    "cls": ""
+   },
+   {
+    "t": 661,
+    "text": "Level bust · UAE1839: not met (not re-cleared within 60 s)",
+    "cls": "w"
+   },
+   {
+    "t": 746,
+    "text": "Late transfer UAE1839",
+    "cls": "w"
+   },
+   {
+    "t": 1020,
+    "text": "Level request · THY2536 fired",
+    "cls": ""
+   },
+   {
+    "t": 1081,
+    "text": "Level request · THY2536: not met (not answered within 60 s)",
+    "cls": "w"
+   }
+  ],
+  "clearances": [],
+  "snapshots": [],
+  "remarks": ""
+ },
+ {
+  "schemaVersion": 2,
+  "kind": "atc-session-record",
+  "id": "progress-3",
+  "savedAt": "2026-11-03T10:00:00.000Z",
+  "trainee": "Ana Pop",
+  "instructor": "I. Ionescu",
+  "country": "RO",
+  "sector": "ARG",
+  "sectorName": "ARGES",
+  "seed": 4127,
+  "sectorBand": null,
+  "completed": true,
+  "elapsedS": 1200,
+  "scenario": {
+   "schemaVersion": 1,
+   "title": "ARGES: weather deviations with intermediate traffic",
+   "country": "RO",
+   "sector": "ARG",
+   "difficulty": "intermediate",
+   "duration": 20,
+   "seed": 4127,
+   "objective": "Trainee loses the picture when a level bust and weather deviations happen close together in a busy sector.",
+   "conflicts": 2,
+   "challenges": [
+    "2 built-in crossing conflicts inside ARGES that must be solved before STCA triggers",
+    "CB cell and deviations while normal traffic keeps calling",
+    "Level bust overlapping with the first event"
+   ],
+   "criteria": [
+    "No loss of separation (5 NM / 1000 ft)",
+    "Every request answered within 60 s",
+    "Correct priority order: emergencies and STCA before routine requests",
+    "Every flight assumed before it enters and transferred at its agreed exit level"
+   ],
+   "wind": [
+    {
+     "fl": 50,
+     "dir": 211,
+     "kt": 17
+    },
+    {
+     "fl": 180,
+     "dir": 231,
+     "kt": 48
+    },
+    {
+     "fl": 340,
+     "dir": 241,
+     "kt": 95
+    },
+    {
+     "fl": 420,
+     "dir": 251,
+     "kt": 76
+    }
+   ],
+   "injects": [
+    {
+     "min": 3,
+     "type": "WEATHER_CELL",
+     "text": "A CB cell builds on a main flow. Aircraft ask for deviations.",
+     "objective": "Every deviation request answered before the aircraft deviates on its own (10 min)"
+    },
+    {
+     "min": 10,
+     "type": "LEVEL_BUST",
+     "text": "An aircraft passes its cleared level. Mode S selected level disagrees with the clearance.",
+     "objective": "Level re-cleared within 60 s"
+    },
+    {
+     "min": 17,
+     "type": "CLIMB_REQUEST",
+     "text": "An aircraft in sector requests a higher cruising level.",
+     "objective": "Answered within 60 s"
+    }
+   ]
+  },
+  "stats": {
+   "losCount": 1,
+   "losSec": 60,
+   "minSep": 4.1,
+   "reqs": 4,
+   "reqAnswered": 0,
+   "reqMissed": 4,
+   "avgResponse": null,
+   "selfDev": 0,
+   "tsaInf": 0,
+   "emgAckT": null,
+   "lateAssume": 2,
+   "lateXfer": 2,
+   "wrongXfl": 1,
+   "cmds": 0,
+   "injectsFired": 3,
+   "injectsTotal": 3
+  },
+  "injects": [
+   {
+    "min": 3,
+    "type": "WEATHER_CELL",
+    "label": "CB cell and deviations",
+    "target": "THY2605",
+    "status": "fired",
+    "firedAt": 180,
+    "objective": "Every deviation request answered before the aircraft deviates on its own (10 min)",
+    "result": {
+     "state": "met",
+     "t": 30,
+     "reason": "objective met"
+    }
+   },
+   {
+    "min": 10,
+    "type": "LEVEL_BUST",
+    "label": "Level bust",
+    "target": "UAE1839",
+    "status": "fired",
+    "firedAt": 600,
+    "objective": "Level re-cleared within 60 s",
+    "result": {
+     "state": "met",
+     "t": 50,
+     "reason": "objective met"
+    }
+   },
+   {
+    "min": 17,
+    "type": "CLIMB_REQUEST",
+    "label": "Level request",
+    "target": "THY2536",
+    "status": "fired",
+    "firedAt": 1020,
+    "objective": "Answered within 60 s",
+    "result": {
+     "state": "met",
+     "t": 40,
+     "reason": "objective met"
+    }
+   }
+  ],
+  "timeline": [
+   {
+    "t": 61,
+    "text": "Late assume THY2799",
+    "cls": "w"
+   },
+   {
+    "t": 77,
+    "text": "Late assume WZZ777",
+    "cls": "w"
+   },
+   {
+    "t": 94,
+    "text": "Late assume WZZ206",
+    "cls": "w"
+   },
+   {
+    "t": 110,
+    "text": "Late assume THY2536",
+    "cls": "w"
+   },
+   {
+    "t": 144,
+    "text": "Late transfer RYR2145",
+    "cls": "w"
+   },
+   {
+    "t": 154,
+    "text": "Late assume WZZ605",
+    "cls": "w"
+   },
+   {
+    "t": 180,
+    "text": "CB cell and deviations · THY2605 fired",
+    "cls": ""
+   },
+   {
+    "t": 181,
+    "text": "Loss of separation ROT344 / UAE1839",
+    "cls": "a"
+   },
+   {
+    "t": 192,
+    "text": "Late transfer THY2605",
+    "cls": "w"
+   },
+   {
+    "t": 192,
+    "text": "Wrong exit level THY2605: FL340, agreed FL110",
+    "cls": "w"
+   },
+   {
+    "t": 206,
+    "text": "Late assume PGT112",
+    "cls": "w"
+   },
+   {
+    "t": 302,
+    "text": "CB cell and deviations · THY2605: not met (ROT344 deviation request not answered, 05:02)",
+    "cls": "w"
+   },
+   {
+    "t": 334,
+    "text": "Late assume WZZ1118",
+    "cls": "w"
+   },
+   {
+    "t": 392,
+    "text": "Late transfer THY1146",
+    "cls": "w"
+   },
+   {
+    "t": 392,
+    "text": "Wrong exit level THY1146: FL240, agreed FL350",
+    "cls": "w"
+   },
+   {
+    "t": 483,
+    "text": "Late transfer ROT344",
+    "cls": "w"
+   },
+   {
+    "t": 572,
+    "text": "Loss of separation THY2536 / WZZ605",
+    "cls": "a"
+   },
+   {
+    "t": 600,
+    "text": "Level bust · UAE1839 fired",
+    "cls": ""
+   },
+   {
+    "t": 661,
+    "text": "Level bust · UAE1839: not met (not re-cleared within 60 s)",
+    "cls": "w"
+   },
+   {
+    "t": 746,
+    "text": "Late transfer UAE1839",
+    "cls": "w"
+   },
+   {
+    "t": 1020,
+    "text": "Level request · THY2536 fired",
+    "cls": ""
+   },
+   {
+    "t": 1081,
+    "text": "Level request · THY2536: not met (not answered within 60 s)",
+    "cls": "w"
+   }
+  ],
+  "clearances": [],
+  "snapshots": [],
+  "remarks": ""
+ },
+ {
+  "schemaVersion": 2,
+  "kind": "atc-session-record",
+  "id": "progress-4",
+  "savedAt": "2026-11-04T10:00:00.000Z",
+  "trainee": "Ana Pop",
+  "instructor": "I. Ionescu",
+  "country": "RO",
+  "sector": "ARG",
+  "sectorName": "ARGES",
+  "seed": 4127,
+  "sectorBand": null,
+  "completed": true,
+  "elapsedS": 1200,
+  "scenario": {
+   "schemaVersion": 1,
+   "title": "ARGES: weather deviations with intermediate traffic",
+   "country": "RO",
+   "sector": "ARG",
+   "difficulty": "intermediate",
+   "duration": 20,
+   "seed": 4127,
+   "objective": "Trainee loses the picture when a level bust and weather deviations happen close together in a busy sector.",
+   "conflicts": 2,
+   "challenges": [
+    "2 built-in crossing conflicts inside ARGES that must be solved before STCA triggers",
+    "CB cell and deviations while normal traffic keeps calling",
+    "Level bust overlapping with the first event"
+   ],
+   "criteria": [
+    "No loss of separation (5 NM / 1000 ft)",
+    "Every request answered within 60 s",
+    "Correct priority order: emergencies and STCA before routine requests",
+    "Every flight assumed before it enters and transferred at its agreed exit level"
+   ],
+   "wind": [
+    {
+     "fl": 50,
+     "dir": 211,
+     "kt": 17
+    },
+    {
+     "fl": 180,
+     "dir": 231,
+     "kt": 48
+    },
+    {
+     "fl": 340,
+     "dir": 241,
+     "kt": 95
+    },
+    {
+     "fl": 420,
+     "dir": 251,
+     "kt": 76
+    }
+   ],
+   "injects": [
+    {
+     "min": 3,
+     "type": "WEATHER_CELL",
+     "text": "A CB cell builds on a main flow. Aircraft ask for deviations.",
+     "objective": "Every deviation request answered before the aircraft deviates on its own (10 min)"
+    },
+    {
+     "min": 10,
+     "type": "LEVEL_BUST",
+     "text": "An aircraft passes its cleared level. Mode S selected level disagrees with the clearance.",
+     "objective": "Level re-cleared within 60 s"
+    },
+    {
+     "min": 17,
+     "type": "CLIMB_REQUEST",
+     "text": "An aircraft in sector requests a higher cruising level.",
+     "objective": "Answered within 60 s"
+    }
+   ]
+  },
+  "stats": {
+   "losCount": 0,
+   "losSec": 0,
+   "minSep": null,
+   "reqs": 4,
+   "reqAnswered": 0,
+   "reqMissed": 4,
+   "avgResponse": null,
+   "selfDev": 0,
+   "tsaInf": 0,
+   "emgAckT": null,
+   "lateAssume": 1,
+   "lateXfer": 1,
+   "wrongXfl": 0,
+   "cmds": 0,
+   "injectsFired": 3,
+   "injectsTotal": 3
+  },
+  "injects": [
+   {
+    "min": 3,
+    "type": "WEATHER_CELL",
+    "label": "CB cell and deviations",
+    "target": "THY2605",
+    "status": "fired",
+    "firedAt": 180,
+    "objective": "Every deviation request answered before the aircraft deviates on its own (10 min)",
+    "result": {
+     "state": "met",
+     "t": 25,
+     "reason": "objective met"
+    }
+   },
+   {
+    "min": 10,
+    "type": "LEVEL_BUST",
+    "label": "Level bust",
+    "target": "UAE1839",
+    "status": "fired",
+    "firedAt": 600,
+    "objective": "Level re-cleared within 60 s",
+    "result": {
+     "state": "not met",
+     "t": null,
+     "reason": "objective not met"
+    }
+   },
+   {
+    "min": 17,
+    "type": "CLIMB_REQUEST",
+    "label": "Level request",
+    "target": "THY2536",
+    "status": "fired",
+    "firedAt": 1020,
+    "objective": "Answered within 60 s",
+    "result": {
+     "state": "not met",
+     "t": null,
+     "reason": "objective not met"
+    }
+   }
+  ],
+  "timeline": [
+   {
+    "t": 61,
+    "text": "Late assume THY2799",
+    "cls": "w"
+   },
+   {
+    "t": 77,
+    "text": "Late assume WZZ777",
+    "cls": "w"
+   },
+   {
+    "t": 94,
+    "text": "Late assume WZZ206",
+    "cls": "w"
+   },
+   {
+    "t": 110,
+    "text": "Late assume THY2536",
+    "cls": "w"
+   },
+   {
+    "t": 144,
+    "text": "Late transfer RYR2145",
+    "cls": "w"
+   },
+   {
+    "t": 154,
+    "text": "Late assume WZZ605",
+    "cls": "w"
+   },
+   {
+    "t": 180,
+    "text": "CB cell and deviations · THY2605 fired",
+    "cls": ""
+   },
+   {
+    "t": 181,
+    "text": "Loss of separation ROT344 / UAE1839",
+    "cls": "a"
+   },
+   {
+    "t": 192,
+    "text": "Late transfer THY2605",
+    "cls": "w"
+   },
+   {
+    "t": 192,
+    "text": "Wrong exit level THY2605: FL340, agreed FL110",
+    "cls": "w"
+   },
+   {
+    "t": 206,
+    "text": "Late assume PGT112",
+    "cls": "w"
+   },
+   {
+    "t": 302,
+    "text": "CB cell and deviations · THY2605: not met (ROT344 deviation request not answered, 05:02)",
+    "cls": "w"
+   },
+   {
+    "t": 334,
+    "text": "Late assume WZZ1118",
+    "cls": "w"
+   },
+   {
+    "t": 392,
+    "text": "Late transfer THY1146",
+    "cls": "w"
+   },
+   {
+    "t": 392,
+    "text": "Wrong exit level THY1146: FL240, agreed FL350",
+    "cls": "w"
+   },
+   {
+    "t": 483,
+    "text": "Late transfer ROT344",
+    "cls": "w"
+   },
+   {
+    "t": 572,
+    "text": "Loss of separation THY2536 / WZZ605",
+    "cls": "a"
+   },
+   {
+    "t": 600,
+    "text": "Level bust · UAE1839 fired",
+    "cls": ""
+   },
+   {
+    "t": 661,
+    "text": "Level bust · UAE1839: not met (not re-cleared within 60 s)",
+    "cls": "w"
+   },
+   {
+    "t": 746,
+    "text": "Late transfer UAE1839",
+    "cls": "w"
+   },
+   {
+    "t": 1020,
+    "text": "Level request · THY2536 fired",
+    "cls": ""
+   },
+   {
+    "t": 1081,
+    "text": "Level request · THY2536: not met (not answered within 60 s)",
+    "cls": "w"
+   }
+  ],
+  "clearances": [],
+  "snapshots": [],
+  "remarks": ""
+ },
+ {
+  "schemaVersion": 2,
+  "kind": "atc-session-record",
+  "id": "progress-5",
+  "savedAt": "2026-11-05T10:00:00.000Z",
+  "trainee": "Ana Pop",
+  "instructor": "I. Ionescu",
+  "country": "RO",
+  "sector": "ARG",
+  "sectorName": "ARGES",
+  "seed": 4127,
+  "sectorBand": null,
+  "completed": true,
+  "elapsedS": 1200,
+  "scenario": {
+   "schemaVersion": 1,
+   "title": "ARGES: weather deviations with intermediate traffic",
+   "country": "RO",
+   "sector": "ARG",
+   "difficulty": "intermediate",
+   "duration": 20,
+   "seed": 4127,
+   "objective": "Trainee loses the picture when a level bust and weather deviations happen close together in a busy sector.",
+   "conflicts": 2,
+   "challenges": [
+    "2 built-in crossing conflicts inside ARGES that must be solved before STCA triggers",
+    "CB cell and deviations while normal traffic keeps calling",
+    "Level bust overlapping with the first event"
+   ],
+   "criteria": [
+    "No loss of separation (5 NM / 1000 ft)",
+    "Every request answered within 60 s",
+    "Correct priority order: emergencies and STCA before routine requests",
+    "Every flight assumed before it enters and transferred at its agreed exit level"
+   ],
+   "wind": [
+    {
+     "fl": 50,
+     "dir": 211,
+     "kt": 17
+    },
+    {
+     "fl": 180,
+     "dir": 231,
+     "kt": 48
+    },
+    {
+     "fl": 340,
+     "dir": 241,
+     "kt": 95
+    },
+    {
+     "fl": 420,
+     "dir": 251,
+     "kt": 76
+    }
+   ],
+   "injects": [
+    {
+     "min": 3,
+     "type": "WEATHER_CELL",
+     "text": "A CB cell builds on a main flow. Aircraft ask for deviations.",
+     "objective": "Every deviation request answered before the aircraft deviates on its own (10 min)"
+    },
+    {
+     "min": 10,
+     "type": "LEVEL_BUST",
+     "text": "An aircraft passes its cleared level. Mode S selected level disagrees with the clearance.",
+     "objective": "Level re-cleared within 60 s"
+    },
+    {
+     "min": 17,
+     "type": "CLIMB_REQUEST",
+     "text": "An aircraft in sector requests a higher cruising level.",
+     "objective": "Answered within 60 s"
+    }
+   ]
+  },
+  "stats": {
+   "losCount": 0,
+   "losSec": 0,
+   "minSep": null,
+   "reqs": 4,
+   "reqAnswered": 0,
+   "reqMissed": 4,
+   "avgResponse": null,
+   "selfDev": 0,
+   "tsaInf": 0,
+   "emgAckT": null,
+   "lateAssume": 0,
+   "lateXfer": 0,
+   "wrongXfl": 0,
+   "cmds": 0,
+   "injectsFired": 3,
+   "injectsTotal": 3
+  },
+  "injects": [
+   {
+    "min": 3,
+    "type": "WEATHER_CELL",
+    "label": "CB cell and deviations",
+    "target": "THY2605",
+    "status": "fired",
+    "firedAt": 180,
+    "objective": "Every deviation request answered before the aircraft deviates on its own (10 min)",
+    "result": {
+     "state": "met",
+     "t": 20,
+     "reason": "objective met"
+    }
+   },
+   {
+    "min": 10,
+    "type": "LEVEL_BUST",
+    "label": "Level bust",
+    "target": "UAE1839",
+    "status": "fired",
+    "firedAt": 600,
+    "objective": "Level re-cleared within 60 s",
+    "result": {
+     "state": "met",
+     "t": 40,
+     "reason": "objective met"
+    }
+   },
+   {
+    "min": 17,
+    "type": "CLIMB_REQUEST",
+    "label": "Level request",
+    "target": "THY2536",
+    "status": "fired",
+    "firedAt": 1020,
+    "objective": "Answered within 60 s",
+    "result": {
+     "state": "met",
+     "t": 30,
+     "reason": "objective met"
+    }
+   }
+  ],
+  "timeline": [
+   {
+    "t": 61,
+    "text": "Late assume THY2799",
+    "cls": "w"
+   },
+   {
+    "t": 77,
+    "text": "Late assume WZZ777",
+    "cls": "w"
+   },
+   {
+    "t": 94,
+    "text": "Late assume WZZ206",
+    "cls": "w"
+   },
+   {
+    "t": 110,
+    "text": "Late assume THY2536",
+    "cls": "w"
+   },
+   {
+    "t": 144,
+    "text": "Late transfer RYR2145",
+    "cls": "w"
+   },
+   {
+    "t": 154,
+    "text": "Late assume WZZ605",
+    "cls": "w"
+   },
+   {
+    "t": 180,
+    "text": "CB cell and deviations · THY2605 fired",
+    "cls": ""
+   },
+   {
+    "t": 181,
+    "text": "Loss of separation ROT344 / UAE1839",
+    "cls": "a"
+   },
+   {
+    "t": 192,
+    "text": "Late transfer THY2605",
+    "cls": "w"
+   },
+   {
+    "t": 192,
+    "text": "Wrong exit level THY2605: FL340, agreed FL110",
+    "cls": "w"
+   },
+   {
+    "t": 206,
+    "text": "Late assume PGT112",
+    "cls": "w"
+   },
+   {
+    "t": 302,
+    "text": "CB cell and deviations · THY2605: not met (ROT344 deviation request not answered, 05:02)",
+    "cls": "w"
+   },
+   {
+    "t": 334,
+    "text": "Late assume WZZ1118",
+    "cls": "w"
+   },
+   {
+    "t": 392,
+    "text": "Late transfer THY1146",
+    "cls": "w"
+   },
+   {
+    "t": 392,
+    "text": "Wrong exit level THY1146: FL240, agreed FL350",
+    "cls": "w"
+   },
+   {
+    "t": 483,
+    "text": "Late transfer ROT344",
+    "cls": "w"
+   },
+   {
+    "t": 572,
+    "text": "Loss of separation THY2536 / WZZ605",
+    "cls": "a"
+   },
+   {
+    "t": 600,
+    "text": "Level bust · UAE1839 fired",
+    "cls": ""
+   },
+   {
+    "t": 661,
+    "text": "Level bust · UAE1839: not met (not re-cleared within 60 s)",
+    "cls": "w"
+   },
+   {
+    "t": 746,
+    "text": "Late transfer UAE1839",
+    "cls": "w"
+   },
+   {
+    "t": 1020,
+    "text": "Level request · THY2536 fired",
+    "cls": ""
+   },
+   {
+    "t": 1081,
+    "text": "Level request · THY2536: not met (not answered within 60 s)",
+    "cls": "w"
+   }
+  ],
+  "clearances": [],
+  "snapshots": [],
+  "remarks": ""
+ },
+ {
+  "schemaVersion": 2,
+  "kind": "atc-session-record",
+  "id": "progress-6",
+  "savedAt": "2026-11-06T10:00:00.000Z",
+  "trainee": "ANA POP",
+  "instructor": "I. Ionescu",
+  "country": "RO",
+  "sector": "ARG",
+  "sectorName": "ARGES",
+  "seed": 4127,
+  "sectorBand": null,
+  "completed": true,
+  "elapsedS": 1200,
+  "scenario": {
+   "schemaVersion": 1,
+   "title": "ARGES: weather deviations with intermediate traffic",
+   "country": "RO",
+   "sector": "ARG",
+   "difficulty": "intermediate",
+   "duration": 20,
+   "seed": 4127,
+   "objective": "Trainee loses the picture when a level bust and weather deviations happen close together in a busy sector.",
+   "conflicts": 2,
+   "challenges": [
+    "2 built-in crossing conflicts inside ARGES that must be solved before STCA triggers",
+    "CB cell and deviations while normal traffic keeps calling",
+    "Level bust overlapping with the first event"
+   ],
+   "criteria": [
+    "No loss of separation (5 NM / 1000 ft)",
+    "Every request answered within 60 s",
+    "Correct priority order: emergencies and STCA before routine requests",
+    "Every flight assumed before it enters and transferred at its agreed exit level"
+   ],
+   "wind": [
+    {
+     "fl": 50,
+     "dir": 211,
+     "kt": 17
+    },
+    {
+     "fl": 180,
+     "dir": 231,
+     "kt": 48
+    },
+    {
+     "fl": 340,
+     "dir": 241,
+     "kt": 95
+    },
+    {
+     "fl": 420,
+     "dir": 251,
+     "kt": 76
+    }
+   ],
+   "injects": [
+    {
+     "min": 3,
+     "type": "WEATHER_CELL",
+     "text": "A CB cell builds on a main flow. Aircraft ask for deviations.",
+     "objective": "Every deviation request answered before the aircraft deviates on its own (10 min)"
+    },
+    {
+     "min": 10,
+     "type": "LEVEL_BUST",
+     "text": "An aircraft passes its cleared level. Mode S selected level disagrees with the clearance.",
+     "objective": "Level re-cleared within 60 s"
+    },
+    {
+     "min": 17,
+     "type": "CLIMB_REQUEST",
+     "text": "An aircraft in sector requests a higher cruising level.",
+     "objective": "Answered within 60 s"
+    }
+   ]
+  },
+  "stats": {
+   "losCount": 0,
+   "losSec": 0,
+   "minSep": null,
+   "reqs": 4,
+   "reqAnswered": 0,
+   "reqMissed": 4,
+   "avgResponse": null,
+   "selfDev": 0,
+   "tsaInf": 0,
+   "emgAckT": null,
+   "lateAssume": 0,
+   "lateXfer": 0,
+   "wrongXfl": 0,
+   "cmds": 0,
+   "injectsFired": 3,
+   "injectsTotal": 3
+  },
+  "injects": [
+   {
+    "min": 3,
+    "type": "WEATHER_CELL",
+    "label": "CB cell and deviations",
+    "target": "THY2605",
+    "status": "fired",
+    "firedAt": 180,
+    "objective": "Every deviation request answered before the aircraft deviates on its own (10 min)",
+    "result": {
+     "state": "met",
+     "t": 15,
+     "reason": "objective met"
+    }
+   },
+   {
+    "min": 10,
+    "type": "LEVEL_BUST",
+    "label": "Level bust",
+    "target": "UAE1839",
+    "status": "fired",
+    "firedAt": 600,
+    "objective": "Level re-cleared within 60 s",
+    "result": {
+     "state": "not met",
+     "t": null,
+     "reason": "objective not met"
+    }
+   },
+   {
+    "min": 17,
+    "type": "CLIMB_REQUEST",
+    "label": "Level request",
+    "target": "THY2536",
+    "status": "fired",
+    "firedAt": 1020,
+    "objective": "Answered within 60 s",
+    "result": {
+     "state": "met",
+     "t": 25,
+     "reason": "objective met"
+    }
+   }
+  ],
+  "timeline": [
+   {
+    "t": 61,
+    "text": "Late assume THY2799",
+    "cls": "w"
+   },
+   {
+    "t": 77,
+    "text": "Late assume WZZ777",
+    "cls": "w"
+   },
+   {
+    "t": 94,
+    "text": "Late assume WZZ206",
+    "cls": "w"
+   },
+   {
+    "t": 110,
+    "text": "Late assume THY2536",
+    "cls": "w"
+   },
+   {
+    "t": 144,
+    "text": "Late transfer RYR2145",
+    "cls": "w"
+   },
+   {
+    "t": 154,
+    "text": "Late assume WZZ605",
+    "cls": "w"
+   },
+   {
+    "t": 180,
+    "text": "CB cell and deviations · THY2605 fired",
+    "cls": ""
+   },
+   {
+    "t": 181,
+    "text": "Loss of separation ROT344 / UAE1839",
+    "cls": "a"
+   },
+   {
+    "t": 192,
+    "text": "Late transfer THY2605",
+    "cls": "w"
+   },
+   {
+    "t": 192,
+    "text": "Wrong exit level THY2605: FL340, agreed FL110",
+    "cls": "w"
+   },
+   {
+    "t": 206,
+    "text": "Late assume PGT112",
+    "cls": "w"
+   },
+   {
+    "t": 302,
+    "text": "CB cell and deviations · THY2605: not met (ROT344 deviation request not answered, 05:02)",
+    "cls": "w"
+   },
+   {
+    "t": 334,
+    "text": "Late assume WZZ1118",
+    "cls": "w"
+   },
+   {
+    "t": 392,
+    "text": "Late transfer THY1146",
+    "cls": "w"
+   },
+   {
+    "t": 392,
+    "text": "Wrong exit level THY1146: FL240, agreed FL350",
+    "cls": "w"
+   },
+   {
+    "t": 483,
+    "text": "Late transfer ROT344",
+    "cls": "w"
+   },
+   {
+    "t": 572,
+    "text": "Loss of separation THY2536 / WZZ605",
+    "cls": "a"
+   },
+   {
+    "t": 600,
+    "text": "Level bust · UAE1839 fired",
+    "cls": ""
+   },
+   {
+    "t": 661,
+    "text": "Level bust · UAE1839: not met (not re-cleared within 60 s)",
+    "cls": "w"
+   },
+   {
+    "t": 746,
+    "text": "Late transfer UAE1839",
+    "cls": "w"
+   },
+   {
+    "t": 1020,
+    "text": "Level request · THY2536 fired",
+    "cls": ""
+   },
+   {
+    "t": 1081,
+    "text": "Level request · THY2536: not met (not answered within 60 s)",
+    "cls": "w"
+   }
+  ],
+  "clearances": [],
+  "snapshots": [],
+  "remarks": ""
+ },
+ {
+  "schemaVersion": 2,
+  "kind": "atc-session-record",
+  "id": "progress-7",
+  "savedAt": "2026-11-03T10:00:00.000Z",
+  "trainee": "Ion Rusu",
+  "instructor": "I. Ionescu",
+  "country": "RO",
+  "sector": "ARG",
+  "sectorName": "ARGES",
+  "seed": 4127,
+  "sectorBand": null,
+  "completed": true,
+  "elapsedS": 1200,
+  "scenario": {
+   "schemaVersion": 1,
+   "title": "ARGES: weather deviations with intermediate traffic",
+   "country": "RO",
+   "sector": "ARG",
+   "difficulty": "intermediate",
+   "duration": 20,
+   "seed": 4127,
+   "objective": "Trainee loses the picture when a level bust and weather deviations happen close together in a busy sector.",
+   "conflicts": 2,
+   "challenges": [
+    "2 built-in crossing conflicts inside ARGES that must be solved before STCA triggers",
+    "CB cell and deviations while normal traffic keeps calling",
+    "Level bust overlapping with the first event"
+   ],
+   "criteria": [
+    "No loss of separation (5 NM / 1000 ft)",
+    "Every request answered within 60 s",
+    "Correct priority order: emergencies and STCA before routine requests",
+    "Every flight assumed before it enters and transferred at its agreed exit level"
+   ],
+   "wind": [
+    {
+     "fl": 50,
+     "dir": 211,
+     "kt": 17
+    },
+    {
+     "fl": 180,
+     "dir": 231,
+     "kt": 48
+    },
+    {
+     "fl": 340,
+     "dir": 241,
+     "kt": 95
+    },
+    {
+     "fl": 420,
+     "dir": 251,
+     "kt": 76
+    }
+   ],
+   "injects": [
+    {
+     "min": 3,
+     "type": "WEATHER_CELL",
+     "text": "A CB cell builds on a main flow. Aircraft ask for deviations.",
+     "objective": "Every deviation request answered before the aircraft deviates on its own (10 min)"
+    },
+    {
+     "min": 10,
+     "type": "LEVEL_BUST",
+     "text": "An aircraft passes its cleared level. Mode S selected level disagrees with the clearance.",
+     "objective": "Level re-cleared within 60 s"
+    },
+    {
+     "min": 17,
+     "type": "CLIMB_REQUEST",
+     "text": "An aircraft in sector requests a higher cruising level.",
+     "objective": "Answered within 60 s"
+    }
+   ]
+  },
+  "stats": {
+   "losCount": 0,
+   "losSec": 0,
+   "minSep": null,
+   "reqs": 4,
+   "reqAnswered": 0,
+   "reqMissed": 4,
+   "avgResponse": null,
+   "selfDev": 0,
+   "tsaInf": 0,
+   "emgAckT": null,
+   "lateAssume": 0,
+   "lateXfer": 0,
+   "wrongXfl": 0,
+   "cmds": 0,
+   "injectsFired": 3,
+   "injectsTotal": 3
+  },
+  "injects": [
+   {
+    "min": 3,
+    "type": "WEATHER_CELL",
+    "label": "CB cell and deviations",
+    "target": "THY2605",
+    "status": "fired",
+    "firedAt": 180,
+    "objective": "Every deviation request answered before the aircraft deviates on its own (10 min)",
+    "result": {
+     "state": "met",
+     "t": 50,
+     "reason": "objective met"
+    }
+   },
+   {
+    "min": 10,
+    "type": "LEVEL_BUST",
+    "label": "Level bust",
+    "target": "UAE1839",
+    "status": "fired",
+    "firedAt": 600,
+    "objective": "Level re-cleared within 60 s",
+    "result": {
+     "state": "met",
+     "t": 20,
+     "reason": "objective met"
+    }
+   },
+   {
+    "min": 17,
+    "type": "CLIMB_REQUEST",
+    "label": "Level request",
+    "target": "THY2536",
+    "status": "fired",
+    "firedAt": 1020,
+    "objective": "Answered within 60 s",
+    "result": {
+     "state": "met",
+     "t": 10,
+     "reason": "objective met"
+    }
+   }
+  ],
+  "timeline": [
+   {
+    "t": 61,
+    "text": "Late assume THY2799",
+    "cls": "w"
+   },
+   {
+    "t": 77,
+    "text": "Late assume WZZ777",
+    "cls": "w"
+   },
+   {
+    "t": 94,
+    "text": "Late assume WZZ206",
+    "cls": "w"
+   },
+   {
+    "t": 110,
+    "text": "Late assume THY2536",
+    "cls": "w"
+   },
+   {
+    "t": 144,
+    "text": "Late transfer RYR2145",
+    "cls": "w"
+   },
+   {
+    "t": 154,
+    "text": "Late assume WZZ605",
+    "cls": "w"
+   },
+   {
+    "t": 180,
+    "text": "CB cell and deviations · THY2605 fired",
+    "cls": ""
+   },
+   {
+    "t": 181,
+    "text": "Loss of separation ROT344 / UAE1839",
+    "cls": "a"
+   },
+   {
+    "t": 192,
+    "text": "Late transfer THY2605",
+    "cls": "w"
+   },
+   {
+    "t": 192,
+    "text": "Wrong exit level THY2605: FL340, agreed FL110",
+    "cls": "w"
+   },
+   {
+    "t": 206,
+    "text": "Late assume PGT112",
+    "cls": "w"
+   },
+   {
+    "t": 302,
+    "text": "CB cell and deviations · THY2605: not met (ROT344 deviation request not answered, 05:02)",
+    "cls": "w"
+   },
+   {
+    "t": 334,
+    "text": "Late assume WZZ1118",
+    "cls": "w"
+   },
+   {
+    "t": 392,
+    "text": "Late transfer THY1146",
+    "cls": "w"
+   },
+   {
+    "t": 392,
+    "text": "Wrong exit level THY1146: FL240, agreed FL350",
+    "cls": "w"
+   },
+   {
+    "t": 483,
+    "text": "Late transfer ROT344",
+    "cls": "w"
+   },
+   {
+    "t": 572,
+    "text": "Loss of separation THY2536 / WZZ605",
+    "cls": "a"
+   },
+   {
+    "t": 600,
+    "text": "Level bust · UAE1839 fired",
+    "cls": ""
+   },
+   {
+    "t": 661,
+    "text": "Level bust · UAE1839: not met (not re-cleared within 60 s)",
+    "cls": "w"
+   },
+   {
+    "t": 746,
+    "text": "Late transfer UAE1839",
+    "cls": "w"
+   },
+   {
+    "t": 1020,
+    "text": "Level request · THY2536 fired",
+    "cls": ""
+   },
+   {
+    "t": 1081,
+    "text": "Level request · THY2536: not met (not answered within 60 s)",
+    "cls": "w"
+   }
+  ],
+  "clearances": [],
+  "snapshots": [],
+  "remarks": ""
+ },
+ {
+  "schemaVersion": 2,
+  "kind": "atc-session-record",
+  "id": "progress-8",
+  "savedAt": "2026-11-02T10:00:00.000Z",
+  "trainee": "",
+  "instructor": "I. Ionescu",
+  "country": "RO",
+  "sector": "ARG",
+  "sectorName": "ARGES",
+  "seed": 4127,
+  "sectorBand": null,
+  "completed": true,
+  "elapsedS": 1200,
+  "scenario": {
+   "schemaVersion": 1,
+   "title": "ARGES: weather deviations with intermediate traffic",
+   "country": "RO",
+   "sector": "ARG",
+   "difficulty": "intermediate",
+   "duration": 20,
+   "seed": 4127,
+   "objective": "Trainee loses the picture when a level bust and weather deviations happen close together in a busy sector.",
+   "conflicts": 2,
+   "challenges": [
+    "2 built-in crossing conflicts inside ARGES that must be solved before STCA triggers",
+    "CB cell and deviations while normal traffic keeps calling",
+    "Level bust overlapping with the first event"
+   ],
+   "criteria": [
+    "No loss of separation (5 NM / 1000 ft)",
+    "Every request answered within 60 s",
+    "Correct priority order: emergencies and STCA before routine requests",
+    "Every flight assumed before it enters and transferred at its agreed exit level"
+   ],
+   "wind": [
+    {
+     "fl": 50,
+     "dir": 211,
+     "kt": 17
+    },
+    {
+     "fl": 180,
+     "dir": 231,
+     "kt": 48
+    },
+    {
+     "fl": 340,
+     "dir": 241,
+     "kt": 95
+    },
+    {
+     "fl": 420,
+     "dir": 251,
+     "kt": 76
+    }
+   ],
+   "injects": [
+    {
+     "min": 3,
+     "type": "WEATHER_CELL",
+     "text": "A CB cell builds on a main flow. Aircraft ask for deviations.",
+     "objective": "Every deviation request answered before the aircraft deviates on its own (10 min)"
+    },
+    {
+     "min": 10,
+     "type": "LEVEL_BUST",
+     "text": "An aircraft passes its cleared level. Mode S selected level disagrees with the clearance.",
+     "objective": "Level re-cleared within 60 s"
+    },
+    {
+     "min": 17,
+     "type": "CLIMB_REQUEST",
+     "text": "An aircraft in sector requests a higher cruising level.",
+     "objective": "Answered within 60 s"
+    }
+   ]
+  },
+  "stats": {
+   "losCount": 2,
+   "losSec": 120,
+   "minSep": 0.08,
+   "reqs": 4,
+   "reqAnswered": 0,
+   "reqMissed": 4,
+   "avgResponse": null,
+   "selfDev": 0,
+   "tsaInf": 0,
+   "emgAckT": null,
+   "lateAssume": 7,
+   "lateXfer": 5,
+   "wrongXfl": 2,
+   "cmds": 0,
+   "injectsFired": 3,
+   "injectsTotal": 3
+  },
+  "injects": [
+   {
+    "min": 3,
+    "type": "WEATHER_CELL",
+    "label": "CB cell and deviations",
+    "target": "THY2605",
+    "status": "fired",
+    "firedAt": 180,
+    "objective": "Every deviation request answered before the aircraft deviates on its own (10 min)",
+    "result": {
+     "state": "not met",
+     "t": 122,
+     "reason": "objective not met"
+    }
+   },
+   {
+    "min": 10,
+    "type": "LEVEL_BUST",
+    "label": "Level bust",
+    "target": "UAE1839",
+    "status": "fired",
+    "firedAt": 600,
+    "objective": "Level re-cleared within 60 s",
+    "result": {
+     "state": "not met",
+     "t": null,
+     "reason": "objective not met"
+    }
+   },
+   {
+    "min": 17,
+    "type": "CLIMB_REQUEST",
+    "label": "Level request",
+    "target": "THY2536",
+    "status": "fired",
+    "firedAt": 1020,
+    "objective": "Answered within 60 s",
+    "result": {
+     "state": "not met",
+     "t": null,
+     "reason": "objective not met"
+    }
+   }
+  ],
+  "timeline": [
+   {
+    "t": 61,
+    "text": "Late assume THY2799",
+    "cls": "w"
+   },
+   {
+    "t": 77,
+    "text": "Late assume WZZ777",
+    "cls": "w"
+   },
+   {
+    "t": 94,
+    "text": "Late assume WZZ206",
+    "cls": "w"
+   },
+   {
+    "t": 110,
+    "text": "Late assume THY2536",
+    "cls": "w"
+   },
+   {
+    "t": 144,
+    "text": "Late transfer RYR2145",
+    "cls": "w"
+   },
+   {
+    "t": 154,
+    "text": "Late assume WZZ605",
+    "cls": "w"
+   },
+   {
+    "t": 180,
+    "text": "CB cell and deviations · THY2605 fired",
+    "cls": ""
+   },
+   {
+    "t": 181,
+    "text": "Loss of separation ROT344 / UAE1839",
+    "cls": "a"
+   },
+   {
+    "t": 192,
+    "text": "Late transfer THY2605",
+    "cls": "w"
+   },
+   {
+    "t": 192,
+    "text": "Wrong exit level THY2605: FL340, agreed FL110",
+    "cls": "w"
+   },
+   {
+    "t": 206,
+    "text": "Late assume PGT112",
+    "cls": "w"
+   },
+   {
+    "t": 302,
+    "text": "CB cell and deviations · THY2605: not met (ROT344 deviation request not answered, 05:02)",
+    "cls": "w"
+   },
+   {
+    "t": 334,
+    "text": "Late assume WZZ1118",
+    "cls": "w"
+   },
+   {
+    "t": 392,
+    "text": "Late transfer THY1146",
+    "cls": "w"
+   },
+   {
+    "t": 392,
+    "text": "Wrong exit level THY1146: FL240, agreed FL350",
+    "cls": "w"
+   },
+   {
+    "t": 483,
+    "text": "Late transfer ROT344",
+    "cls": "w"
+   },
+   {
+    "t": 572,
+    "text": "Loss of separation THY2536 / WZZ605",
+    "cls": "a"
+   },
+   {
+    "t": 600,
+    "text": "Level bust · UAE1839 fired",
+    "cls": ""
+   },
+   {
+    "t": 661,
+    "text": "Level bust · UAE1839: not met (not re-cleared within 60 s)",
+    "cls": "w"
+   },
+   {
+    "t": 746,
+    "text": "Late transfer UAE1839",
+    "cls": "w"
+   },
+   {
+    "t": 1020,
+    "text": "Level request · THY2536 fired",
+    "cls": ""
+   },
+   {
+    "t": 1081,
+    "text": "Level request · THY2536: not met (not answered within 60 s)",
+    "cls": "w"
+   }
+  ],
+  "clearances": [],
+  "snapshots": [],
+  "remarks": ""
+ }
+]

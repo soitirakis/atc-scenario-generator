@@ -16,6 +16,8 @@ import { Link, SimView, makeSnapshot, CHANNEL_NAME } from './link.js';
 import { tasToMach, machToCas } from './atmos.js';
 import { buildRecord, readImport, summary, debriefOf, bundle, recordFileName, pdfFileName, upgradeRecord, statRows, SNAPSHOT_MAX } from './records.js';
 import { buildDebriefPdf } from './pdf.js';
+import { progressOf, trainees, traineeKey, PROGRESS } from './progress.js';
+import { barsSvg, closestSvg, squaresSvg } from './charts.js';
 import { openRecords } from './store.js';
 import PERF from '../data/performance.json';
 
@@ -31,7 +33,7 @@ let C = countryData(COUNTRIES.find(c => !c.planned).code);
 const link = ROLE === 'solo' ? null : new Link(new BroadcastChannel(CHANNEL_NAME), ROLE);
 const sim = ROLE === 'trainee' ? new SimView(link, countryData) : new Sim(C);
 const R = new Renderer($('scope'), sim);
-const ui = { lastRecord: null, viewRecord: null, snaps: [], tlSeen: 0, running: false, speed: 1, debriefShown: false, acBoxFor: null, acBoxSig: '', lastPanel: 0, toastT: 0, session: 0, lastPub: 0, editInj: null, ppFor: null, ppSig: '' };
+const ui = { lastRecord: null, viewRecord: null, snaps: [], tlSeen: 0, histView: 'sessions', progKey: null, pdfProgress: false, running: false, speed: 1, debriefShown: false, acBoxFor: null, acBoxSig: '', lastPanel: 0, toastT: 0, session: 0, lastPub: 0, editInj: null, ppFor: null, ppSig: '' };
 // session records (src/records.js) in IndexedDB (src/store.js); the trainee window has no Sim, so it keeps none
 let records = null;
 const recordsReady = ROLE === 'trainee' ? Promise.resolve(null) : openRecords().then(s => { records = s; return s; });
@@ -506,6 +508,7 @@ async function saveRecord() {
 async function renderHistory() {
   if (ROLE === 'trainee') return;
   const store = await recordsReady, list = (await store.list()).map(upgradeRecord);
+  if (ui.histView === 'progress') renderProgress(list);
   $('histStore').textContent = store.available
     ? 'Saved in this browser only, with no login or server. Export to keep a copy or to move sessions to another computer.'
     : `Session history is not available: ${store.reason} Sessions are kept only until this page closes. Use Export record in the debrief, or Export all, to keep them.`;
@@ -540,13 +543,64 @@ async function exportAll() {
   histMessage([`Exported ${list.length} session${list.length > 1 ? 's' : ''} to ${name}`]);
 }
 /** The record's PDF debrief (src/pdf.js), built in the browser and downloaded. */
-function downloadPdf(rec, say) {
+async function downloadPdf(rec, say) {
   try {
     const C2 = availableCountries()[rec.country], name = pdfFileName(rec);
-    downloadBlob(buildDebriefPdf(rec, { countryName: C2 && C2.meta.name }).output('blob'), name);
+    let progress = null;
+    if (ui.pdfProgress) {
+      // the trainee's progress as it stood at this session: their records up to it, this one included
+      const all = (await (await recordsReady).list()).map(upgradeRecord).filter(r => r.id !== rec.id && r.savedAt <= rec.savedAt);
+      progress = progressOf([...all, rec], traineeKey(rec.trainee));
+    }
+    downloadBlob(buildDebriefPdf(rec, { countryName: C2 && C2.meta.name, progress }).output('blob'), name);
     say([`Downloaded ${name}`]);
   } catch (e) { say([`The PDF could not be built: ${e.message}`], true); }
 }
+/* ---------- progress (src/progress.js), drawn with src/charts.js ---------- */
+const pctText = r => (r === null ? '—' : `${Math.round(r * 100)}%`);
+const TREND_TEXT = { improving: 'improving', declining: 'getting worse', steady: 'no clear change' };
+function renderProgress(list) {
+  const ts = trainees(list), sel = $('progTrainee');
+  if (!ts.some(t => t.key === ui.progKey)) ui.progKey = ts.length ? ts[0].key : null;
+  sel.innerHTML = ts.map(t => `<option value="${esc(t.key)}">${esc(t.name)} (${t.sessions} session${t.sessions > 1 ? 's' : ''})</option>`).join('');
+  sel.disabled = !ts.length;
+  if (ui.progKey !== null) sel.value = ui.progKey;
+  if (!ts.length) { $('progBody').innerHTML = '<div class="empty">No sessions yet. Progress is built from the sessions saved in History.</div>'; return; }
+  const p = progressOf(list, ui.progKey), recent = p.series.slice(-12), day = iso => iso.slice(5, 10);
+  // one row per objective: name and the last sessions as squares, the objective, then the numbers in words
+  const table = (items, unit) => `<ul class="prog-list">${items.map(o => `<li data-obj="${esc(o.type || o.key)}">
+      <div class="prog-head"><b>${esc(o.label)}</b>${squaresSvg(o.last)}</div>
+      <div class="note">${esc(o.objective)}</div>
+      <div class="prog-nums">${o[unit]} session${o[unit] === 1 ? '' : 's'} · met ${o.graded ? `${o.met}/${o.graded} (${pctText(o.rate)})` : '—'}${o.medianS === null || o.medianS === undefined ? '' : ` · median ${Math.round(o.medianS)} s`} · ${o.trend ? TREND_TEXT[o.trend] : 'trend after 3 sessions'}</div>
+    </li>`).join('')}</ul>`;
+  const pt = (s, value, what) => ({ label: day(s.savedAt), value, title: `${s.savedAt.slice(0, 10)} · ${s.title}: ${what}` });
+  const fig = (cap, svg) => `<figure><figcaption>${cap}</figcaption>${svg}</figure>`;
+  $('progBody').innerHTML = `<div class="prog">
+    <p class="note">${p.sessions} session${p.sessions > 1 ? 's' : ''}, ${p.from.slice(0, 10)} to ${p.to.slice(0, 10)}. Trends compare the met rate over the last ${PROGRESS.trendWindow} sessions; squares are green when met, amber when partly met, red when not met, oldest on the left.</p>
+    <h4>Weakest objectives</h4>
+    ${p.weakest.length ? `<ol class="prog-weak" id="progWeak">${p.weakest.map(w => `<li>${esc(w.text)}</li>`).join('')}</ol>` : '<p class="note" id="progWeak">None yet: each objective needs at least two sessions, and objectives met every time are not listed.</p>'}
+    ${p.injects.length ? `<h4>Injects</h4>${table(p.injects, 'seen')}` : ''}
+    <h4>Every session</h4>${table(p.standing, 'sessions')}
+    <h4>Separation</h4><div class="prog-charts">
+      ${fig('Losses of separation per session', barsSvg(recent.map(s => pt(s, s.los, `${s.los} loss${s.los === 1 ? '' : 'es'} of separation`)), 'Losses of separation per session'))}
+      ${fig('Closest pair (NM); open circle: no loss of separation', closestSvg(recent.map(s => ({ ...pt(s, s.minSep, s.minSep === null ? 'no loss of separation (5 NM or more)' : `closest pair ${s.minSep.toFixed(1)} NM`) })), 'Closest pair per session'))}
+    </div>
+    <h4>Sector routine</h4><div class="prog-charts">
+      ${fig('Late assumes', barsSvg(recent.map(s => pt(s, s.lateAssume, `${s.lateAssume} late assumes`)), 'Late assumes per session'))}
+      ${fig('Late transfers', barsSvg(recent.map(s => pt(s, s.lateXfer, `${s.lateXfer} late transfers`)), 'Late transfers per session'))}
+      ${fig('Wrong exit levels', barsSvg(recent.map(s => pt(s, s.wrongXfl, `${s.wrongXfl} wrong exit levels`)), 'Wrong exit levels per session'))}
+    </div>
+    ${p.series.length > recent.length ? `<p class="note">Charts show the last ${recent.length} of ${p.series.length} sessions.</p>` : ''}
+  </div>`;
+}
+function setHistView(v) {
+  ui.histView = v;
+  for (const b of $('histSeg').children) b.setAttribute('aria-pressed', b.dataset.v === v);
+  $('histSessions').hidden = v !== 'sessions'; $('histProgress').hidden = v !== 'progress';
+  renderHistory();
+}
+function setPdfProgress(on) { ui.pdfProgress = on; $('pdfProgress').checked = on; $('debPdfProgress').checked = on; }
+
 /** Instructor remarks typed in the debrief: kept in the record shown and saved with it. */
 let remarksTimer = 0;
 function remarksChanged() {
@@ -607,7 +661,7 @@ function showDebrief(rec = null) {
     : `Scenario "${scn.title}"${rec ? `, ${rec.country} ${rec.sectorName}` : ''}, seed ${scn.seed}${who ? `, ${who}` : ''}. Success criteria: ${scn.criteria.join('; ')}.`;
   $('debRestart').hidden = $('debNew').hidden = !!rec;
   $('debReplay').hidden = !rec;
-  $('debExport').hidden = $('debPdf').hidden = $('debRemarksBox').hidden = !rec && !ui.lastRecord;
+  $('debExport').hidden = $('debPdf').hidden = $('debPdfProgressBox').hidden = $('debRemarksBox').hidden = !rec && !ui.lastRecord;
   $('debRemarks').value = (rec || ui.lastRecord || { remarks: '' }).remarks;
   $('debrief').hidden = false;
 }
@@ -784,6 +838,10 @@ function bindInput() {
   $('debRemarks').oninput = remarksChanged;
   $('debExport').onclick = () => { const rec = ui.viewRecord || ui.lastRecord; if (rec) { download(rec, recordFileName(rec)); toast(`Exported ${recordFileName(rec)}`); } };
   $('histList').onclick = historyClick;
+  $('histSeg').onclick = e => { const b = e.target.closest('button'); if (b) setHistView(b.dataset.v); };
+  $('progTrainee').onchange = () => { ui.progKey = $('progTrainee').value; renderHistory(); };
+  $('pdfProgress').onchange = () => setPdfProgress($('pdfProgress').checked);
+  $('debPdfProgress').onchange = () => setPdfProgress($('debPdfProgress').checked);
   $('histExportAll').onclick = exportAll;
   $('histImport').onclick = () => $('histFile').click();
   $('histFile').onchange = () => { const f = $('histFile').files[0]; $('histFile').value = ''; if (f) importRecords(f); };
