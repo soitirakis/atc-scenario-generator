@@ -185,3 +185,53 @@ test('Progress: per trainee from the stored sessions, weakest objectives and cha
   expect(withProgress).toBe(without + 1);
   expect(errors).toEqual([]);
 });
+
+test('Suggest next scenario: shown with its reasons, editable, loaded only on Accept', async ({ page }, info) => {
+  const errors = [];
+  page.on('pageerror', e => errors.push(e.message));
+  await open(page, '/');
+  const records = JSON.parse(fs.readFileSync(new URL('../fixtures/progress-records.json', import.meta.url), 'utf8'));
+  const file = info.outputPath('progress.json');
+  fs.writeFileSync(file, JSON.stringify({ schemaVersion: 2, kind: 'atc-session-records', records }));
+  await page.locator('#tab-history').click();
+  await page.locator('#histFile').setInputFiles(file);
+  await page.locator('#histSeg [data-v="progress"]').click();
+  const before = await page.evaluate(() => ({ sector: window.__sim.scenario.sector, seed: window.__sim.scenario.seed }));
+
+  await page.locator('#progSuggest').click();
+  await expect(page.locator('#sgWhy li')).toHaveCount(5);
+  await expect(page.locator('#sgWhy li[data-rule="sector"]')).toHaveText('Sector. BACAU: not flown yet; the last session was in ARGES.');
+  await expect(page.locator('#sgWhy li[data-rule="difficulty"]')).toContainText('Stay at intermediate traffic');
+  await expect(page.locator('#sgSector')).toHaveValue('BAC');
+  await expect(page.locator('#sgDiff')).toHaveValue('intermediate');
+  // nothing is loaded yet
+  expect(await page.evaluate(() => ({ sector: window.__sim.scenario.sector, seed: window.__sim.scenario.seed }))).toEqual(before);
+
+  // edit: more traffic, and an inject outside the session, which Accept refuses with the reason
+  await page.locator('#sgDiff').selectOption('advanced');
+  await page.locator('#sgInj .sg-min').first().fill('99');
+  await page.locator('#sgAccept').click();
+  await expect(page.locator('#sgErr')).toContainText('Inject 1 at minute 99 is outside the 20-minute session');
+  expect(await page.evaluate(() => window.__sim.scenario.sector)).toBe(before.sector);
+  await page.locator('#sgInj .sg-min').first().fill('5');
+  await page.locator('#sgInj .sg-type').first().selectOption('EMERGENCY_DESCENT');
+  await page.locator('#sgAccept').click();
+
+  await expect(page.locator('#suggestBox')).toBeHidden();
+  await expect(page.locator('#sector')).toHaveValue('BAC');
+  await expect(page.locator('#difficulty')).toHaveValue('advanced');
+  await expect(page.locator('#traineeName')).toHaveValue('ANA POP');
+  const loaded = await page.evaluate(() => ({ t: window.__sim.t, injects: window.__sim.scenario.injects.map(i => [i.min, i.type]) }));
+  expect(loaded.t).toBe(0);
+  expect(loaded.injects).toContainEqual([5, 'EMERGENCY_DESCENT']);
+  await page.locator('#tab-scenario').click();
+  await expect(page.locator('#scnSource')).toHaveText('suggested from progress');
+
+  // Discard closes it without loading anything
+  await page.locator('#tab-history').click();
+  await page.locator('#progSuggest').click();
+  await page.locator('#sgDiscard').click();
+  await expect(page.locator('#suggestBox')).toBeHidden();
+  await expect(page.locator('#sector')).toHaveValue('BAC');
+  expect(errors).toEqual([]);
+});

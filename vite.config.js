@@ -18,7 +18,7 @@ export default defineConfig({
     // `npm run test:coverage`: the simulation engine, scenario builder, safety nets and tools must each stay at 85% or more
     coverage: {
       provider: 'v8',
-      include: ['src/sim.js', 'src/scenario.js', 'src/cmdline.js', 'src/records.js', 'src/pdf.js', 'src/progress.js', 'src/charts.js', 'src/nets/*.js', 'src/tools/*.js'],
+      include: ['src/sim.js', 'src/scenario.js', 'src/cmdline.js', 'src/records.js', 'src/pdf.js', 'src/progress.js', 'src/charts.js', 'src/recommend.js', 'src/nets/*.js', 'src/tools/*.js'],
       reporter: ['text', 'json-summary'],
       thresholds: { perFile: true, statements: 85, branches: 85, functions: 85, lines: 85 }
     }
