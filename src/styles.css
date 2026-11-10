@@ -162,6 +162,7 @@ select { padding-right: 4px; }
 .data-list div span:first-child { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; padding-top: 1px; }
 .data-list a { color: var(--accent); word-break: break-word; }
 .roadmap { display: flex; flex-direction: column; gap: 4px; }
+.roadmap small { display: block; color: var(--muted); font-size: 12px; }
 .roadmap div { display: flex; justify-content: space-between; gap: 8px; padding: 5px 8px; background: var(--panel-2); border-radius: 4px; font-size: 14px; }
 pre.code { margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 8px; font-family: var(--f-data); font-size: 11.5px; line-height: 1.45; overflow-x: auto; color: var(--text); }
 

@@ -5,7 +5,6 @@ import { fileURLToPath } from 'node:url';
 import { parseWrapTable, parseWrap } from '../../scripts/performance-lib.mjs';
 import PERF from '../../data/performance.json';
 import RO from '../../data/RO/index.js';
-import HU from '../../data/HU/index.js';
 import { isa, casToMach, machToCas, casToTas, machToTas, tasToMach, windAt, normaliseWind, defaultWind } from '../../src/atmos.js';
 
 // openap-wrap-a320.txt: OpenAP openap/data/wrap/a320.txt at commit 46753ac (GPL-3.0), unchanged.
@@ -34,7 +33,7 @@ describe('OpenAP WRAP conversion', () => {
 });
 
 describe('data/performance.json', () => {
-  const types = [...new Set([RO, HU].flatMap(c => c.traffic.operators.flatMap(o => o.types)))];
+  const types = [...new Set([RO].flatMap(c => c.traffic.operators.flatMap(o => o.types)))];
 
   it('covers every aircraft type in the traffic files', () => {
     for (const t of types) expect(PERF.types[t], t).toBeTruthy();

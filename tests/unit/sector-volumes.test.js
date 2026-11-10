@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import RO from '../../data/RO/index.js';
-import HU from '../../data/HU/index.js';
 import { loadCountry, inSector, isVertical, sectorLimit, sectorLabel, bandText } from '../../src/country.js';
 import { Sim } from '../../src/sim.js';
 import { buildLocalScenario } from '../../src/scenario.js';
@@ -163,7 +162,6 @@ describe('delegated airspace', () => {
 describe('several source AIPs', () => {
   it('a single-state module lists its own eAIP', () => {
     expect(C.aips).toEqual([{ state: 'Romania', url: RO.meta.sources[0].url, edition: RO.meta.airac.edition, amendment: RO.meta.airac.enr41 }]);
-    expect(loadCountry(HU).aips[0]).toMatchObject({ state: 'Hungary', edition: '2026-09-03' });
   });
   it('meta.aips lists each state with its own eAIP, edition and amendment', () => {
     const aips = [

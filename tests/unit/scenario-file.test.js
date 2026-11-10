@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import RO from '../../data/RO/index.js';
-import HU from '../../data/HU/index.js';
 import { LIBRARY } from '../../data/scenarios/index.js';
 import { loadCountry } from '../../src/country.js';
 import { Sim, GRADING } from '../../src/sim.js';
@@ -9,7 +8,7 @@ import { buildLocalScenario, exportScenario, validateScenarioFile, SCHEMA_VERSIO
 /** Long simulations (whole sessions, many sectors) get more than the default 5 s, which coverage instrumentation can exceed. */
 const LONG_SIM_MS = 60_000;
 
-const countries = { RO: loadCountry(RO), HU: loadCountry(HU) };
+const countries = { RO: loadCountry(RO) };
 const cfg = { sector: 'ARG', difficulty: 'intermediate', duration: 30, seed: 4127, objective: 'General radar handling.' };
 const file = (o = {}) => ({ ...exportScenario(buildLocalScenario(countries.RO, cfg), 'RO'), ...o });
 /** A trainee doing only the sector routine: assume on first call, transfer near the exit at the agreed level. */
@@ -74,12 +73,12 @@ describe('scenario file validation errors', () => {
     expect(errorsOf(null)[0]).toMatch(/^This is not a scenario file/);
   });
   it('unknown country', () => {
-    expect(errorsOf(file({ country: 'BG' }))).toEqual(['Unknown country "BG". Available: RO, HU.']);
+    expect(errorsOf(file({ country: 'BG' }))).toEqual(['Unknown country "BG". Available: RO.']);
   });
   it('unknown sector for the country', () => {
-    const e = errorsOf(file({ country: 'HU', sector: 'ARG' }));
+    const e = errorsOf(file({ sector: 'EAST' }));
     expect(e).toHaveLength(1);
-    expect(e[0]).toMatch(/^Unknown sector "ARG" for Hungary\. Available: WEST, NORTH, EAST, SOUTH, FIR\.$/);
+    expect(e[0]).toMatch(/^Unknown sector "EAST" for Romania\. Available: ARG, .*, KNL, FIR\.$/);
   });
   it('unknown inject type', () => {
     const j = file();
@@ -108,10 +107,9 @@ describe('scenario file validation errors', () => {
 });
 
 describe('scenario library', () => {
-  it('has the six scenarios', () => {
+  it('has the four scenarios', () => {
     expect(LIBRARY.map(l => [l.file.country, l.file.sector, l.file.difficulty])).toEqual([
-      ['RO', 'ARG', 'foundational'], ['RO', 'DIN', 'intermediate'], ['RO', 'KNL', 'intermediate'],
-      ['RO', 'NER', 'intermediate'], ['HU', 'EAST', 'intermediate'], ['HU', 'FIR', 'advanced']
+      ['RO', 'ARG', 'foundational'], ['RO', 'DIN', 'intermediate'], ['RO', 'KNL', 'intermediate'], ['RO', 'NER', 'intermediate']
     ]);
   });
 

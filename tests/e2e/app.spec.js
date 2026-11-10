@@ -72,23 +72,17 @@ test('scenario tab rebuilds the session for a new sector', async ({ page }) => {
   await expect(page.locator('#scnCard h3')).toContainText('DINSI');
 });
 
-test('country selector switches to Hungary and back', async ({ page }) => {
-  await page.locator('#country').selectOption('HU');
-  await expect(page.locator('#firTag')).toContainText('LHCC');
-  await expect(page.locator('#sector option')).toHaveCount(5); // 4 lateral sectors + FIR
-  await expect(page.locator('#sector')).toHaveValue('EAST');
-  await expect(page.locator('#pausedSub')).toContainText('EAST');
-  await expect(page.locator('#airacTag')).toContainText('2026-09-03');
-  const hu = await page.evaluate(() => ({ fir: window.__sim.C.meta.fir, ac: window.__sim.ac.length }));
-  expect(hu).toEqual({ fir: 'LHCC', ac: 13 });
+test('Hungary is listed as withdrawn, pending permission from HungaroControl, and cannot be selected', async ({ page }) => {
+  const hu = page.locator('#country option[value="HU"]');
+  await expect(hu).toBeDisabled();
+  await expect(hu).toHaveText('Hungary · LHCC — pending permission from HungaroControl');
+  await expect(page.locator('#country option:not([disabled])')).toHaveText(['Romania · LRBB']);
+  await page.locator('#tab-data').click();
+  await expect(page.locator('#roadmap')).toContainText('Hungary · LHCC pending permission from HungaroControl');
   await page.locator('#pausedStart').click();
   await page.evaluate(() => { for (let i = 0; i < 300; i++) window.__sim.step(); });
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow).toBeLessThanOrEqual(0);
-  await page.locator('#country').selectOption('RO');
-  await expect(page.locator('#firTag')).toContainText('LRBB');
-  await expect(page.locator('#sector')).toHaveValue('ARG');
-  await expect(page.locator('#sector option')).toHaveCount(16);
 });
 
 const nextFrame = page => page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));

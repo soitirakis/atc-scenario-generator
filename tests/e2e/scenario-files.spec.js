@@ -49,12 +49,11 @@ test('a library scenario loaded in the instructor window reaches the trainee win
   await expect(trainee.locator('#libSel')).toBeHidden(); // the trainee cannot load or export scenarios
 
   await page.locator('#tab-scenario').click();
-  await page.locator('#libSel').selectOption('hu-east-intermediate');
+  await page.locator('#libSel').selectOption('ro-knl-night-shift');
   await page.locator('#libLoad').click();
-  await expect(page.locator('#country')).toHaveValue('HU');
-  await expect(page.locator('#sector')).toHaveValue('EAST');
+  await expect(page.locator('#sector')).toHaveValue('KNL');
   const callsigns = await page.evaluate(() => window.__sim.ac.map(a => a.cs).sort());
-  await expect.poll(() => trainee.evaluate(() => window.__sim.C && window.__sim.C.meta.code), { timeout: 5000 }).toBe('HU');
+  await expect.poll(() => trainee.evaluate(() => window.__sim.sector && window.__sim.sector.id), { timeout: 5000 }).toBe('KNL');
   await expect.poll(() => trainee.evaluate(() => window.__sim.ac.map(a => a.cs).sort()), { timeout: 5000 }).toEqual(callsigns);
 });
 

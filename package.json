@@ -2,7 +2,7 @@
   "name": "atc-scenario-generator",
   "version": "1.0.0",
   "license": "GPL-3.0-only",
-  "description": "En-route ATC radar training simulator with scenario and inject generation, built on real eAIP data for Romania (Bucharest ACC, LRBB) and Hungary (Budapest ACC, LHCC).",
+  "description": "En-route ATC radar training simulator with scenario and inject generation, built on real eAIP data for Romania (Bucharest ACC, LRBB).",
   "type": "module",
   "private": true,
   "scripts": {
