@@ -2,11 +2,19 @@
 // sim.js: built from a Sim, checked by validateRecord, stored by src/store.js, rendered by main.js.
 import { exportScenario, validateScenarioFile } from './scenario.js';
 import { TYPES } from './sim.js';
+import { bandText } from './country.js';
+import { fmtT } from './geo.js';
 
-export const SCHEMA_VERSION = 1;
+// Version 2 adds sectorBand, snapshots and remarks. Version 1 records still import and open
+// (upgradeRecord fills those in), so files exported before version 2 keep working.
+export const SCHEMA_VERSION = 2;
 export const KIND = 'atc-session-record';
 export const BUNDLE_KIND = 'atc-session-records';
 export const NAME_MAX = 60;
+export const REMARKS_MAX = 4000;
+/** Radar snapshots kept per session: one at each inject and each loss of separation, the first ones only. */
+export const SNAPSHOT_MAX = 24;
+export const SNAPSHOT_KINDS = ['inject', 'los'];
 /** Debrief statistics kept in a record (the ones the debrief shows). null where nothing was measured. */
 export const STAT_KEYS = ['losCount', 'losSec', 'minSep', 'reqs', 'reqAnswered', 'reqMissed', 'avgResponse', 'selfDev', 'tsaInf', 'emgAckT', 'lateAssume', 'lateXfer', 'wrongXfl', 'cmds', 'injectsFired', 'injectsTotal'];
 const NULLABLE = new Set(['minSep', 'avgResponse', 'emgAckT']);
@@ -18,7 +26,8 @@ const name = s => String(s || '').trim().replace(/\s+/g, ' ').slice(0, NAME_MAX)
 /**
  * The record of a session, from the Sim that ran it.
  * @param sim  a Sim with a loaded scenario (usually ended)
- * @param o    { country, trainee, instructor, savedAt (ISO, default now), id (default from savedAt and seed) }
+ * @param o    { country, trainee, instructor, savedAt (ISO, default now), id (default from savedAt and seed),
+ *               snapshots ([{ t, kind, label, image (JPEG data URL), w, h }]), remarks }
  */
 export function buildRecord(sim, o) {
   const scn = sim.scenario, d = sim.debrief(), savedAt = o.savedAt || new Date().toISOString();
@@ -28,13 +37,38 @@ export function buildRecord(sim, o) {
     id: o.id || `${savedAt}-${scn.seed}`, savedAt,
     trainee: name(o.trainee), instructor: name(o.instructor),
     country: o.country, sector: scn.sector, sectorName: sim.sector.name, seed: scn.seed,
+    sectorBand: sim.sector.band ? bandText(sim.sector.band[0], sim.sector.band[1]) : null,
     completed: !!sim.ended, elapsedS: sim.t,
     scenario: exportScenario(scn, o.country),
     stats: Object.fromEntries(STAT_KEYS.map(k => [k, d[k] ?? null])),
     injects,
     timeline: d.timeline.map(e => ({ t: e.t, text: e.text, cls: e.cls || '' })),
-    clearances: sim.clearances.map(c => ({ t: c.t, cs: c.cs, text: c.text, result: c.result }))
+    clearances: sim.clearances.map(c => ({ t: c.t, cs: c.cs, text: c.text, result: c.result })),
+    snapshots: (o.snapshots || []).slice(0, SNAPSHOT_MAX).map(s => ({ t: s.t, kind: s.kind, label: s.label, image: s.image, w: s.w, h: s.h })),
+    remarks: String(o.remarks || '').slice(0, REMARKS_MAX)
   };
+}
+
+/** A version 1 record as version 2: no layer band, no snapshots, no remarks. Others are returned as they are. */
+export const upgradeRecord = j => (j && j.kind === KIND && j.schemaVersion === 1 ? { ...j, schemaVersion: 2, sectorBand: null, snapshots: [], remarks: '' } : j);
+
+/** Debrief statistics as [label, value, level]: level 'a' (alert), 'w' (warning) or ''. Shared by the debrief and the PDF. */
+export function statRows(d) {
+  const rows = [
+    ['Losses of separation', d.losCount, d.losCount ? 'a' : ''],
+    ['Time below minima', fmtT(d.losSec), d.losSec ? 'a' : ''],
+    ['Closest pair', d.minSep === null ? '—' : d.minSep.toFixed(1) + ' NM', d.minSep !== null && d.minSep < 5 ? 'a' : ''],
+    ['Requests answered', `${d.reqAnswered}/${d.reqs}`, d.reqMissed ? 'w' : ''],
+    ['Avg. response', d.avgResponse === null ? '—' : d.avgResponse + ' s', d.avgResponse !== null && d.avgResponse > 60 ? 'w' : ''],
+    ['Weather self-deviations', d.selfDev, d.selfDev ? 'w' : ''],
+    ['Military area infringements', d.tsaInf, d.tsaInf ? 'a' : ''],
+    ['Late assumes', d.lateAssume, d.lateAssume ? 'w' : ''],
+    ['Late transfers', d.lateXfer, d.lateXfer ? 'w' : ''],
+    ['Wrong exit levels', d.wrongXfl, d.wrongXfl ? 'a' : ''],
+    ['Clearances issued', d.cmds, '']
+  ];
+  if (d.injectsTotal !== undefined) rows.push(['Injects fired', `${d.injectsFired}/${d.injectsTotal}`, '']);
+  return rows;
 }
 
 /** Objectives met and graded, and losses of separation: the line in the history list. */
@@ -64,7 +98,8 @@ const isStr = v => typeof v === 'string';
 export function validateRecord(j, countries) {
   if (!j || typeof j !== 'object' || Array.isArray(j)) return { ok: false, errors: ['This is not a session record: expected a JSON object.'] };
   if (j.kind !== KIND) return { ok: false, errors: [`This is not a session record: kind is ${JSON.stringify(j.kind)}, expected "${KIND}".`] };
-  if (j.schemaVersion !== SCHEMA_VERSION) return { ok: false, errors: [`Record schema version ${JSON.stringify(j.schemaVersion)} is not supported. This simulator reads schemaVersion ${SCHEMA_VERSION}.`] };
+  j = upgradeRecord(j);
+  if (j.schemaVersion !== SCHEMA_VERSION) return { ok: false, errors: [`Record schema version ${JSON.stringify(j.schemaVersion)} is not supported. This simulator reads schemaVersion 1 and ${SCHEMA_VERSION}.`] };
   const errors = [];
   if (!isStr(j.id) || !j.id) errors.push('id must be a non-empty string.');
   if (!isStr(j.savedAt) || Number.isNaN(Date.parse(j.savedAt))) errors.push(`savedAt must be a date and time, not ${JSON.stringify(j.savedAt)}.`);
@@ -93,6 +128,13 @@ export function validateRecord(j, countries) {
   });
   if (!Array.isArray(j.timeline) || j.timeline.some(e => !e || !isNum(e.t) || !isStr(e.text) || !isStr(e.cls))) errors.push('timeline must be a list of { t, text, cls }.');
   if (!Array.isArray(j.clearances) || j.clearances.some(c => !c || !isNum(c.t) || !isStr(c.cs) || !isStr(c.text) || !CLEARANCE_RESULTS.includes(c.result))) errors.push(`clearances must be a list of { t, cs, text, result: ${CLEARANCE_RESULTS.join(' | ')} }.`);
+  if (!(j.sectorBand === null || isStr(j.sectorBand))) errors.push('sectorBand must be text or null.');
+  if (!isStr(j.remarks) || j.remarks.length > REMARKS_MAX) errors.push(`remarks must be text of at most ${REMARKS_MAX} characters.`);
+  if (!Array.isArray(j.snapshots) || j.snapshots.length > SNAPSHOT_MAX) errors.push(`snapshots must be a list of at most ${SNAPSHOT_MAX}.`);
+  else j.snapshots.forEach((s, k) => {
+    if (!s || !isNum(s.t) || !SNAPSHOT_KINDS.includes(s.kind) || !isStr(s.label) || !isNum(s.w) || !isNum(s.h) || s.w <= 0 || s.h <= 0 || !isStr(s.image) || !/^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/.test(s.image))
+      errors.push(`Snapshot ${k + 1} must be { t, kind: ${SNAPSHOT_KINDS.join(' | ')}, label, image: a JPEG data URL, w, h }.`);
+  });
   return errors.length ? { ok: false, errors } : { ok: true, record: j };
 }
 
@@ -116,4 +158,10 @@ export function readImport(j, countries) {
 }
 
 /** File name for an exported record, e.g. session-ro-arg-4127-2026-11-10-1432.json. */
+/** File name for a record's PDF debrief: <date>_<trainee>_<sector>.pdf, e.g. 2026-11-10_Ana-Pop_ARG.pdf. */
+export function pdfFileName(r) {
+  const safe = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  return `${r.savedAt.slice(0, 10)}_${safe(r.trainee) || 'no-trainee'}_${safe(r.sector) || 'sector'}.pdf`;
+}
+
 export const recordFileName = r => `session-${r.country}-${r.sector}-${r.seed}-${r.savedAt.slice(0, 16).replace('T', '-').replace(':', '')}.json`.toLowerCase();

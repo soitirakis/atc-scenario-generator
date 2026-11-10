@@ -14,7 +14,8 @@ import { parseCommand, completeCallsign } from './cmdline.js';
 import { Renderer } from './render.js';
 import { Link, SimView, makeSnapshot, CHANNEL_NAME } from './link.js';
 import { tasToMach, machToCas } from './atmos.js';
-import { buildRecord, readImport, summary, debriefOf, bundle, recordFileName } from './records.js';
+import { buildRecord, readImport, summary, debriefOf, bundle, recordFileName, pdfFileName, upgradeRecord, statRows, SNAPSHOT_MAX } from './records.js';
+import { buildDebriefPdf } from './pdf.js';
 import { openRecords } from './store.js';
 import PERF from '../data/performance.json';
 
@@ -30,7 +31,7 @@ let C = countryData(COUNTRIES.find(c => !c.planned).code);
 const link = ROLE === 'solo' ? null : new Link(new BroadcastChannel(CHANNEL_NAME), ROLE);
 const sim = ROLE === 'trainee' ? new SimView(link, countryData) : new Sim(C);
 const R = new Renderer($('scope'), sim);
-const ui = { lastRecord: null, viewRecord: null, running: false, speed: 1, debriefShown: false, acBoxFor: null, acBoxSig: '', lastPanel: 0, toastT: 0, session: 0, lastPub: 0, editInj: null, ppFor: null, ppSig: '' };
+const ui = { lastRecord: null, viewRecord: null, snaps: [], tlSeen: 0, running: false, speed: 1, debriefShown: false, acBoxFor: null, acBoxSig: '', lastPanel: 0, toastT: 0, session: 0, lastPub: 0, editInj: null, ppFor: null, ppSig: '' };
 // session records (src/records.js) in IndexedDB (src/store.js); the trainee window has no Sim, so it keeps none
 let records = null;
 const recordsReady = ROLE === 'trainee' ? Promise.resolve(null) : openRecords().then(s => { records = s; return s; });
@@ -53,7 +54,7 @@ function applyScenario(scn) {
 }
 function startSession(scn = sim.scenario) {
   sim.load(scn);
-  ui.session++; ui.editInj = null; ui.lastRecord = null;
+  ui.session++; ui.editInj = null; ui.lastRecord = null; ui.snaps = []; ui.tlSeen = 0;
   ui.debriefShown = false; R.sel = null; ui.acBoxFor = -1; R.resetLabels();
   setRunning(false);
   $('pausedTag').hidden = false;
@@ -385,8 +386,8 @@ function loadScenarioFile(j, source) {
   return true;
 }
 /** Save a JSON file through the browser's download. */
-function download(obj, filename) {
-  const blob = new Blob([JSON.stringify(obj, null, 2) + '\n'], { type: 'application/json' });
+const download = (obj, filename) => downloadBlob(new Blob([JSON.stringify(obj, null, 2) + '\n'], { type: 'application/json' }), filename);
+function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob), a = document.createElement('a');
   a.href = url; a.download = filename;
   document.body.append(a); a.click(); a.remove();
@@ -474,16 +475,35 @@ function histMessage(lines, error = false) {
   m.hidden = !lines.length; m.classList.toggle('err', error);
   m.innerHTML = lines.map(l => `<div>${esc(l)}</div>`).join('');
 }
+/**
+ * Radar snapshots for the record: at each inject and each loss of separation (timeline marks),
+ * the radar as it is drawn, scaled to at most 800 px wide as JPEG. Called after every step.
+ */
+function captureEvents() {
+  if (ROLE === 'trainee' || !sim.timeline) return;
+  for (; ui.tlSeen < sim.timeline.length; ui.tlSeen++) {
+    const e = sim.timeline[ui.tlSeen], kind = /^Loss of separation /.test(e.text) ? 'los' : / fired(,|$)/.test(e.text) ? 'inject' : null;
+    if (!kind || ui.snaps.length >= SNAPSHOT_MAX) continue;
+    const src = $('scope');
+    if (!src.width || !src.height) continue;
+    R.draw();
+    const w = Math.min(800, src.width), h = Math.round((src.height * w) / src.width), c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    c.getContext('2d').drawImage(src, 0, 0, w, h);
+    ui.snaps.push({ t: e.t, kind, label: e.text, image: c.toDataURL('image/jpeg', 0.72), w, h });
+  }
+}
 /** At the end of a session: build its record, keep it for the debrief's Export, and save it. */
 async function saveRecord() {
-  const rec = buildRecord(sim, { country: sim.C.meta.code, trainee: $('traineeName').value, instructor: $('instructorName').value });
+  captureEvents();
+  const rec = buildRecord(sim, { country: sim.C.meta.code, trainee: $('traineeName').value, instructor: $('instructorName').value, snapshots: ui.snaps });
   ui.lastRecord = rec;
   try { await (await recordsReady).put(rec); } catch (e) { histMessage([`This session was not saved (${e.message}). Export it from the debrief to keep it.`], true); }
   renderHistory();
 }
 async function renderHistory() {
   if (ROLE === 'trainee') return;
-  const store = await recordsReady, list = await store.list();
+  const store = await recordsReady, list = (await store.list()).map(upgradeRecord);
   $('histStore').textContent = store.available
     ? 'Saved in this browser only, with no login or server. Export to keep a copy or to move sessions to another computer.'
     : `Session history is not available: ${store.reason} Sessions are kept only until this page closes. Use Export record in the debrief, or Export all, to keep them.`;
@@ -493,15 +513,16 @@ async function renderHistory() {
       <div class="hist-head"><b>${fmtDate(r.savedAt)}</b><span>${esc(r.trainee || 'No trainee name')}${r.instructor ? ' · instructor ' + esc(r.instructor) : ''}</span></div>
       <div>${esc(r.scenario.title)}</div>
       <div class="hist-sum">${esc(r.country)} ${esc(r.sectorName)} · seed ${r.seed} · ${esc(summary(r).text)}</div>
-      <div class="row-btns"><button class="btn sm" data-h="open">Open</button><button class="btn sm" data-h="export">Export</button><button class="btn sm" data-h="del">Delete</button></div>
+      <div class="row-btns"><button class="btn sm" data-h="open">Open</button><button class="btn sm" data-h="pdf">Download PDF</button><button class="btn sm" data-h="export">Export</button><button class="btn sm" data-h="del">Delete</button></div>
     </div>`).join('') : '<div class="empty">No sessions yet. A session is saved here when it ends.</div>';
 }
 async function historyClick(e) {
   const b = e.target.closest('button[data-h]'), row = b && b.closest('.hist-row');
   if (!row) return;
-  const store = await recordsReady, rec = await store.get(row.dataset.id);
+  const store = await recordsReady, rec = upgradeRecord(await store.get(row.dataset.id));
   if (!rec) { renderHistory(); return; }
   if (b.dataset.h === 'open') showDebrief(rec);
+  if (b.dataset.h === 'pdf') downloadPdf(rec, histMessage);
   if (b.dataset.h === 'export') { download(rec, recordFileName(rec)); histMessage([`Exported ${recordFileName(rec)}`]); }
   if (b.dataset.h === 'del') {
     // two clicks: the first arms the button, the second deletes
@@ -516,6 +537,23 @@ async function exportAll() {
   download(bundle(list), name);
   histMessage([`Exported ${list.length} session${list.length > 1 ? 's' : ''} to ${name}`]);
 }
+/** The record's PDF debrief (src/pdf.js), built in the browser and downloaded. */
+function downloadPdf(rec, say) {
+  try {
+    const C2 = availableCountries()[rec.country], name = pdfFileName(rec);
+    downloadBlob(buildDebriefPdf(rec, { countryName: C2 && C2.meta.name }).output('blob'), name);
+    say([`Downloaded ${name}`]);
+  } catch (e) { say([`The PDF could not be built: ${e.message}`], true); }
+}
+/** Instructor remarks typed in the debrief: kept in the record shown and saved with it. */
+let remarksTimer = 0;
+function remarksChanged() {
+  const rec = ui.viewRecord || ui.lastRecord;
+  if (!rec) return;
+  rec.remarks = $('debRemarks').value.slice(0, 4000);
+  clearTimeout(remarksTimer);
+  remarksTimer = setTimeout(async () => { try { await (await recordsReady).put(rec); } catch (e) { toast(`Remarks not saved: ${e.message}`); } }, 400);
+}
 async function importRecords(f) {
   let j;
   try { j = JSON.parse(await f.text()); } catch { histMessage([`${f.name} is not a JSON file.`], true); return; }
@@ -525,23 +563,7 @@ async function importRecords(f) {
   renderHistory();
 }
 
-function gradeItems(d) {
-  const items = [
-    ['Losses of separation', d.losCount, d.losCount ? 'a' : ''],
-    ['Time below minima', fmtT(d.losSec), d.losSec ? 'a' : ''],
-    ['Closest pair', d.minSep === null ? '—' : d.minSep.toFixed(1) + ' NM', d.minSep !== null && d.minSep < 5 ? 'a' : ''],
-    ['Requests answered', `${d.reqAnswered}/${d.reqs}`, d.reqMissed ? 'w' : ''],
-    ['Avg. response', d.avgResponse === null ? '—' : d.avgResponse + ' s', d.avgResponse !== null && d.avgResponse > 60 ? 'w' : ''],
-    ['Weather self-deviations', d.selfDev, d.selfDev ? 'w' : ''],
-    ['Military area infringements', d.tsaInf, d.tsaInf ? 'a' : ''],
-    ['Late assumes', d.lateAssume, d.lateAssume ? 'w' : ''],
-    ['Late transfers', d.lateXfer, d.lateXfer ? 'w' : ''],
-    ['Wrong exit levels', d.wrongXfl, d.wrongXfl ? 'a' : ''],
-    ['Clearances issued', d.cmds, '']
-  ];
-  if (d.injectsTotal !== undefined) items.push(['Injects fired', `${d.injectsFired}/${d.injectsTotal}`, '']);
-  return items;
-}
+const gradeItems = statRows; // shared with the PDF debrief
 /** One line under a fired inject: its objective result (instructor and solo only). */
 function gradeLine(i) {
   const r = i.result;
@@ -583,7 +605,8 @@ function showDebrief(rec = null) {
     : `Scenario "${scn.title}"${rec ? `, ${rec.country} ${rec.sectorName}` : ''}, seed ${scn.seed}${who ? `, ${who}` : ''}. Success criteria: ${scn.criteria.join('; ')}.`;
   $('debRestart').hidden = $('debNew').hidden = !!rec;
   $('debReplay').hidden = !rec;
-  $('debExport').hidden = !rec && !ui.lastRecord;
+  $('debExport').hidden = $('debPdf').hidden = $('debRemarksBox').hidden = !rec && !ui.lastRecord;
+  $('debRemarks').value = (rec || ui.lastRecord || { remarks: '' }).remarks;
   $('debrief').hidden = false;
 }
 
@@ -755,6 +778,8 @@ function bindInput() {
     $('traineeName').value = rec.trainee; $('instructorName').value = rec.instructor;
     loadScenarioFile(rec.scenario, 'record');
   };
+  $('debPdf').onclick = () => { const rec = ui.viewRecord || ui.lastRecord; if (rec) downloadPdf(rec, lines => toast(lines[0])); };
+  $('debRemarks').oninput = remarksChanged;
   $('debExport').onclick = () => { const rec = ui.viewRecord || ui.lastRecord; if (rec) { download(rec, recordFileName(rec)); toast(`Exported ${recordFileName(rec)}`); } };
   $('histList').onclick = historyClick;
   $('histExportAll').onclick = exportAll;
@@ -799,8 +824,9 @@ function boot() {
     if (ROLE !== 'trainee' && ui.running && !sim.ended) {
       acc += dt * ui.speed;
       let n = 0;
-      while (acc >= 1 && n < 40) { sim.step(); acc -= 1; n++; }
+      while (acc >= 1 && n < 40) { sim.step(); captureEvents(); acc -= 1; n++; }
     }
+    if (ROLE !== 'trainee') captureEvents(); // injects fired from the instructor panel
     if (sim.ended && !ui.debriefShown) { ui.debriefShown = true; setRunning(false); updatePanel(true); if (ROLE !== 'trainee') saveRecord(); showDebrief(); }
     if (ROLE === 'instructor' && now - ui.lastPub >= 1000) publish();
     R.draw();
