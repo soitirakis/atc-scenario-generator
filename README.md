@@ -174,6 +174,17 @@ If the browser gives the page no storage (a private window, blocked site data), 
 - the radar snapshots;
 - the instructor remarks, and signature lines for trainee and instructor.
 
+**Progress.** The **Progress** view on the History tab is built from the stored sessions of one trainee. Names are matched regardless of case and spacing, and the newest spelling is shown. It has:
+- **per inject type:** sessions seen, met rate, median measured time, and the trend over the last 5 sessions, with each of those sessions shown as a square (met, partly met, not met);
+- **every session:** the same for no loss of separation, assume on time, transfer on time and agreed exit levels, where a session is met when the count is zero;
+- **separation:** losses of separation per session, and the closest pair against the 5 NM minimum (measured only when separation was lost; an open circle marks a session without a loss);
+- **sector routine:** late assumes, late transfers and wrong exit levels per session;
+- **the three weakest objectives in plain words:** lowest met rate first, with the trend, whether the last session missed it, and the median time.
+
+A trend is the least-squares slope of the per-session met rate: 'improving' or 'getting worse' at 0.1 or more per session, and only from 3 sessions on. An objective needs at least 2 sessions to be called weak. The statistics are in `src/progress.js` (no DOM). The charts are plain inline SVG from `src/charts.js`, one measure per chart, with the value on each mark and a hover title.
+
+**Add progress page to PDFs** (History tab, or "with progress page" in the debrief) appends the trainee's progress to the PDF, as it stood at that session: their sessions up to it, this one included.
+
 The PDF uses the standard PDF fonts, which cover Western European letters only. Other letters lose their accents in the PDF (Ș becomes S, ă becomes a); the app and the record keep them.
 
 ## Tests
@@ -207,6 +218,8 @@ src/
   records.js          session records: builder, validator, import of one record or a bundle (no DOM)
   store.js            session records in IndexedDB, with a memory fallback when storage is unavailable
   pdf.js              PDF debrief from a session record, with jsPDF (no DOM)
+  progress.js         a trainee's progress over their session records (no DOM)
+  charts.js           small inline SVG charts for the Progress view, as strings (no DOM)
   vendor/             stand-in for jsPDF's optional dependencies, which the build leaves out
   render.js           canvas radar display
   link.js             instructor/trainee windows: BroadcastChannel protocol, trainee snapshot, read-only view

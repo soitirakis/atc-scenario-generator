@@ -4,6 +4,7 @@ import RO from '../../data/RO/index.js';
 import { loadCountry } from '../../src/country.js';
 import { validateRecord, statRows, debriefOf } from '../../src/records.js';
 import { buildDebriefPdf, pdfText, TRAINING_MARK } from '../../src/pdf.js';
+import { progressOf } from '../../src/progress.js';
 import { fmtT } from '../../src/geo.js';
 
 // A real session record exported from the app (RO ARGES, 20 min, seed 4127), with three of its
@@ -126,5 +127,31 @@ describe('licence notices in the page', () => {
     expect(html).toContain('Copyright 2017 The Barlow Project Authors');
     expect(html).toContain('Copyright 2017 IBM Corp.');
     expect(html).toContain(read('src/fonts/OFL-IBMPlexMono.txt').split('\n').slice(2).join('\n').trim());
+  });
+});
+
+describe('optional progress page', () => {
+  const records = JSON.parse(fs.readFileSync(new URL('../fixtures/progress-records.json', import.meta.url), 'utf8'));
+  const progress = progressOf(records, 'Ana Pop');
+  const { out, pages } = pdf(fixture, { progress });
+
+  it('adds a page with the trainee, the weakest objectives and every objective', () => {
+    expect(pages).toBe(5); // the four debrief pages, then progress
+    for (const t of ['Progress: ANA POP', '6 sessions, 2026-11-01 to 2026-11-06.', 'Weakest objectives', 'Injects', 'Every session', 'Separation', 'Sector routine', 'Losses of separation per session', 'Closest pair (NM); open circle: no loss of separation', 'Late assumes', 'Late transfers', 'Wrong exit levels', 'ATC Scenario Generator · page 5 of 5']) expect(has(out, t), t).toBe(true);
+    progress.weakest.forEach((w, k) => expect(has(out, `${k + 1}.  ${w.text}`), w.label).toBe(true));
+    for (const i of [...progress.injects, ...progress.standing]) expect(has(out, i.label), i.label).toBe(true);
+    expect(has(out, '3/6 (50%)') && has(out, 'declining') && has(out, '45 s')).toBe(true);
+  });
+  it('the training mark is on the progress page too', () => {
+    expect(count(out, /\(Training aid, not an official assessment\) Tj/g)).toBe(pages + 1);
+  });
+  it('no page without the option, or for a trainee with no sessions', () => {
+    expect(pdf(fixture).pages).toBe(4);
+    expect(pdf(fixture, { progress: progressOf(records, 'Nobody') }).pages).toBe(4);
+  });
+  it('a trainee with one session: no weakest objectives yet, and it says so', () => {
+    const { out: o } = pdf(fixture, { progress: progressOf(records, 'Ion Rusu') });
+    expect(has(o, 'None yet: each objective needs at least two sessions, and those met every time are not listed.')).toBe(true);
+    expect(has(o, '1 session, 2026-11-03 to 2026-11-03.')).toBe(true);
   });
 });

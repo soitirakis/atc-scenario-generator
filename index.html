@@ -330,13 +330,25 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         <div class="sec">
           <h2>Session history <small id="histCount"></small></h2>
           <p class="note" id="histStore" role="status"></p>
-          <div class="row-btns">
-            <button class="btn sm" id="histExportAll">Export all</button>
-            <button class="btn sm" id="histImport">Import</button>
-            <input type="file" id="histFile" accept=".json,application/json" aria-label="Session records to import" hidden>
+          <div class="row-btns hist-bar">
+            <div class="seg" id="histSeg" role="group" aria-label="History view">
+              <button data-v="sessions" aria-pressed="true">Sessions</button><button data-v="progress" aria-pressed="false">Progress</button>
+            </div>
+            <label class="check"><input type="checkbox" id="pdfProgress"> Add progress page to PDFs</label>
           </div>
           <div class="note io-msg" id="histMsg" role="status" hidden></div>
-          <div class="hist" id="histList"></div>
+          <div id="histSessions">
+            <div class="row-btns">
+              <button class="btn sm" id="histExportAll">Export all</button>
+              <button class="btn sm" id="histImport">Import</button>
+              <input type="file" id="histFile" accept=".json,application/json" aria-label="Session records to import" hidden>
+            </div>
+            <div class="hist" id="histList"></div>
+          </div>
+          <div id="histProgress" hidden>
+            <div class="form"><div class="full"><label for="progTrainee">Trainee</label><select id="progTrainee"></select></div></div>
+            <div id="progBody"></div>
+          </div>
         </div>
       </div>
 
@@ -379,6 +391,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       <button class="btn not-trainee" id="debNew">New seed</button>
       <button class="btn primary not-trainee" id="debReplay" hidden>Replay (same scenario and seed)</button>
       <button class="btn not-trainee" id="debPdf">Download PDF</button>
+      <label class="check not-trainee" id="debPdfProgressBox"><input type="checkbox" id="debPdfProgress"> with progress page</label>
       <button class="btn not-trainee" id="debExport">Export record</button>
       <button class="btn" id="debClose">Close</button>
     </div>

@@ -144,3 +144,44 @@ test('Download PDF from the debrief and from History; remarks and radar snapshot
   expect(rec.snapshots[0]).toMatchObject({ kind: expect.stringMatching(/^(inject|los)$/), image: expect.stringMatching(/^data:image\/jpeg;base64,/) });
   expect(errors).toEqual([]);
 });
+
+test('Progress: per trainee from the stored sessions, weakest objectives and charts; the PDF can add a progress page', async ({ page }, info) => {
+  const errors = [];
+  page.on('pageerror', e => errors.push(e.message));
+  await open(page, '/');
+  const records = JSON.parse(fs.readFileSync(new URL('../fixtures/progress-records.json', import.meta.url), 'utf8'));
+  const file = info.outputPath('progress.json');
+  fs.writeFileSync(file, JSON.stringify({ schemaVersion: 2, kind: 'atc-session-records', records }));
+  await page.locator('#tab-history').click();
+  await page.locator('#histFile').setInputFiles(file);
+  await expect(page.locator('#histMsg')).toContainText('Imported 8 sessions');
+
+  await page.locator('#histSeg [data-v="progress"]').click();
+  await expect(page.locator('#histList')).toBeHidden();
+  await expect(page.locator('#progTrainee option')).toHaveText(['ANA POP (6 sessions)', 'Ion Rusu (1 session)', 'No trainee name (1 session)']);
+  await expect(page.locator('#progWeak li')).toHaveCount(3);
+  await expect(page.locator('#progWeak li').first()).toHaveText(/^Assume on time: every flight assumed before it enters\. Met 2 of 6 sessions \(33%\)/);
+  await expect(page.locator('#progWeak li').nth(2)).toContainText('Level bust');
+  await expect(page.locator('.prog-list li')).toHaveCount(7); // 3 inject types, 4 standing objectives
+  await expect(page.locator('.prog-list li[data-obj="LEVEL_BUST"] .prog-nums')).toHaveText('6 sessions · met 3/6 (50%) · median 45 s · getting worse');
+  await expect(page.locator('#progBody svg.ch')).toHaveCount(5);
+  await expect(page.locator('#progBody svg.ch').first().locator('title').first()).toHaveText(/^2026-11-01 · .*: 2 losses of separation$/);
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  expect(overflow).toBeLessThanOrEqual(0);
+  await page.locator('#progTrainee').selectOption('ion rusu');
+  await expect(page.locator('#progWeak')).toHaveText(/^None yet/);
+
+  // the newest of Ana's sessions as PDF, without and with the progress page
+  const pages = async () => {
+    const [d] = await Promise.all([page.waitForEvent('download'), page.locator('#histList .hist-row').first().locator('[data-h="pdf"]').click()]);
+    const f = info.outputPath(`p${Date.now()}.pdf`); await d.saveAs(f);
+    return (fs.readFileSync(f, 'latin1').match(/\/Type \/Page[^s]/g) || []).length;
+  };
+  await page.locator('#histSeg [data-v="sessions"]').click();
+  await expect(page.locator('#histList .hist-row').first()).toContainText('ANA POP');
+  const without = await pages();
+  await page.locator('#pdfProgress').check();
+  const withProgress = await pages();
+  expect(withProgress).toBe(without + 1);
+  expect(errors).toEqual([]);
+});
