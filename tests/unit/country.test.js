@@ -28,6 +28,14 @@ describe('Romania data module', () => {
     for (const k of RO.sectors.collapsed) for (const p of k.parts) expect(C.sectors[p], `${k.id}:${p}`).toBeTruthy();
   });
 
+  it('names its source and the terms the AIP-derived files are reproduced under', () => {
+    expect(RO.meta.rights.source).toBe('AIP Romania © ROMATSA');
+    expect(RO.meta.rights.note).toMatch(/remain subject to ROMATSA's rights/);
+    expect(RO.meta.rights.note).toMatch(/non-operational training use with attribution/);
+    expect(RO.meta.rights.note).toMatch(/will be removed on request/);
+    for (const f of ['sectors.json', 'navaids.json', 'points.json', 'airports.json', 'areas.json']) expect(RO.meta.rights.note, f).toContain(f);
+  });
+
   it('all published aerodromes lie inside the FIR', () => {
     for (const a of C.airportList) expect(inSector(a.xy, C.sectors.FIR), a.id).toBe(true);
   });

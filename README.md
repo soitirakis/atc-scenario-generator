@@ -291,6 +291,47 @@ As of 1 November 2026, the Ukrainian entry and exit points are kept in the data 
 
 The Hungary module (Budapest ACC, LHCC) is withdrawn pending permission from HungaroControl. AIP Hungary GEN 0.1 §5 makes any use of the AIP, in full or in part, subject to HungaroControl's prior written consent. It comes back if HungaroControl gives that consent. Its data, sample scenarios, screenshot and data tests are removed, and the country selector lists it as pending. The engine features it used (sector layers, several source AIPs) and the parsers for its eAIP table formats stay; the parsers are tested on synthetic fixtures with invented names and coordinates.
 
+## Data permissions
+
+Where each data source stands. Dates marked _to be filled in_ are added when the requests are sent.
+
+**AIP Romania**
+
+| | |
+|---|---|
+| Files | `data/RO/navaids.json` (ENR 4.1), `points.json` (ENR 4.4), `areas.json` (ENR 5.2), `airports.json` (AD 2); the LRCK position in `military.json` comes from `airports.json` |
+| Publisher | ROMATSA (Romanian Air Traffic Services Administration), eAIP at https://www.aisro.ro, edition 2026-10-29 |
+| Published terms | None. GEN 0.1 and GEN 3.1 of edition 2026-10-29 contain no copyright or reuse statement, and aisro.ro publishes no terms of use. GEN 3.1 lists the paper and CD-ROM AIP for sale. |
+| Status | Kept. Permission requested from ROMATSA: _date to be filled in_ |
+
+**EUROCONTROL NM sector file (Romania)**
+
+| | |
+|---|---|
+| Files | `data/RO/sectors.json` |
+| Document | NM RAD sector file `LR_Sector ID_14-08-25`, https://www.nm.eurocontrol.int/RAD/ |
+| Publisher | EUROCONTROL publishes it on the NM RAD website on behalf of the state; the originator is ROMATSA |
+| Published terms | None. The page shows "Copyrights ©2025 EUROCONTROL" and liability disclaimers only. |
+| Status | Kept. Covered by the same request to ROMATSA, as originator. |
+
+**AIP Hungary**
+
+| | |
+|---|---|
+| Files | None. `data/HU` was withdrawn (PR #32); earlier commits in the git history still contain it. |
+| Publisher | HungaroControl |
+| Published terms | AIP Hungary GEN 0.1 §5: "Any – in full or in part – usage of this document in any form or by any means is subject to HungaroControl's prior written consent." |
+| Status | Withdrawn pending HungaroControl's written consent. Request sent: _date to be filled in_ |
+
+**OpenAP**
+
+| | |
+|---|---|
+| Files | `data/performance.json` |
+| Source | [OpenAP](https://github.com/TUDelft-CNS-ATM/openap) WRAP kinematic data (TU Delft), commit `46753acb` |
+| Licence | GPL-3.0 (OpenAP's code is LGPL-3.0) |
+| Status | Used under its licence; the reason this project is GPL-3.0. |
+
 ## Updating for a new AIRAC cycle
 
 AIRAC cycles change every 28 days. The eAIP has no data API, so updates are a scripted pull of the published pages, followed by a diff against `data/RO`. Nothing is written without `--write`.
@@ -315,7 +356,7 @@ What the script does and doesn't do:
 
 ## Adding a country
 
-1. Create `data/<CODE>/` with the same eight files as `data/RO/`. Coordinates stay in AIP notation (`DDMMSSN DDDMMSSE`); `{ "b": "KEY" }` inside a sector polygon splices in a border segment from `borders.json`, and `{ "b": "KEY", "upTo": "DMS" }` only the part before a published point on it. In `meta.json`, `defaultSector` picks the sector selected when the country loads, and `simNote` is the traffic note shown in the AIP data tab.
+1. Create `data/<CODE>/` with the same eight files as `data/RO/`. Coordinates stay in AIP notation (`DDMMSSN DDDMMSSE`); `{ "b": "KEY" }` inside a sector polygon splices in a border segment from `borders.json`, and `{ "b": "KEY", "upTo": "DMS" }` only the part before a published point on it. In `meta.json`, `defaultSector` picks the sector selected when the country loads, `simNote` is the traffic note shown in the AIP data tab, and `rights` (`source`, `note`) gives the attribution and the terms the AIP-derived files are reproduced under. Before adding a country, read each publisher's terms (AIP GEN 0.1 and GEN 3.1, website terms) and add the source to [Data permissions](#data-permissions).
 
    **Sectors are volumes.** A sector with no limits is checked laterally only. Give `lower` and `upper` as published (`"FL 245"`, `"GND"`, `"Lower limit of ATS routes"`) to make it a layer. The lower limit is inclusive and the upper exclusive, so a level on a layer boundary belongs to the upper layer. Layers of one lateral sector share a `group`, the label drawn once on the map. The sector selection shows each layer with its band, e.g. "KOMAN 2 FL245-FL660":
 
@@ -403,7 +444,9 @@ Concept and portfolio project. Not validated against any operational system.
 
 ## Licence
 
-This project is licensed under GPL-3.0 (see [LICENSE](LICENSE)), because it includes data derived from [OpenAP](https://github.com/TUDelft-CNS-ATM/openap), the open aircraft performance model by Junzi Sun, Jacco M. Hoekstra, Joost Ellerbroek and contributors at TU Delft. The aircraft performance data in `data/performance.json` is converted from OpenAP's WRAP data, which is licensed GPL-3.0 (OpenAP's code is LGPL-3.0); that file keeps the source, commit and licence notice.
+GPL-3.0 (see [LICENSE](LICENSE)) covers the code and the OpenAP-derived data. The project is GPL-3.0 because it includes data derived from [OpenAP](https://github.com/TUDelft-CNS-ATM/openap), the open aircraft performance model by Junzi Sun, Jacco M. Hoekstra, Joost Ellerbroek and contributors at TU Delft. The aircraft performance data in `data/performance.json` is converted from OpenAP's WRAP data, which is licensed GPL-3.0 (OpenAP's code is LGPL-3.0); that file keeps the source, commit and licence notice.
+
+**AIP-derived data.** The AIP-derived files in `data/RO` (`sectors.json`, from the EUROCONTROL NM sector file whose originator is ROMATSA; `navaids.json`, `points.json`, `airports.json` and `areas.json`, from AIP Romania) are not covered by GPL-3.0. They remain subject to ROMATSA's rights, are reproduced for non-operational training use with attribution (Source: AIP Romania © ROMATSA), and will be removed on request. `data/RO/meta.json` (`rights`) and the AIP data tab say the same. See [Data permissions](#data-permissions).
 
 **jsPDF.** The PDF debrief uses [jsPDF](https://github.com/parallax/jsPDF) 4.2.1 (Copyright 2010-2025 James Hall, 2015-2025 yWorks GmbH; MIT licence), bundled into the build. Its optional dependencies (html2canvas, DOMPurify, canvg) serve features this project does not use and are not included.
 

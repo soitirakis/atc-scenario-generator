@@ -33,5 +33,9 @@
       "title": "NM RAD — LR sector data",
       "url": "https://www.nm.eurocontrol.int/RAD/assets/ADDITIONAL_DOCUMENTATION/SECTOR_DATA/LR_Sector%20ID_14-08-25.pdf"
     }
-  ]
+  ],
+  "rights": {
+    "source": "AIP Romania © ROMATSA",
+    "note": "The AIP-derived files in data/RO (sectors.json from the EUROCONTROL NM sector file, originator ROMATSA; navaids.json, points.json, airports.json and areas.json from AIP Romania) remain subject to ROMATSA's rights. They are reproduced for non-operational training use with attribution, are not covered by this project's GPL-3.0 licence, and will be removed on request."
+  }
 }
