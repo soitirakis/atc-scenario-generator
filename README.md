@@ -147,6 +147,26 @@ On the Scenario tab (solo or instructor window):
 - **Import** checks the file first (`validateScenarioFile` in `src/scenario.js`) and lists every problem in plain words, for example a wrong schema version, an unknown country or sector, an unknown inject type, or an inject outside the session length. A valid file loads in both windows.
 - **Sample scenarios** in `data/scenarios/` use the same format: ARGES foundational, DINSI with weather, a night shift on the collapsed KOMAN + LOMOS + NERDI sector (light traffic, an emergency and a military area), NERDI coordination, Hungary EAST, and the whole Budapest FIR combined. Their objectives, criteria and inject notes are training material written for this project, not published procedures.
 
+## Session history
+
+Every session that runs to its end is saved as a **session record** in the solo or instructor window. The trainee window keeps none, because it has no simulator. Trainee and instructor names are optional and are asked on the start overlay.
+
+A record (`schemaVersion: 1`, defined and checked in `src/records.js`) holds:
+- the scenario file, which includes the seed, country and sector;
+- the trainee and instructor names;
+- the per-inject grading results;
+- the timeline;
+- the debrief statistics;
+- the full clearance log: every transmission, assume, transfer and answer, with how it ended (`ok`, `blocked` on a busy frequency, `no reply`, `unable`, `say again`).
+
+Records stay in the browser's IndexedDB (`src/store.js`): no login, no server, nothing leaves the computer unless you export it. On the **History** tab:
+- **Open** shows the saved debrief, and **Replay** reloads the same scenario and seed.
+- **Export** saves one record as JSON, and **Export all** saves every record in one file.
+- **Import** reads either kind of file. Each record is checked on its own, and a record with an existing id replaces it.
+- **Delete** takes two clicks.
+
+If the browser gives the page no storage (a private window, blocked site data), the History tab says so. Records are then kept only until the page closes, and **Export record** in the debrief still works.
+
 ## Tests
 
 ```bash
@@ -176,6 +196,8 @@ src/
   nets/               APW, CLAM, RAM, MTCD: pure modules, each with its settings (no DOM)
   tools/              range-bearing line, SEP, level probe: pure modules (no DOM)
   scenario.js         local scenario builder, Claude prompt and validator
+  records.js          session records: builder, validator, import of one record or a bundle (no DOM)
+  store.js            session records in IndexedDB, with a memory fallback when storage is unavailable
   render.js           canvas radar display
   link.js             instructor/trainee windows: BroadcastChannel protocol, trainee snapshot, read-only view
   main.js             UI wiring
