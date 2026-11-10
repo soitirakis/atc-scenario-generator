@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
 import RO from '../../data/RO/index.js';
-import HU from '../../data/HU/index.js';
 import { loadCountry, inSector } from '../../src/country.js';
 import { Sim, DIFF, TYPES } from '../../src/sim.js';
 import { buildLocalScenario } from '../../src/scenario.js';
@@ -320,8 +319,7 @@ describe('sector routine: assume and transfer', () => {
   });
 
   it('a disciplined trainee finishes with no late assumes, late transfers or wrong exit levels, in every sector', () => {
-    // seed 4 includes gate points on the border that a new flight briefly wobbles across (Hungary NORTH)
-    for (const raw of [RO, HU]) {
+    for (const raw of [RO]) {
       const K = loadCountry(raw);
       for (const sector of [...K.sectorList.map(s => s.id), 'FIR']) {
         const sim = new Sim(K);

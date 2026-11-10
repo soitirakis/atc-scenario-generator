@@ -4,20 +4,18 @@
 // Nothing is written unless --write is given.
 //
 //   npm run airac                                  # Romania, current cycle, report only
-//   npm run airac -- --country HU                  # Hungary, edition in force today
 //   npm run airac -- --edition 2026-10-29          # a specific eAIP edition
-//   npm run airac -- --country HU --date 2026-11-26  # Hungary, edition in force on a date
 //   npm run airac -- --write                       # apply coordinate/role changes and add new points
 //
 // Romania: ROMATSA eAIP PDFs (ENR 4.1, ENR 4.4, ENR 5.2), a new edition every AIRAC cycle.
-// Hungary: HungaroControl eAIP HTML (ENR 4.1, ENR 4.4.1), amended on some cycles only,
-// so the edition in force is read from the eAIP index.
+// Hungary is withdrawn pending HungaroControl's written consent (AIP Hungary GEN 0.1), so this
+// script does not download its eAIP. Its HTML parsers stay in airac-lib.mjs, tested on synthetic fixtures.
 //
 // Sector polygons are updated by hand (see README).
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseEnr44, parseEnr41, parseLhEnr441, parseLhEnr41, parseLrEnr52, parseLhEnr52, lhEditionOn, htmlText, diffPoints, diffNavaids, diffAreas, airacDates } from './airac-lib.mjs';
+import { parseEnr44, parseEnr41, parseLrEnr52, diffPoints, diffNavaids, diffAreas, airacDates } from './airac-lib.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -68,46 +66,10 @@ const COUNTRIES = {
       meta.airac.edition = ed.edition;
       for (const s of meta.sources) s.url = s.url.split(`/aip/${old}/`).join(`/aip/${ed.edition}/`);
     }
-  },
-  HU: {
-    cache: ed => path.join(root, '.airac-cache', 'HU', ed),
-    async edition() {
-      const index = 'https://ais-en.hungarocontrol.hu/aip/';
-      const res = await fetch(index);
-      if (!res.ok) throw new Error(`HTTP ${res.status} for ${index}`);
-      const text = htmlText(await res.text()).replace(/\s+/g, ' ');
-      const want = arg('--edition');
-      if (want) {
-        const ed = lhEditionOn(text, want);
-        if (!ed || ed.edition !== want) throw new Error(`No HungaroControl eAIP edition effective ${want}. The index lists AMDTs effective on: ${[...text.matchAll(/Effective date (\d{4}-\d{2}-\d{2})/g)].map(m => m[1]).join(', ')}. Use --date ${want} for the edition in force on that day.`);
-        return ed;
-      }
-      const ed = lhEditionOn(text, today);
-      if (!ed) throw new Error(`The HungaroControl eAIP index lists no edition in force on ${today}`);
-      return ed;
-    },
-    async fetch(ed, cache) {
-      const base = `https://ais-en.hungarocontrol.hu/aip/${ed}/${ed}-AIRAC/html/eAIP`;
-      await download(`${base}/LH-ENR-4.1-en-HU.html`, path.join(cache, 'ENR_4_1.html'));
-      await download(`${base}/LH-ENR-4.4.1-en-HU.html`, path.join(cache, 'ENR_4_4_1.html'));
-      await download(`${base}/LH-ENR-5.2-en-HU.html`, path.join(cache, 'ENR_5_2.html'));
-      const txt = f => htmlText(fs.readFileSync(path.join(cache, f), 'utf8'));
-      return { points: parseLhEnr441(txt('ENR_4_4_1.html')), navaids: parseLhEnr41(txt('ENR_4_1.html')), areas: parseLhEnr52(txt('ENR_5_2.html')) };
-    },
-    areasSource: ed => ({ doc: 'ENR 5.2 Military exercise and training areas', edition: ed, url: `https://ais-en.hungarocontrol.hu/aip/${ed}/${ed}-AIRAC/html/eAIP/LH-ENR-5.2-en-HU.html` }),
-    min: { points: 100, navaids: 5, areas: 20 },
-    // data/HU keeps every point with an FRA role, so any new one is added
-    addRoles: ['E', 'X', 'EX', 'L', 'I'],
-    updateMeta(meta, ed) {
-      const old = meta.airac.edition;
-      meta.airac.edition = ed.edition;
-      meta.airac.enr41 = `AIRAC AMDT ${ed.amdt}`;
-      meta.airac.enr44 = `ENR 4.4.1, AIRAC AMDT ${ed.amdt}`;
-      for (const s of meta.sources) { s.url = s.url.split(old).join(ed.edition); s.title = s.title.replace(/AIRAC AMDT \d{3}\/\d{4}/, `AIRAC AMDT ${ed.amdt}`); }
-    }
   }
 };
 
+if (code === 'HU') { console.error('Hungary is withdrawn pending written permission from HungaroControl (AIP Hungary GEN 0.1), so its eAIP is not downloaded.'); process.exit(1); }
 const K = COUNTRIES[code];
 if (!K) { console.error(`Unknown --country ${code}. Known: ${Object.keys(COUNTRIES).join(', ')}`); process.exit(1); }
 const dataDir = path.join(root, 'data', code);

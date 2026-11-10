@@ -1,13 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import RO from '../../data/RO/index.js';
-import HU from '../../data/HU/index.js';
 import { loadCountry } from '../../src/country.js';
 import { Sim, CIVMIL, vMin, GRADING } from '../../src/sim.js';
 import { buildLocalScenario } from '../../src/scenario.js';
 import { makeSnapshot, TRAINEE_COMMANDS } from '../../src/link.js';
 import { dist } from '../../src/geo.js';
 
-const RC = loadCountry(RO), HC = loadCountry(HU);
+const RC = loadCountry(RO);
 const fresh = (injects, C = RC, sector = 'ARG') => {
   const scn = buildLocalScenario(C, { sector, difficulty: 'intermediate', duration: 45, seed: 4127, objective: 'x' });
   scn.injects = injects;
@@ -38,14 +37,8 @@ describe('military data (training constructs)', () => {
     expect(RC.military.qra.map(q => [q.id, q.aircraft])).toEqual([['LRCK', 'F16']]);
     expect(RC.military.qra[0].xy).toEqual(RC.airports.LRCK.xy);
   });
-  it('Hungary: LHKE at the Kecskemét MCTR centre from ENR 2.1, JAS 39 Gripen', () => {
-    const q = HU.military.qra[0];
-    expect(q).toMatchObject({ id: 'LHKE', pos: '465504N 0194503E', aircraft: 'JAS39' });
-    expect(q.source).toMatch(/ENR 2\.1 .*KECSKEMET MCTR/);
-    expect(HC.military.aircraft.JAS39.name).toBe('JAS 39 Gripen');
-  });
   it('fighter performance is labelled as not from OpenAP or a manufacturer', () => {
-    for (const raw of [RO, HU]) expect(raw.military._note).toMatch(/not from OpenAP .* and not from a manufacturer/);
+    for (const raw of [RO]) expect(raw.military._note).toMatch(/not from OpenAP .* and not from a manufacturer/);
   });
 });
 
@@ -128,11 +121,6 @@ describe('COMLOSS escalation', () => {
     expect(a.comloss).toBeUndefined();
   });
 
-  it('Hungary scrambles Gripens from LHKE', () => {
-    const sim = fresh([at('COMLOSS')], HC, 'EAST');
-    const g = toQra(sim);
-    expect([g.qra.oat.base.id, g.qra.type]).toEqual(['LHKE', 'JAS39']);
-  });
 });
 
 describe('short-notice military area extension', () => {

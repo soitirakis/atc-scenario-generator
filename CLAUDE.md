@@ -10,7 +10,7 @@ En-route ATC radar training simulator. Vanilla JS (ES modules) built with Vite i
 - `npm test` — Vitest unit tests (fast; run after every change)
 - `npm run test:e2e` — Playwright against the production build, desktop + phone
 - `npm run build` — single-file `dist/index.html`
-- `npm run airac` — AIRAC diff for Romania; `-- --country HU` for Hungary (needs network to aisro.ro / ais-en.hungarocontrol.hu)
+- `npm run airac` — AIRAC diff for Romania (needs network to aisro.ro). Hungary is withdrawn pending HungaroControl's written consent: `--country HU` stops, and nothing may be downloaded from or added back from HungaroControl's eAIP until that consent is given.
 
 ## Architecture rules
 - `src/sim.js` must stay DOM-free. All simulation state lives on the `Sim` instance; the UI only reads it and calls command methods, which return `{ ok, msg }`. The controller's commands are the ones in `TRAINEE_COMMANDS` (`src/link.js`), the only ones a trainee window may run; instructor commands (injects, the inject timeline, pseudo-pilot, wind) are the other public `Sim` methods the UI calls.
@@ -41,8 +41,10 @@ En-route ATC radar training simulator. Vanilla JS (ES modules) built with Vite i
 
 ## Data rules
 - Country data lives in `data/<CODE>/` as JSON. Keep coordinates in AIP DMS notation, exactly as published, so they can be diffed against the source. Sector limits too: `"FL 245"`, `"GND"` or `"Lower limit of ATS routes"`; anything else makes the loader fail. A sector that leaves a border part-way uses `{ "b": "KEY", "upTo": "DMS" }`.
-- A module built from several states' AIPs lists them in `meta.aips` (`state`, `url`, `edition`, `amendment`); the AIP data tab shows each. Without it, the module's single eAIP comes from `meta.airac` and the first source. `npm run airac` only updates single-AIP modules (RO, HU).
-- Before changing the engine, check that RO and HU still behave the same: the seed reproducibility test only compares two runs, so also compare sessions for every sector before and after (fingerprint the positions, logs and stats over a full session).
+- A module built from several states' AIPs lists them in `meta.aips` (`state`, `url`, `edition`, `amendment`); the AIP data tab shows each. Without it, the module's single eAIP comes from `meta.airac` and the first source. `npm run airac` only updates single-AIP modules (RO).
+- Before changing the engine, check that RO still behaves the same: the seed reproducibility test only compares two runs, so also compare sessions for every sector before and after (fingerprint the positions, logs and stats over a full session).
+- Before adding data from any publisher, read its terms of use and copyright notice (AIP GEN 0.1 and GEN 3.1, website terms, robots.txt). Do not add data whose terms forbid reuse or automated download without written permission; ask the user instead.
+- Parser tests for formats whose source may not be redistributed use synthetic fixtures (invented names and coordinates in the same layout).
 - Anything not from an official source (border approximations, flows, TSA geometry) must be labelled as such in the file's `_note` and in the README.
 - Point roles: `E`, `X`, `EX`, `L` (entry/exit only up to FL175), `I`. The rule is implemented in `scripts/airac-lib.mjs` `classifyRole`; data must agree with it.
 - Do not delete points still referenced by `traffic.json`.

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-// Regenerate the README images: two screenshots and a short GIF of a running session.
+// Regenerate the README images: a screenshot and a short GIF of a running session.
 // Builds the app, serves dist/ with `vite preview`, and drives it with Playwright (Chromium).
 //
-//   npm run screenshots        # writes docs/img/romania-arges-advanced.png, hungary-east.png, session.gif
+//   npm run screenshots        # writes docs/img/romania-arges-advanced.png and session.gif
 //
 // Sessions use the default seed, so the images are the same on every run. While the clock runs,
 // a scripted trainee works the traffic (assume, re-clear to the exit level, transfer, answer
@@ -80,12 +80,6 @@ async function screenshots(browser) {
   await page.locator('#difficulty').selectOption('advanced'); // Romania, ARGES by default
   await prepare(page, 120);
   await page.screenshot({ path: path.join(out, 'romania-arges-advanced.png') });
-
-  await page.goto(URL);
-  await page.locator('#country').selectOption('HU');           // Hungary, EAST by default
-  await page.locator('#difficulty').selectOption('advanced');
-  await prepare(page, 120);
-  await page.screenshot({ path: path.join(out, 'hungary-east.png') });
   await page.close();
 }
 
@@ -129,6 +123,6 @@ try {
   await browser.close();
   srv.kill();
 }
-for (const f of ['romania-arges-advanced.png', 'hungary-east.png', 'session.gif']) {
+for (const f of ['romania-arges-advanced.png', 'session.gif']) {
   console.log(`docs/img/${f}  ${(fs.statSync(path.join(out, f)).size / 1024).toFixed(0)} KB`);
 }

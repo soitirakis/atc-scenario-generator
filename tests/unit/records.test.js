@@ -1,13 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import RO from '../../data/RO/index.js';
-import HU from '../../data/HU/index.js';
 import { loadCountry } from '../../src/country.js';
 import { Sim } from '../../src/sim.js';
 import { buildLocalScenario, exportScenario, validateScenarioFile } from '../../src/scenario.js';
 import { SCHEMA_VERSION, KIND, NAME_MAX, STAT_KEYS, buildRecord, validateRecord, readImport, summary, debriefOf, bundle, recordFileName } from '../../src/records.js';
 import { openRecords } from '../../src/store.js';
 
-const C = loadCountry(RO), countries = { RO: C, HU: loadCountry(HU) };
+const C = loadCountry(RO), countries = { RO: C };
 const run = (sim, s) => { for (let i = 0; i < s; i++) sim.step(); };
 const free = sim => { for (let i = 0; i < 30 && sim.freqBusy(); i++) sim.step(); };
 const SAVED = '2026-11-10T14:32:05.000Z';
@@ -116,7 +115,7 @@ describe('validating a record', () => {
   it('the embedded scenario must load (so Replay works) and match the record', () => {
     expect(validateRecord({ ...copy(), scenario: { ...base.rec.scenario, sector: 'ZZZ' } }, countries).errors.join('\n')).toMatch(/^Scenario: Unknown sector "ZZZ"/);
     expect(validateRecord({ ...copy(), seed: 1 }, countries).errors).toEqual(['Scenario: its country, sector and seed must match the record.']);
-    expect(validateRecord(copy(), { HU: countries.HU }).errors[0]).toMatch(/^Scenario: Unknown country "RO"/);
+    expect(validateRecord(copy(), {}).errors[0]).toMatch(/^Scenario: Unknown country "RO"/);
     expect(validateRecord({ ...copy(), stats: null }, countries).errors).toContain('stats must be an object.');
     expect(validateRecord({ ...copy(), injects: 'none' }, countries).errors).toContain('injects must be a list.');
     expect(validateRecord({ ...copy(), country: 1 }, countries).errors).toContain('country, sector and sectorName must be text.');
