@@ -1,0 +1,78 @@
+{
+  "_note": "Radiotelephony designators (ICAO three-letter designator -> telephony word) for the operators in data/<CODE>/traffic.json. telephony is as published in FAA Order JO 7340.2P Contractions, Chapter 3 Section 1 (ICAO aircraft company three-letter identifier and telephony designator assignments), which follows ICAO Doc 8585. say is how the browser's speech synthesis is told to pronounce it: a spelling chosen for this project, not published data. Every operator in a traffic.json must have an entry (tests/unit/phraseology.test.js).",
+  "_source": {
+    "doc": "FAA Order JO 7340.2P Contractions, Chapter 3 Section 1",
+    "url": "https://www.faa.gov/air_traffic/publications/atpubs/cnt_html/chap3_section_1.html",
+    "checked": "2026-11-11"
+  },
+  "operators": {
+    "ROT": {
+      "telephony": "TAROM",
+      "say": "Tarom"
+    },
+    "WZZ": {
+      "telephony": "WIZZAIR",
+      "say": "Wizz Air"
+    },
+    "THY": {
+      "telephony": "TURKISH",
+      "say": "Turkish"
+    },
+    "PGT": {
+      "telephony": "SUNTURK",
+      "say": "Sun Turk"
+    },
+    "RYR": {
+      "telephony": "RYANAIR",
+      "say": "Ryanair"
+    },
+    "DLH": {
+      "telephony": "LUFTHANSA",
+      "say": "Lufthansa"
+    },
+    "AUA": {
+      "telephony": "AUSTRIAN",
+      "say": "Austrian"
+    },
+    "LOT": {
+      "telephony": "LOT",
+      "say": "Lot"
+    },
+    "QTR": {
+      "telephony": "QATARI",
+      "say": "Qatari"
+    },
+    "UAE": {
+      "telephony": "EMIRATES",
+      "say": "Emirates"
+    },
+    "FDB": {
+      "telephony": "SKY DUBAI",
+      "say": "Sky Dubai"
+    },
+    "AEE": {
+      "telephony": "AEGEAN",
+      "say": "Aegean"
+    },
+    "KLM": {
+      "telephony": "KLM",
+      "say": "K L M"
+    },
+    "AFR": {
+      "telephony": "AIRFRANS",
+      "say": "Air France"
+    },
+    "SWR": {
+      "telephony": "SWISS",
+      "say": "Swiss"
+    },
+    "BAW": {
+      "telephony": "SPEEDBIRD",
+      "say": "Speedbird"
+    },
+    "ELY": {
+      "telephony": "ELAL",
+      "say": "El Al"
+    }
+  }
+}

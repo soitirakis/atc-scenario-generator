@@ -17,11 +17,13 @@ This document describes what each test layer covers, and why it is there.
 | `tests/unit/link.test.js` | two-window protocol, what the trainee snapshot contains, trainee commands | 14 |
 | `tests/unit/nets.test.js` | APW, CLAM, RAM and MTCD on plain data and in the simulator | 21 |
 | `tests/unit/performance.test.js` | OpenAP WRAP conversion, ISA airspeeds, wind | 12 |
-| `tests/unit/radio.test.js` | readbacks, the busy frequency, one transmission per command line, similar callsigns | 8 |
+| `tests/unit/radio.test.js` | readbacks, the busy frequency, one transmission per command line, similar callsigns | 13 |
 | `tests/unit/records.test.js` | session record builder and validator, the clearance log, import of single records and bundles, storage unavailable | 22 |
 | `tests/unit/progress.test.js` | a trainee's progress from fixture records: grouping by name, per inject type (seen, met rate, median, trend), separation and routine per session, the weakest objectives in plain words | 13 |
 | `tests/unit/charts.test.js` | inline SVG charts for the Progress view: bars, closest pair against 5 NM, last-sessions squares, escaping | 5 |
 | `tests/unit/recommend.test.js` | suggest next scenario: each rule (repeat the weakest, traffic level up and down, sector not flown recently, overlapping injects), its reasons, and a valid scenario file over 400 generated histories | 17 |
+| `tests/unit/phraseology.test.js` | spoken ICAO phraseology: digits and niner, numbers, levels, headings, points, callsigns and telephony (every operator covered), every clearance form, readback errors, requests, voice per callsign, rate to fit the slot | 17 |
+| `tests/unit/voice.test.js` | speaking in the radio slot: once, not before or late, cut at the end or on pause, muted, requests not over a readback, rate and volume, restart | 11 |
 | `tests/unit/pdf.test.js` | PDF debrief from a fixture record: page count, header, objective and criteria, injects, stats, timeline, snapshots, remarks, signatures, the training mark on every page, page breaks, text for the PDF fonts | 20 |
 | `tests/unit/scenario-file.test.js` | scenario export and import validation, the sample library | 24 |
 | `tests/unit/sector-volumes.test.js` | sector layers and vertical limits (KOMAN 1/2), collapsed layers, delegated airspace, several source AIPs, upper-airspace-only units | 27 |
@@ -31,11 +33,12 @@ This document describes what each test layer covers, and why it is there.
 | `tests/e2e/app.spec.js` | the single window: loading, clearances, injects, data blocks, tools, command line, COMLOSS, no requests to other hosts | 17 × 2 viewports |
 | `tests/e2e/two-windows.spec.js` | instructor and trainee windows: sync, what the trainee sees, commands through the link, grading | 9 × 2 viewports |
 | `tests/e2e/session-records.spec.js` | session history: save, reload, list, open, replay, export one and all, delete, import, no storage | 6 × 2 viewports |
+| `tests/e2e/voice.spec.js` | pilot voices with a recording speech engine: readback in ICAO phraseology in its slot, local English voices only, mute and volume remembered, requests, only the trainee window speaks in two-window mode, no voice installed | 4 × 2 viewports |
 | `tests/e2e/scenario-files.spec.js` | export, reload and import round trip, the library in both windows, invalid files | 3 × 2 viewports |
-| **Total** | 21 unit files, 4 end-to-end files | 401 unit, 35 end-to-end × 2 viewports |
+| **Total** | 23 unit files, 5 end-to-end files | 434 unit, 39 end-to-end × 2 viewports |
 <!-- test-counts:end -->
 
-The counts come from the test runners: `node scripts/test-counts.mjs` rewrites them, and CI fails if they differ (`--check`). The coverage gate (`npm run test:coverage`, `vite.config.js`) requires 85% per file on `src/sim.js`, `src/scenario.js`, `src/cmdline.js`, `src/records.js`, `src/pdf.js`, `src/progress.js`, `src/charts.js`, `src/recommend.js`, `src/nets/*.js` and `src/tools/*.js`.
+The counts come from the test runners: `node scripts/test-counts.mjs` rewrites them, and CI fails if they differ (`--check`). The coverage gate (`npm run test:coverage`, `vite.config.js`) requires 85% per file on `src/sim.js`, `src/scenario.js`, `src/cmdline.js`, `src/records.js`, `src/pdf.js`, `src/progress.js`, `src/charts.js`, `src/recommend.js`, `src/phraseology.js`, `src/voice.js`, `src/nets/*.js` and `src/tools/*.js`.
 
 The unit tests run in Node in a few seconds and need no browser or network. The end-to-end tests run against the production build, on a desktop and a phone viewport. CI (`.github/workflows/ci.yml`) runs the unit tests with coverage, checks these counts, then runs the end-to-end tests, on every push and pull request. A push to `main` deploys to GitHub Pages only if all of that passes.
 
