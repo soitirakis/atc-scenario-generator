@@ -120,7 +120,8 @@ export class Sim {
     this.t = 0; this.ac = []; this.nextId = 1; this.stca = []; this.los = new Map();
     this.logs = []; this.wx = []; this.tsa = []; this.ended = false; this.csUsed = new Set(); this.timeline = []; this.clearances = [];
     this.nets = { clam: new Map(), apw: new Map(), ram: new Map(), mtcd: [] };
-    this.freq = { busyUntil: 0, cs: null }; this.radio = []; this.radioActs = []; this._tx = null;
+    this.freq = { busyUntil: 0, cs: null }; this.radio = []; this.radioActs = []; this._tx = null; this.tx = [];
+    this.txSeq = this.txSeq || 0; // keeps counting across sessions, so a transmission id is never reused
     // seeded even before a scenario is loaded (load() reseeds both from the scenario), never Math.random
     this.spawnTimer = 30; this.rng = mulberry32(1); this.radioRng = mulberry32(2); this.wind = [];
   }
@@ -695,6 +696,7 @@ export class Sim {
 
   raiseRequest(a, kind, value, text) {
     a.req = { kind, value, text, t: this.t };
+    if (['climb', 'descend', 'wx', 'direct'].includes(kind)) this.pushTx({ kind: 'request', cs: a.cs, t: this.t, until: this.t + RADIO.readbackS, req: { kind, value, text } });
     this.stats.reqs++;
     this.log(`${a.cs} ${text}`);
   }
@@ -1289,7 +1291,14 @@ export class Sim {
     const at = this.t + RADIO.readbackMinS + Math.floor(this.radioRng() * (RADIO.readbackMaxS - RADIO.readbackMinS + 1));
     this.radio.push({ at, a, text: `${what}, ${a.cs}`, act });
     this.freq = { busyUntil: at + RADIO.readbackS, cs: a.cs };
+    this.pushTx({ kind: 'readback', cs: a.cs, t: at, until: at + RADIO.readbackS, what });
   }
+  /**
+   * Pilot transmissions for the voice (src/phraseology.js, src/voice.js): who says what, from t to until.
+   * A readback is said in its slot at the end of the busy frequency; a request is raised at once and
+   * gets a slot of the same length. Read only by the UI; no rng, no effect on the session.
+   */
+  pushTx(x) { this.tx.push({ id: ++this.txSeq, ...x }); if (this.tx.length > 30) this.tx.shift(); }
   /** One transmission with several clearances to one aircraft, read back together. */
   transmit(id, actions) {
     const a = this.get(id);

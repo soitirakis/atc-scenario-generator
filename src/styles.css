@@ -167,7 +167,10 @@ select { padding-right: 4px; }
 pre.code { margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 8px; font-family: var(--f-data); font-size: 11.5px; line-height: 1.45; overflow-x: auto; color: var(--text); }
 
 /* Roles: solo (one window), instructor and trainee (two windows) */
-body:not([data-role="solo"]) .solo-only, body[data-role="trainee"] .not-trainee, body:not([data-role="instructor"]) .instructor-only { display: none !important; }
+body:not([data-role="solo"]) .solo-only, body[data-role="trainee"] .not-trainee, body:not([data-role="instructor"]) .instructor-only, body[data-role="instructor"] .not-instructor { display: none !important; }
+.voice-ctl { display: inline-flex; align-items: center; gap: 6px; }
+.voice-ctl input[type=range] { width: 84px; accent-color: var(--accent); }
+#voiceBtn[aria-pressed="false"] { color: var(--muted); }
 .role-tag { font-family: var(--f-data); font-size: 11px; letter-spacing: 1px; padding: 2px 8px; border-radius: 3px; border: 1px solid var(--accent); color: var(--accent); white-space: nowrap; }
 .role-tag.off { border-color: var(--warn); color: var(--warn); }
 .inj-row.held .tm { color: var(--muted); text-decoration: line-through; }

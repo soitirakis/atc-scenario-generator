@@ -128,6 +128,26 @@ Two injects use this:
 - **Readback error**: the next level or heading clearance to one of your aircraft is read back wrong (1000 ft or 30° off). The aircraft does what it read back 10 s after the readback, unless you correct it first; graded on whether you do. A wrong level shows as CLAM SFL once it is set.
 - **Similar callsigns**: a flight with a similar callsign (WZZ4127 and WZZ4172) comes on frequency, and the next clearance to either is taken by the other one: it reads back with its own callsign and acts on it 10 s later unless you stop it.
 
+## Pilot voices
+
+Pilot readbacks and requests are spoken with the browser's speech synthesis (Web Speech API), offline: only English voices installed on the computer are used (`localService`), and nothing is sent online. If none is installed, nothing is spoken and the **Voice** button's tooltip says so.
+
+- **Phraseology** (`src/phraseology.js`, no DOM) follows ICAO Annex 10 Vol II numbers:
+  - digits one by one, with "niner": "heading zero niner zero";
+  - levels as "flight level three five zero", and whole hundreds as "flight level one hundred";
+  - rates in whole thousands and hundreds: "two thousand feet per minute";
+  - "Mach decimal seven eight";
+  - five-letter points said as words, other identifiers (aerodromes, VORs) in the spelling alphabet.
+
+  A readback is each clearance of the transmission, then the callsign. A request is the callsign first.
+- **Callsigns** use the operator's telephony designator ("WZZ1118" is "Wizz Air one one one eight"), from `data/telephony.json`. An unknown designator is spelled out.
+- **Readback errors** are spoken as the pilot says them: the wrong level or heading, or the similar callsign's own callsign.
+- **Timing:** each transmission is said only in its slot from the simulator's radio, a readback when it appears in the log, for `RADIO.readbackS` (2 s). Speech is faster when the text would not fit, up to twice the voice's rate, and is cut at the slot's end; nothing is said late or while paused. A pilot request does not talk over a transmission being said.
+- **Voices:** each callsign keeps its own voice (among the local English ones), pitch and rate.
+- **Where:** in the solo window, and in two-window mode only in the trainee window (the instructor window has no voice controls). **Voice on/off** and the volume slider are in the top bar, remembered in this browser.
+
+Voice input is not supported yet.
+
 ## Controller tools
 
 Pure modules in `src/tools/`, with unit tests. They work the same in the trainee window.
@@ -229,6 +249,8 @@ src/
   progress.js         a trainee's progress over their session records (no DOM)
   charts.js           small inline SVG charts for the Progress view, as strings (no DOM)
   recommend.js        suggest the next scenario from a trainee's records, with reasons (no DOM)
+  phraseology.js      pilot transmissions as spoken ICAO phraseology (no DOM)
+  voice.js            speaks them with the browser's speech synthesis, in their radio slots
   vendor/             stand-in for jsPDF's optional dependencies, which the build leaves out
   render.js           canvas radar display
   link.js             instructor/trainee windows: BroadcastChannel protocol, trainee snapshot, read-only view
@@ -344,6 +366,15 @@ Where each data source stands. Dates marked _to be filled in_ are added when the
 | Publisher | HungaroControl |
 | Published terms | AIP Hungary GEN 0.1 §5: "Any – in full or in part – usage of this document in any form or by any means is subject to HungaroControl's prior written consent." |
 | Status | Withdrawn pending HungaroControl's written consent. Request sent: _date to be filled in_ |
+
+**Telephony designators**
+
+| | |
+|---|---|
+| Files | `data/telephony.json` (`telephony`; `say` is this project's spelling for the speech synthesis) |
+| Source | FAA Order JO 7340.2P Contractions, Chapter 3 Section 1, https://www.faa.gov/air_traffic/publications/atpubs/cnt_html/chap3_section_1.html (checked 2026-11-11), which follows ICAO Doc 8585 |
+| Published terms | A work of the US federal government |
+| Status | Used, with the source cited |
 
 **OpenAP**
 

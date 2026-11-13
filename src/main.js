@@ -10,6 +10,7 @@ import { fmtFL, fmtT, dist } from './geo.js';
 import { Sim, TYPES, DIFF } from './sim.js';
 import { buildLocalScenario, buildClaudePrompt, parseClaudeScenario, exportScenario, validateScenarioFile, DURATIONS, INJECT_TEXT } from './scenario.js';
 import { suggestScenario } from './recommend.js';
+import { Voice } from './voice.js';
 import { LIBRARY } from '../data/scenarios/index.js';
 import { parseCommand, completeCallsign } from './cmdline.js';
 import { Renderer } from './render.js';
@@ -38,6 +39,9 @@ const ui = { lastRecord: null, viewRecord: null, snaps: [], tlSeen: 0, histView:
 // session records (src/records.js) in IndexedDB (src/store.js); the trainee window has no Sim, so it keeps none
 let records = null;
 const recordsReady = ROLE === 'trainee' ? Promise.resolve(null) : openRecords().then(s => { records = s; return s; });
+// pilot voices: in the solo window, and in two-window mode only in the trainee window
+const voice = ROLE === 'instructor' ? null : new Voice();
+window.__voice = voice;
 window.__sim = sim; // handy for e2e tests and console debugging
 window.__radar = R;
 window.__link = link;
@@ -647,6 +651,24 @@ function suggestClick(e) {
   if (b.dataset.sg === 'del') b.parentElement.remove();
 }
 
+/* ---------- pilot voices (src/voice.js): mute and volume, remembered in this browser ---------- */
+function initVoice() {
+  const pref = k => { try { return localStorage.getItem('atc.voice.' + k); } catch { return null; } };
+  const keep = (k, v) => { try { localStorage.setItem('atc.voice.' + k, String(v)); } catch { /* storage blocked: the setting lasts this page only */ } };
+  const show = () => {
+    $('voiceBtn').textContent = voice.muted ? 'Voice off' : 'Voice on';
+    $('voiceBtn').setAttribute('aria-pressed', !voice.muted);
+    $('voiceBtn').title = voice.status();
+  };
+  voice.setMuted(pref('muted') === '1');
+  if (pref('volume') !== null) voice.setVolume(+pref('volume'));
+  $('voiceVol').value = voice.volume;
+  $('voiceBtn').onclick = () => { voice.setMuted(!voice.muted); keep('muted', voice.muted ? 1 : 0); show(); };
+  $('voiceVol').oninput = () => { voice.setVolume($('voiceVol').value); keep('volume', voice.volume); };
+  voice.onchange = show;
+  show();
+}
+
 function setHistView(v) {
   ui.histView = v;
   for (const b of $('histSeg').children) b.setAttribute('aria-pressed', b.dataset.v === v);
@@ -892,6 +914,7 @@ function bindInput() {
   $('debRemarks').oninput = remarksChanged;
   $('debExport').onclick = () => { const rec = ui.viewRecord || ui.lastRecord; if (rec) { download(rec, recordFileName(rec)); toast(`Exported ${recordFileName(rec)}`); } };
   $('histList').onclick = historyClick;
+  if (voice) initVoice();
   $('histSeg').onclick = e => { const b = e.target.closest('button'); if (b) setHistView(b.dataset.v); };
   $('progTrainee').onchange = () => { ui.progKey = $('progTrainee').value; $('suggestBox').hidden = true; ui.suggest = null; renderHistory(); };
   $('progSuggest').onclick = showSuggestion;
@@ -944,7 +967,9 @@ function boot() {
     }
     if (ROLE !== 'trainee') captureEvents(); // injects fired from the instructor panel
     if (sim.ended && !ui.debriefShown) { ui.debriefShown = true; setRunning(false); updatePanel(true); if (ROLE !== 'trainee') saveRecord(); showDebrief(); }
-    if (ROLE === 'instructor' && now - ui.lastPub >= 1000) publish();
+    // more often while a pilot is due to speak, so the trainee window hears it in its slot
+    if (ROLE === 'instructor' && now - ui.lastPub >= (sim.tx.some(x => x.until >= sim.t) ? 250 : 1000)) publish();
+    if (voice) voice.update(sim, ROLE === 'trainee' ? { running: !!(sim.snap && sim.snap.running), speed: (sim.snap && sim.snap.speed) || 1 } : { running: ui.running, speed: ui.speed });
     R.draw();
     updatePanel(false);
     requestAnimationFrame(frame);

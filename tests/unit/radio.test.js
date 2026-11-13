@@ -94,3 +94,50 @@ describe('similar callsigns', () => {
     expect(similarCallsign('THY1')).toBeNull();
   });
 });
+
+describe('pilot transmissions for the voice (sim.tx)', () => {
+  it('a readback is logged with its slot: it starts when the pilot reads back and ends when the frequency is free', () => {
+    const sim = fresh(), a = mine(sim)[0], fl = Math.round(a.cfl) + 20;
+    sim.clearLevel(a.id, fl);
+    const tx = sim.tx[sim.tx.length - 1];
+    expect(tx).toMatchObject({ kind: 'readback', cs: a.cs, what: `climb FL${fl}` });
+    expect(tx.until).toBe(sim.freq.busyUntil);
+    expect(tx.until - tx.t).toBe(RADIO.readbackS);
+    while (sim.t < tx.t) sim.step();
+    expect(readbackOf(sim, a.cs)).toMatchObject({ t: tx.t, text: `climb FL${fl}, ${a.cs}` }); // said when the log shows it
+  });
+  it('one transmission with several clearances is one readback', () => {
+    const sim = fresh(), a = mine(sim)[0], n = sim.tx.length;
+    expect(sim.command(`${a.cs} ${Math.round(a.cfl) + 20} H120`).ok).toBe(true);
+    expect(sim.tx.length).toBe(n + 1);
+    expect(sim.tx[n].what).toMatch(/^climb FL\d{3}, turn heading 120$/);
+  });
+  it('pilot requests are logged at once; coordination calls from the next sector are not', () => {
+    const sim = fresh(), [a, b] = mine(sim);
+    expect(sim.pilotRequest(a.id, 'climb', 390).ok).toBe(true);
+    expect(sim.tx[sim.tx.length - 1]).toMatchObject({ kind: 'request', cs: a.cs, t: sim.t, until: sim.t + RADIO.readbackS, req: { kind: 'climb', value: 390, text: 'requests climb FL390' } });
+    const n = sim.tx.length;
+    sim.raiseRequest(b, 'coord', 330, 'next sector requests exit FL330');
+    expect(sim.tx.length).toBe(n);
+  });
+  it('a wrong readback is logged as the pilot says it', () => {
+    const scn = buildLocalScenario(C, { sector: 'ARG', difficulty: 'intermediate', duration: 30, seed: 4127, objective: 'x' });
+    scn.injects = [{ min: 1, type: 'READBACK_ERROR', text: '' }];
+    const sim = new Sim(C); sim.load(scn); run(sim, 61);
+    const a = mine(sim)[0], fl = Math.round(a.cfl) + 20;
+    sim.clearLevel(a.id, fl);
+    const tx = sim.tx[sim.tx.length - 1], g = sim.scenario.injects[0].g;
+    expect(tx.what).toBe(g.wrong);
+    expect(tx.what).not.toBe(`climb FL${fl}`);
+  });
+  it('the trainee snapshot carries the current and coming transmissions; the log keeps at most 30', () => {
+    const sim = fresh(), a = mine(sim)[0];
+    sim.clearLevel(a.id, Math.round(a.cfl) + 20);
+    const snap = makeSnapshot(sim);
+    expect(snap.tx).toEqual([sim.tx[sim.tx.length - 1]]);
+    expect(() => structuredClone(snap)).not.toThrow();
+    for (let i = 0; i < 40; i++) sim.pushTx({ kind: 'request', cs: 'X', t: 0, until: 0, req: { kind: 'climb', value: 300 } });
+    expect(sim.tx).toHaveLength(30);
+    expect(makeSnapshot(sim).tx.every(x => x.until >= sim.t - 2)).toBe(true);
+  });
+});
