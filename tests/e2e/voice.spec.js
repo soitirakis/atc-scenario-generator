@@ -33,7 +33,7 @@ test('solo: the readback is spoken in ICAO phraseology in its slot, with a local
   await page.addInitScript(fakeSpeech);
   await open(page, '/');
   await expect(page.locator('#voiceBtn')).toHaveText('Voice on');
-  await expect(page.locator('#voiceBtn')).toHaveAttribute('title', /2 local English voices, nothing is sent online/);
+  await expect(page.locator('#voiceBtn')).toHaveAttribute('title', /2 local English voices, nothing is sent online\. Voice at 1× only\./);
   await page.locator('#pausedStart').click();
   await page.locator('#speedSeg [data-s="1"]').click();
 
@@ -69,6 +69,33 @@ test('solo: the readback is spoken in ICAO phraseology in its slot, with a local
   await page.reload();
   await expect(page.locator('#voiceBtn')).toHaveText('Voice off');
   await expect(page.locator('#voiceVol')).toHaveValue('0.3');
+});
+
+test('only at 1x: above it readbacks are not said; speeding up lets the one being said finish', async ({ page }) => {
+  await page.addInitScript(fakeSpeech);
+  await open(page, '/');
+  await page.locator('#pausedStart').click();
+  await page.locator('#speedSeg [data-s="2"]').click();
+  const r = await clearAndReadBack(page);
+  await frames(page);
+  expect(await page.evaluate(() => window.__spoken)).toEqual([]);
+  // the readback log and the radio are unchanged
+  expect(await page.evaluate(() => window.__sim.logs.some(l => l.cls === 'p'))).toBe(true);
+
+  // back at 1x: the readback whose slot passed at 2x is not said late; the next one is
+  await page.locator('#speedSeg [data-s="1"]').click();
+  await frames(page);
+  expect(await page.evaluate(() => window.__spoken)).toEqual([]);
+  await page.evaluate(t => { const s = window.__sim; while (s.t < t) s.step(); }, r.tx.until);
+  const r2 = await clearAndReadBack(page);
+  await frames(page);
+  expect(await page.evaluate(() => window.__spoken.length)).toBe(1);
+
+  // speed up while it is said, past the end of its slot: not cut
+  await page.locator('#speedSeg [data-s="4"]').click();
+  await page.evaluate(t => { const s = window.__sim; while (s.t < t) s.step(); }, r2.tx.until + 1);
+  await frames(page);
+  expect(await page.evaluate(() => window.__cancels)).toBe(0);
 });
 
 test('a pilot request is spoken callsign first', async ({ page }) => {
