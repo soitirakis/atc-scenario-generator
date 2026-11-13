@@ -55,24 +55,46 @@ describe('pilot voice', () => {
     voice.update({ t: 10 + S, tx: [rq(3, 10 + S)] }, run); // the readback's slot is over
     expect(synth.spoken.at(-1).text).toBe('Lufthansa three, request climb flight level three niner zero');
   });
-  it('speaks faster to fit the slot, more so at a higher simulation speed; volume and voice per callsign', () => {
+  it('speaks faster to fit the slot; volume and voice per callsign', () => {
     const a = fake(), b = fake();
     a.voice.setVolume(0.4);
-    // a short readback fits the slot at 1x; at 4x the slot is a quarter as long
     a.voice.update({ t: 10, tx: [rb(1, 10, 'ROT344', 'roger')] }, run);
-    b.voice.update({ t: 10, tx: [rb(1, 10, 'ROT344', 'roger')] }, { running: true, speed: 4 });
-    expect(a.synth.spoken[0].rate).toBeLessThan(1.2);
-    expect(b.synth.spoken[0].rate).toBeGreaterThan(a.synth.spoken[0].rate);
-    expect(b.synth.spoken[0].rate).toBeLessThanOrEqual(2);
+    b.voice.update({ t: 10, tx: [rb(1, 10, 'ROT344')] }, run);
+    expect(a.synth.spoken[0].rate).toBeLessThan(1.2); // a short readback at the voice's own rate
+    expect(b.synth.spoken[0].rate).toBeGreaterThanOrEqual(a.synth.spoken[0].rate);
     expect(a.synth.spoken[0].volume).toBe(0.4);
     expect([a.synth.spoken[0].voice, a.synth.spoken[0].pitch]).toEqual([b.synth.spoken[0].voice, b.synth.spoken[0].pitch]);
   });
-  it('at 1x the longest readback is said whole in the slot (a little faster than the voice); at 2x it is cut', () => {
+  it('only at 1x: above it nothing is said, and a slot that passes at speed is never said late', () => {
+    const { synth, voice } = fake();
+    for (const speed of [2, 4, 8]) voice.update({ t: 10, tx: [rb(speed, 10)] }, { running: true, speed });
+    voice.update({ t: 11, tx: [rb(2, 10), rb(4, 10), rb(8, 10)] }, run); // back at 1x within those slots
+    expect(synth.spoken).toHaveLength(0);
+    voice.update({ t: 20, tx: [rb(9, 20)] }, run);
+    expect(synth.spoken).toHaveLength(1);
+    expect(voice.status()).toMatch(/Voice at 1× only\.$/);
+  });
+  it('speed going up while one is said: it is let finish, not cut, and nothing new starts', () => {
+    const { synth, voice } = fake(), fast = { running: true, speed: 4 };
+    voice.update({ t: 10, tx: [rb(1, 10)] }, run);
+    voice.update({ t: 10 + S, tx: [rb(1, 10), rq(2, 10 + S)] }, fast); // its slot is over: at 1x this would cut it
+    voice.update({ t: 10 + S + 1, tx: [rb(1, 10), rq(2, 10 + S)] }, run); // back at 1x before it ends
+    expect([synth.spoken.length, synth.cancels]).toEqual([1, 0]);
+    synth.spoken[0].onend();
+    expect(voice.current).toBeNull();
+    voice.update({ t: 10 + S + 2, tx: [rq(2, 10 + S)] }, run); // the request's slot came at 4x: dropped
+    expect(synth.spoken).toHaveLength(1);
+    // a pause still cuts it
+    voice.update({ t: 30, tx: [rb(3, 30)] }, run);
+    voice.update({ t: 30, tx: [rb(3, 30)] }, fast);
+    voice.update({ t: 31, tx: [rb(3, 30)] }, { running: false, speed: 4 });
+    expect(synth.cancels).toBe(1);
+  });
+  it('at 1x the longest readback is said whole in the slot (a little faster than the voice)', () => {
     // the longest form: a level, then an operator with a long telephony and four digits (68 characters)
     const text = transmissionText(rb(1, 0, 'UAE1349', 'descend FL370'));
     expect(text).toBe('descend flight level three seven zero, Emirates one three four niner');
     expect(fitRate(text, S, 0.95)).toEqual({ rate: expect.closeTo(1.21, 2), fits: true });
-    expect(fitRate(text, S / 2, 0.95).fits).toBe(false);
   });
   it('a restart starts again: the clock going back clears what was said', () => {
     const { synth, voice } = fake();

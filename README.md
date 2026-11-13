@@ -142,7 +142,8 @@ Pilot readbacks and requests are spoken with the browser's speech synthesis (Web
   A readback is each clearance of the transmission, then the callsign. A request is the callsign first.
 - **Callsigns** use the operator's telephony designator ("WZZ1118" is "Wizz Air one one one eight"), from `data/telephony.json`. An unknown designator is spelled out.
 - **Readback errors** are spoken as the pilot says them: the wrong level or heading, or the similar callsign's own callsign.
-- **Timing:** each transmission is said only in its slot from the simulator's radio, a readback when it appears in the log, for `RADIO.readbackS` (4 s). Speech is faster when the text would not fit, up to twice the voice's rate, and is cut at the slot's end; nothing is said late or while paused. At 1× every readback is said whole, the longest (a level and a four-digit callsign, about 68 characters) about 1.2 times faster than the voice's own rate; at 2× most readbacks are cut, and at 4× and 8× all of them are. A pilot request does not talk over a transmission being said.
+- **Timing:** each transmission is said only in its slot from the simulator's radio, a readback when it appears in the log, for `RADIO.readbackS` (4 s). Speech is faster when the text would not fit, up to twice the voice's rate, and is cut at the slot's end; nothing is said late or while paused. Every readback is said whole, the longest (a level and a four-digit callsign, about 68 characters) about 1.2 times faster than the voice's own rate. A pilot request does not talk over a transmission being said.
+- **Only at 1×** (the button's tooltip says *Voice at 1× only*): above 1× nothing is said, and transmissions whose slot passes then are dropped, as when muted, not said later. If the speed goes up while a pilot is talking, that transmission is finished, not cut part-way. Pausing still cuts it. The log and the radio timing are the same at every speed.
 - **Voices:** each callsign keeps its own voice (among the local English ones), pitch and rate.
 - **Where:** in the solo window, and in two-window mode only in the trainee window (the instructor window has no voice controls). **Voice on/off** and the volume slider are in the top bar, remembered in this browser.
 
@@ -250,7 +251,7 @@ src/
   charts.js           small inline SVG charts for the Progress view, as strings (no DOM)
   recommend.js        suggest the next scenario from a trainee's records, with reasons (no DOM)
   phraseology.js      pilot transmissions as spoken ICAO phraseology (no DOM)
-  voice.js            speaks them with the browser's speech synthesis, in their radio slots
+  voice.js            speaks them with the browser's speech synthesis, in their radio slots, at 1× only
   vendor/             stand-in for jsPDF's optional dependencies, which the build leaves out
   render.js           canvas radar display
   link.js             instructor/trainee windows: BroadcastChannel protocol, trainee snapshot, read-only view
