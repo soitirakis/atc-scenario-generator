@@ -122,7 +122,7 @@ The **Command** box on the Live tab takes clearances in controller shorthand, on
 
 **Tab** completes the callsign when one matches, and the matches are listed as you type. The callsign must be complete before a clearance is sent: a partial one is never guessed, because guessing is how similar callsigns get confused. Errors (an unknown callsign, a level outside FL050-FL450, a heading of 400) are shown at once and nothing is sent. The parser is `src/cmdline.js`, pure and unit tested.
 
-**Readbacks.** Every clearance, from the command line or the panels, is one transmission. The pilot reads it back in the log 2-6 s later (in italics), and the frequency is busy from the clearance until the readback ends: the box header says *frequency busy · CALLSIGN*. A clearance given then gets "say again" and is not applied. Clearances take effect when given; the readback is what you hear. Assume and transfer are system actions, not radio calls. Settings: `RADIO` in `src/sim.js`.
+**Readbacks.** Every clearance, from the command line or the panels, is one transmission. The pilot reads it back in the log 2-6 s later (in italics), the readback takes 4 s, and the frequency is busy from the clearance until the readback ends: the box header says *frequency busy · CALLSIGN*. A clearance given then gets "say again" and is not applied. Clearances take effect when given; the readback is what you hear. Assume and transfer are system actions, not radio calls. Settings: `RADIO` in `src/sim.js`.
 
 Two injects use this:
 - **Readback error**: the next level or heading clearance to one of your aircraft is read back wrong (1000 ft or 30° off). The aircraft does what it read back 10 s after the readback, unless you correct it first; graded on whether you do. A wrong level shows as CLAM SFL once it is set.
@@ -142,7 +142,7 @@ Pilot readbacks and requests are spoken with the browser's speech synthesis (Web
   A readback is each clearance of the transmission, then the callsign. A request is the callsign first.
 - **Callsigns** use the operator's telephony designator ("WZZ1118" is "Wizz Air one one one eight"), from `data/telephony.json`. An unknown designator is spelled out.
 - **Readback errors** are spoken as the pilot says them: the wrong level or heading, or the similar callsign's own callsign.
-- **Timing:** each transmission is said only in its slot from the simulator's radio, a readback when it appears in the log, for `RADIO.readbackS` (2 s). Speech is faster when the text would not fit, up to twice the voice's rate, and is cut at the slot's end; nothing is said late or while paused. A pilot request does not talk over a transmission being said.
+- **Timing:** each transmission is said only in its slot from the simulator's radio, a readback when it appears in the log, for `RADIO.readbackS` (4 s). Speech is faster when the text would not fit, up to twice the voice's rate, and is cut at the slot's end; nothing is said late or while paused. At 1× every readback is said whole, the longest (a level and a four-digit callsign, about 68 characters) about 1.2 times faster than the voice's own rate; at 2× most readbacks are cut, and at 4× and 8× all of them are. A pilot request does not talk over a transmission being said.
 - **Voices:** each callsign keeps its own voice (among the local English ones), pitch and rate.
 - **Where:** in the solo window, and in two-window mode only in the trainee window (the instructor window has no voice controls). **Voice on/off** and the volume slider are in the top bar, remembered in this browser.
 

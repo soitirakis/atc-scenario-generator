@@ -23,7 +23,7 @@ This document describes what each test layer covers, and why it is there.
 | `tests/unit/charts.test.js` | inline SVG charts for the Progress view: bars, closest pair against 5 NM, last-sessions squares, escaping | 5 |
 | `tests/unit/recommend.test.js` | suggest next scenario: each rule (repeat the weakest, traffic level up and down, sector not flown recently, overlapping injects), its reasons, and a valid scenario file over 400 generated histories | 17 |
 | `tests/unit/phraseology.test.js` | spoken ICAO phraseology: digits and niner, numbers, levels, headings, points, callsigns and telephony (every operator covered), every clearance form, readback errors, requests, voice per callsign, rate to fit the slot | 17 |
-| `tests/unit/voice.test.js` | speaking in the radio slot: once, not before or late, cut at the end or on pause, muted, requests not over a readback, rate and volume, restart | 11 |
+| `tests/unit/voice.test.js` | speaking in the radio slot (`RADIO.readbackS`): once, not before or late, cut at the end or on pause, muted, requests not over a readback, rate and volume, the longest readback said whole at 1× and cut at 2×, restart | 12 |
 | `tests/unit/pdf.test.js` | PDF debrief from a fixture record: page count, header, objective and criteria, injects, stats, timeline, snapshots, remarks, signatures, the training mark on every page, page breaks, text for the PDF fonts | 20 |
 | `tests/unit/scenario-file.test.js` | scenario export and import validation, the sample library | 24 |
 | `tests/unit/sector-volumes.test.js` | sector layers and vertical limits (KOMAN 1/2), collapsed layers, delegated airspace, several source AIPs, upper-airspace-only units | 27 |
@@ -35,7 +35,7 @@ This document describes what each test layer covers, and why it is there.
 | `tests/e2e/session-records.spec.js` | session history: save, reload, list, open, replay, export one and all, delete, import, no storage | 6 × 2 viewports |
 | `tests/e2e/voice.spec.js` | pilot voices with a recording speech engine: readback in ICAO phraseology in its slot, local English voices only, mute and volume remembered, requests, only the trainee window speaks in two-window mode, no voice installed | 4 × 2 viewports |
 | `tests/e2e/scenario-files.spec.js` | export, reload and import round trip, the library in both windows, invalid files | 3 × 2 viewports |
-| **Total** | 23 unit files, 5 end-to-end files | 434 unit, 39 end-to-end × 2 viewports |
+| **Total** | 23 unit files, 5 end-to-end files | 435 unit, 39 end-to-end × 2 viewports |
 <!-- test-counts:end -->
 
 The counts come from the test runners: `node scripts/test-counts.mjs` rewrites them, and CI fails if they differ (`--check`). The coverage gate (`npm run test:coverage`, `vite.config.js`) requires 85% per file on `src/sim.js`, `src/scenario.js`, `src/cmdline.js`, `src/records.js`, `src/pdf.js`, `src/progress.js`, `src/charts.js`, `src/recommend.js`, `src/phraseology.js`, `src/voice.js`, `src/nets/*.js` and `src/tools/*.js`.
