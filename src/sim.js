@@ -62,7 +62,7 @@ export const CIVMIL = { comlossS: 300, notifyS: 120, scrambleS: 180, coordS: 60,
 /** Vertical minimum (ft) between two tracks: 2000 ft from FL290 if either is non-RVSM (OAT), else 1000. */
 export const vMin = (a, b) => ((a.oat && a.oat.nonRvsm) || (b.oat && b.oat.nonRvsm)) && Math.max(a.fl, b.fl) >= CIVMIL.rvsmFromFL ? CIVMIL.nonRvsmFt : CIVMIL.verticalFt;
 
-export const RADIO = { readbackMinS: 2, readbackMaxS: 6, readbackS: 2, actS: 10 };
+export const RADIO = { readbackMinS: 2, readbackMaxS: 6, readbackS: 4, actS: 10 };
 
 /** A callsign that sounds like cs: same operator, last two digits swapped (or the last one changed). */
 export function similarCallsign(cs, used = new Set()) {
