@@ -15,6 +15,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "screenshots": "node scripts/screenshots.mjs",
+    "guide:shots": "node scripts/guide-shots.mjs",
     "airac": "node scripts/airac-update.mjs"
   },
   "devDependencies": {
