@@ -19,11 +19,11 @@
     "airac": "node scripts/airac-update.mjs"
   },
   "devDependencies": {
-    "@playwright/test": "^1.65.0",
-    "@vitest/coverage-v8": "^5.1.0",
+    "@playwright/test": "^1.65.1",
+    "@vitest/coverage-v8": "^5.1.1",
     "gifenc": "^1.0.3",
     "pdfjs-dist": "^6.5.438",
-    "vite": "^8.3.6",
+    "vite": "^8.3.8",
     "vite-plugin-singlefile": "^2.3.4",
     "vitest": "^5.0.5"
   },
